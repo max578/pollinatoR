@@ -1,0 +1,22 @@
+url: https://aagi-aus.github.io/pollinatoR/
+
+template:
+  bootstrap: 5
+
+reference:
+  - title: Declare a study
+    contents:
+      - pollin_spec
+      - pollin_validate
+  - title: Estimate the contribution
+    contents:
+      - pollin_contribution
+      - pollin_moderation
+  - title: Indices, guards, and helpers
+    contents:
+      - pollin_index
+      - pollin_rii
+      - pollin_guard_spurious
+      - pollin_within_between
+      - pollin_compensation
+      - pollin_fdr

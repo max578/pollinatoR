@@ -1,0 +1,9 @@
+linters: linters_with_defaults(
+    # lm(y ~ x) formula terms are not seen as variable uses by static analysis,
+    # producing false "assigned but may not be used" notes; disabled by design.
+    object_usage_linter = NULL,
+    line_length_linter = line_length_linter(80L)
+  )
+exclusions: list(
+    "tests"   # test fixtures use data-column names (Site, trt) by design
+  )

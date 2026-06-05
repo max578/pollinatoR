@@ -1,0 +1,204 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "identifier": "pollinatoR",
+  "description": "Tools for estimating the contribution of insect pollinators to crop yield from pollinator-exclusion experiments (open versus caged, and related contrasts). Provides model-based average and conditional treatment effects with propagated uncertainty, uncertainty-aware dependence indices (a defensible replacement for bare ratio indices such as the Relative Interaction Index), a within-between decomposition that shields the exposure-by-treatment estimand from site-level confounders such as an unobserved genotype, a permutation guard against the spurious correlation that arises when a dependence index is regressed on a yield axis that shares a term, and structural data-integrity checks. The methods are general to open-versus-exclusion designs across crops and are not specific to any one study. Developed with support from the Grains Research and Development Corporation (GRDC project USQ2401-002RTX) and Analytics for the Australian Grains Industry (AAGI).",
+  "name": "pollinatoR: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion\n    Experiments",
+  "relatedLink": "https://github.com/max578/pollinatoR",
+  "codeRepository": "https://github.com/max578/pollinatoR",
+  "issueTracker": "https://github.com/max578/pollinatoR/issues",
+  "license": "https://spdx.org/licenses/MIT",
+  "version": "0.0.0.9000",
+  "programmingLanguage": {
+    "@type": "ComputerLanguage",
+    "name": "R",
+    "url": "https://r-project.org"
+  },
+  "runtimePlatform": "R version 4.5.2 (2025-10-31)",
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Max",
+      "familyName": "Moldovan",
+      "email": "max.moldovan@gmail.com",
+      "@id": "https://orcid.org/0000-0001-9680-8474"
+    }
+  ],
+  "maintainer": [
+    {
+      "@type": "Person",
+      "givenName": "Max",
+      "familyName": "Moldovan",
+      "email": "max.moldovan@gmail.com",
+      "@id": "https://orcid.org/0000-0001-9680-8474"
+    }
+  ],
+  "softwareSuggestions": [
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "DHARMa",
+      "name": "DHARMa",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=DHARMa"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "emmeans",
+      "name": "emmeans",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=emmeans"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "brms",
+      "name": "brms",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=brms"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "boot",
+      "name": "boot",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=boot"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "fst",
+      "name": "fst",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=fst"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "data.table",
+      "name": "data.table",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=data.table"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "testthat",
+      "name": "testthat",
+      "version": ">= 3.0.0",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=testthat"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "knitr",
+      "name": "knitr",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=knitr"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "rmarkdown",
+      "name": "rmarkdown",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=rmarkdown"
+    }
+  ],
+  "softwareRequirements": {
+    "1": {
+      "@type": "SoftwareApplication",
+      "identifier": "R",
+      "name": "R",
+      "version": ">= 4.1"
+    },
+    "2": {
+      "@type": "SoftwareApplication",
+      "identifier": "glmmTMB",
+      "name": "glmmTMB",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=glmmTMB"
+    },
+    "3": {
+      "@type": "SoftwareApplication",
+      "identifier": "marginaleffects",
+      "name": "marginaleffects",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=marginaleffects"
+    },
+    "4": {
+      "@type": "SoftwareApplication",
+      "identifier": "stats",
+      "name": "stats"
+    },
+    "SystemRequirements": null
+  },
+  "fileSize": "0KB",
+  "citation": [
+    {
+      "@type": "SoftwareSourceCode",
+      "datePublished": "2026",
+      "author": [
+        {
+          "@type": "Person",
+          "givenName": "Max",
+          "familyName": "Moldovan",
+          "@id": "https://orcid.org/0000-0001-9680-8474"
+        }
+      ],
+      "name": "pollinatoR: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion Experiments",
+      "url": "https://github.com/max578/pollinatoR",
+      "description": "R package version 0.0.0.9000"
+    }
+  ],
+  "releaseNotes": "https://github.com/max578/pollinatoR/blob/main/NEWS.md"
+}

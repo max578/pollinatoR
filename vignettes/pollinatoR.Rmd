@@ -1,0 +1,163 @@
+---
+title: "Pollinator-dependence analytics for exclusion experiments"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Pollinator-dependence analytics for exclusion experiments}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+set.seed(1)
+library(pollinatoR)
+```
+
+## What this package is for
+
+`pollinatoR` estimates the contribution of insect pollinators to crop yield from
+*pollinator-exclusion experiments* -- paired open and caged (exclusion) plots, and
+related contrasts -- and relates that contribution to the pollinator community. The
+methods are general to open-versus-exclusion designs; canola is one application, not
+a constraint.
+
+The package is a small set of verbs around one declared study object. This vignette
+runs every one of them end to end on a simulated canola-shaped dataset, so each step
+produces real output you can read.
+
+| Verb | Question it answers |
+| --- | --- |
+| `pollin_spec()` | What is the study -- outcomes, treatment, nesting, exposures? |
+| `pollin_contribution()` | How much yield does pollinator access add, with uncertainty? |
+| `pollin_fdr()` | Which contributions survive multiple-testing control? |
+| `pollin_moderation()` | Which insects drive the contribution, free of unit confounders? |
+| `pollin_rii()` / `pollin_index()` | The dependence index, with an interval, not a bare ratio. |
+| `pollin_guard_spurious()` | Is an index-versus-yield slope real or mechanical coupling? |
+| `pollin_within_between()` | The Mundlak split that makes moderation confounder-robust. |
+| `pollin_compensation()` | Do yield components trade off against each other? |
+| `pollin_validate()` | Does the data pass structural integrity checks? |
+
+## A simulated study
+
+One open-versus-cage design: 10 sites, 16 plants each, two insect exposures, and two
+yield-component outcomes. Open access lifts pod set, and does so more where honeybees
+are abundant -- the moderation signal we will recover.
+
+```{r}
+ns <- 10L
+per <- 16L
+site <- rep(sprintf("s%02d", seq_len(ns)), each = per)
+trt <- rep(rep(c("Cage", "Open"), each = per / 2L), ns)
+honeybee <- rep(rpois(ns, 8), each = per) + rpois(ns * per, 1)
+wild <- rep(rpois(ns, 4), each = per) + rpois(ns * per, 1)
+site_eff <- rnorm(ns, 0, 0.3)[as.integer(factor(site))]
+open <- trt == "Open"
+pod_mu <- exp(1.8 + 0.35 * open + 0.015 * honeybee * open + site_eff)
+pods <- rpois(ns * per, pod_mu)
+seeds_per_pod <- rpois(ns * per, exp(2.6 + 0.12 * open + site_eff))
+canola <- data.frame(site, trt, honeybee, wild, pods, seeds_per_pod)
+head(canola)
+```
+
+## Declare the study once
+
+```{r}
+spec <- pollin_spec(
+  data = canola,
+  outcomes = c("pods", "seeds_per_pod"),
+  treatment = "trt",
+  control = "Cage",
+  random = "site",
+  exposures = c("honeybee", "wild"),
+  latent_unit = "site" # carries the random treatment slope
+)
+spec
+```
+
+## The contribution, with uncertainty
+
+`pollin_contribution()` fits a `glmmTMB` mixed model per outcome (family chosen
+heuristically) and reports the open-minus-exclusion contrast through
+`marginaleffects`, with a confidence interval and the standard deviation of the
+random treatment slope -- a reportable measure of how much the contribution varies
+between units.
+
+```{r, warning = FALSE, message = FALSE}
+contribution <- pollin_contribution(spec)
+contribution
+```
+
+With more than one outcome, control the false-discovery rate across them:
+
+```{r}
+contribution$table$fdr <- pollin_fdr(contribution$table$p.value)
+contribution$table[, c("outcome", "estimate", "p.value", "fdr")]
+```
+
+## Which insects drive it
+
+`pollin_moderation()` enters each exposure through a within-between (Mundlak) split.
+The within-unit treatment-by-exposure term is the confounder-robust estimate: it is
+identified from variation inside a site, so an unrecorded site-level genotype cannot
+masquerade as a pollinator effect.
+
+```{r, warning = FALSE, message = FALSE}
+moderation <- pollin_moderation(spec, outcome = "pods")
+moderation
+```
+
+The split itself is available directly; `between` is the unit mean and `within` the
+deviation within a unit, robust to any unit-level confounder.
+
+```{r}
+wb <- pollin_within_between(canola$honeybee, group = canola$site)
+str(wb)
+```
+
+## Uncertainty-aware indices
+
+Per-site open and exclusion means give a dependence index with an interval, rather
+than a single ratio. `pollin_rii()` returns the Relative Interaction Index with a
+bootstrap interval; `pollin_index()` adds the log response ratio with a closed-form
+interval.
+
+```{r}
+open_mean <- tapply(canola$pods[open], canola$site[open], mean)
+cage_mean <- tapply(canola$pods[!open], canola$site[!open], mean)
+pollin_rii(open_mean, cage_mean, n_boot = 500, seed = 1)
+pollin_index(open_mean, cage_mean, n_boot = 500, seed = 1)
+```
+
+## Guard against spurious index-versus-yield slopes
+
+Regressing a dependence index on absolute (open-arm) yield is hazardous: the open
+term sits on both axes, so a positive slope is partly mechanical (Pearson 1897). The
+guard permutes the exclusion arm while holding the open arm fixed and reports how much
+of the slope is coupling.
+
+```{r}
+pollin_guard_spurious(open_mean, cage_mean, n_perm = 200, seed = 1)
+```
+
+A permutation p-value near 1 means the observed slope is indistinguishable from the
+coupling null -- spurious. Supply `decouple =` (the exclusion arm, or an independent
+vigour covariate) to regress the index on an axis that shares no term.
+
+## Yield-component compensation
+
+When pollinators lift one yield component, plants may down-regulate another.
+`pollin_compensation()` summarises the trade-off structure across components as a
+correlation matrix.
+
+```{r}
+pollin_compensation(canola[, c("pods", "seeds_per_pod")])
+```
+
+## Integrity checks
+
+`pollin_validate()` runs structural checks -- missingness, expected factor levels, and
+user-supplied identities -- before any model is fitted.
+
+```{r}
+pollin_validate(spec, expect_levels = list(trt = c("Cage", "Open")))
+```

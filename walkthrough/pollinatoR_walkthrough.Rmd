@@ -1,0 +1,218 @@
+---
+title: "A walkthrough of `pollinatoR`"
+subtitle: "Pollinator-dependence analytics for exclusion experiments, end to end"
+author: "Max Moldovan"
+date: "2026-06-05"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    highlight: tango
+geometry: margin=2.6cm
+header-includes:
+  - \usepackage{lmodern}
+  - \usepackage{microtype}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+set.seed(1)
+library(pollinatoR)
+```
+
+# What this walkthrough is
+
+`pollinatoR` turns a pollinator-exclusion experiment -- paired open and caged plots --
+into a defensible estimate of what insect pollinators contribute to yield, with the
+uncertainty carried through rather than discarded. This document runs the whole package
+on one worked dataset, from declaring the study to the integrity checks a reviewer would
+demand. A reader should be able to follow it in ten minutes and reproduce it in thirty.
+
+Two voices run through it. The *analyst* wants a number: how much does pollinator
+access add, and which insects drive it. The *reviewer* distrusts that number and looks
+for the ways a pollination study usually goes wrong -- a ratio index regressed on a yield
+axis it shares a term with, an effect that is really an unrecorded site difference, a
+yield component that was traded away rather than gained.
+
+The data here are simulated, not the field trial: every value below comes from the
+`set.seed(1)` block in the next section, so nothing in this walkthrough touches real or
+restricted records.
+
+# The worked dataset
+
+A modest open-versus-cage design: ten sites, sixteen plants per site, two insect
+exposures (honeybee and wild-insect counts), and two yield components (pod number and
+seeds per pod). The data-generating process is deliberate. Open access lifts pod set,
+and it lifts pods more where honeybees are abundant -- a treatment-by-exposure
+interaction the analyst should recover and the reviewer should be able to trust.
+
+```{r data}
+ns <- 10L
+per <- 16L
+Site <- rep(sprintf("s%02d", seq_len(ns)), each = per)
+trt <- rep(rep(c("Cage", "Open"), each = per / 2L), ns)
+honeybee <- rep(rpois(ns, 8), each = per) + rpois(ns * per, 1)
+wild <- rep(rpois(ns, 4), each = per) + rpois(ns * per, 1)
+site_eff <- rnorm(ns, 0, 0.3)[as.integer(factor(Site))]
+open <- trt == "Open"
+pods <- rpois(ns * per, exp(1.8 + 0.35 * open + 0.015 * honeybee * open + site_eff))
+seeds_per_pod <- rpois(ns * per, exp(2.6 + 0.12 * open + site_eff))
+canola <- data.frame(Site, trt, honeybee, wild, pods, seeds_per_pod)
+head(canola)
+```
+
+# Act I -- the analyst
+
+## Declare the study once
+
+Every later call reads from one `pollin_spec()` object, so the study definition lives in
+exactly one place. The `latent_unit` is the unit that carries a random treatment slope:
+the site-to-site spread in the contribution becomes a parameter rather than noise.
+
+```{r spec}
+spec <- pollin_spec(
+  data = canola,
+  outcomes = c("pods", "seeds_per_pod"),
+  treatment = "trt",
+  control = "Cage",
+  random = "Site",
+  exposures = c("honeybee", "wild"),
+  latent_unit = "Site"
+)
+spec
+```
+
+## Estimate the contribution
+
+`pollin_contribution()` fits a `glmmTMB` mixed model for each outcome, choosing a count,
+proportion, or continuous family from the data, and reports the open-minus-exclusion
+contrast through `marginaleffects`. The estimate is a contribution on the response
+scale, with a confidence interval and `slope_sd` -- the standard deviation of the random
+treatment slope, which says how much the contribution itself varies between sites.
+
+```{r contribution}
+contribution <- pollin_contribution(spec)
+contribution
+```
+
+With two outcomes the analyst is already testing more than one hypothesis, so the
+p-values are brought under false-discovery-rate control before anything is called
+significant.
+
+```{r fdr}
+contribution$table$fdr <- pollin_fdr(contribution$table$p.value)
+contribution$table[, c("outcome", "estimate", "p.value", "fdr")]
+```
+
+## Attribute it to the community
+
+The next question -- which insects drive the contribution -- is where naive analyses
+fail, because a site with many honeybees may differ in a dozen unrecorded ways.
+`pollin_moderation()` answers it with a within-between (Mundlak) decomposition: each
+exposure is split into its site mean and the deviation within a site, and only the
+within-site treatment-by-exposure term is read as the pollinator effect.
+
+```{r moderation}
+moderation <- pollin_moderation(spec, outcome = "pods")
+moderation
+```
+
+The split is available on its own through `pollin_within_between()`. The `between`
+component is the site mean; the `within` component is the part identified inside a site,
+robust to any site-level confounder.
+
+```{r within-between}
+wb <- pollin_within_between(canola$honeybee, group = canola$Site)
+str(wb)
+```
+
+# Act II -- the reviewer
+
+## Indices, but with an interval
+
+The reviewer accepts the dependence index as a summary, but not as a bare ratio.
+`pollin_rii()` returns the Relative Interaction Index with a bootstrap interval, and
+`pollin_index()` adds the log response ratio with a closed-form interval. Here the index
+is built from per-site open and exclusion pod means.
+
+```{r indices}
+open_mean <- tapply(canola$pods[open], canola$Site[open], mean)
+cage_mean <- tapply(canola$pods[!open], canola$Site[!open], mean)
+pollin_rii(open_mean, cage_mean, n_boot = 500, seed = 1)
+pollin_index(open_mean, cage_mean, n_boot = 500, seed = 1)
+```
+
+## The coupling trap
+
+The reviewer's sharpest objection: a paper that regresses a dependence index on absolute
+yield is partly measuring an identity, because the open-arm term sits on both axes
+(Pearson 1897). `pollin_guard_spurious()` permutes the exclusion arm while holding the
+open arm fixed, so the permutation distribution is exactly the mechanical-coupling null.
+
+```{r guard}
+pollin_guard_spurious(open_mean, cage_mean, n_perm = 200, seed = 1)
+```
+
+A permutation p-value near one means the observed slope is indistinguishable from
+coupling -- it should not be reported as a finding. The `decouple =` argument lets the
+analyst regress the index on an axis that shares no term (the exclusion arm, or an
+independent vigour covariate) and recover an honest slope.
+
+## Was the yield gained or merely moved
+
+A contribution to one component can be a true gain or a re-allocation from another.
+`pollin_compensation()` summarises the trade-off structure among yield components as a
+correlation matrix, so a negative off-diagonal flags compensation rather than gain.
+
+```{r compensation}
+pollin_compensation(canola[, c("pods", "seeds_per_pod")])
+```
+
+## Integrity before inference
+
+Finally, the checks that should run before any model is fitted: missingness, the
+factor levels the design promises, and any identity the analyst asserts about the data.
+
+```{r validate}
+pollin_validate(spec, expect_levels = list(trt = c("Cage", "Open")))
+```
+
+# Reproduce it yourself
+
+Everything above runs from a clean session in well under a minute:
+
+```r
+# install.packages("pak")
+pak::pak("max578/pollinatoR")
+library(pollinatoR)
+
+# then paste the "worked dataset" block and run each section in order.
+```
+
+The only stochastic steps are the data simulation and the bootstrap and permutation
+intervals; each carries an explicit seed, so the numbers reproduce exactly.
+
+# Notes and limitations
+
+The dataset is synthetic and small, chosen so the walkthrough runs quickly and the
+recovered signal can be checked against the known data-generating process. On real data
+the family heuristic should be confirmed against residual diagnostics, the random
+treatment slope needs enough units to be estimable, and the within-between split assumes
+the exposures are measured without large error. The package estimates a contribution
+under the design it is given; it does not repair a design that lacks a credible
+exclusion contrast, and the spurious-regression guard flags a coupled regression but
+cannot rescue a question that should not have been asked as a ratio in the first place.
+
+# Session information
+
+```{r session}
+sessionInfo()
+```

@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use pollinatoR, please cite it as below."
+type: software
+title: "pollinatoR: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion Experiments"
+version: 0.0.0.9000
+authors:
+  - family-names: Moldovan
+    given-names: Max
+    orcid: "https://orcid.org/0000-0001-9680-8474"
+repository-code: "https://github.com/max578/pollinatoR"
+url: "https://github.com/max578/pollinatoR"
+license: MIT
+abstract: >-
+  Tools for estimating the contribution of insect pollinators to crop yield
+  from pollinator-exclusion experiments, with model-based treatment effects,
+  uncertainty-aware dependence indices, a confounder-robust within-between
+  moderation, and a guard against spurious index-versus-yield correlation.
+keywords:
+  - pollination
+  - crop yield
+  - mixed models
+  - causal inference
+  - R

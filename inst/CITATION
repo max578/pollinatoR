@@ -1,0 +1,11 @@
+citHeader("To cite pollinatoR in publications use:")
+
+bibentry(
+  bibtype  = "Manual",
+  title    = "pollinatoR: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion Experiments",
+  author   = person("Max", "Moldovan",
+                    comment = c(ORCID = "0000-0001-9680-8474")),
+  year     = "2026",
+  note     = "R package version 0.0.0.9000",
+  url      = "https://github.com/max578/pollinatoR"
+)

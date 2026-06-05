@@ -1,0 +1,47 @@
+Package: pollinatoR
+Title: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion
+    Experiments
+Version: 0.0.0.9000
+Authors@R:
+    person("Max", "Moldovan", email = "max.moldovan@gmail.com",
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-9680-8474"))
+Description: Tools for estimating the contribution of insect pollinators to
+    crop yield from pollinator-exclusion experiments (open versus caged, and
+    related contrasts). Provides model-based average and conditional treatment
+    effects with propagated uncertainty, uncertainty-aware dependence indices
+    (a defensible replacement for bare ratio indices such as the Relative
+    Interaction Index), a within-between decomposition that shields the
+    exposure-by-treatment estimand from site-level confounders such as an
+    unobserved genotype, a permutation guard against the spurious correlation
+    that arises when a dependence index is regressed on a yield axis that shares
+    a term, and structural data-integrity checks. The methods are general to
+    open-versus-exclusion designs across crops and are not specific to any one
+    study. Developed with support from the Grains Research and Development
+    Corporation (GRDC project USQ2401-002RTX) and Analytics for the Australian
+    Grains Industry (AAGI).
+License: MIT + file LICENSE
+Encoding: UTF-8
+Language: en-AU
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.1)
+Imports:
+    glmmTMB,
+    marginaleffects,
+    stats
+Suggests:
+    DHARMa,
+    emmeans,
+    brms,
+    boot,
+    fst,
+    data.table,
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+URL: https://github.com/max578/pollinatoR
+BugReports: https://github.com/max578/pollinatoR/issues

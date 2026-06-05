@@ -1,0 +1,16 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.claude$
+^\.positai$
+^\.cursor$
+^run_pipeline\.R$
+^_pkgdown\.yml$
+^air\.toml$
+^CITATION\.cff$
+^codemeta\.json$
+^pkgdown$
+^docs$
+^\.github$
+^\.lintr$
+^walkthrough$
+^LICENSE\.md$

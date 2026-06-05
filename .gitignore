@@ -1,0 +1,23 @@
+# R build artefacts
+*.tar.gz
+*.Rcheck/
+..Rcheck/
+
+# R session / history
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# rendered/derived
+/docs/
+/pkgdown/
+
+# OS / editor
+.DS_Store
+
+# AI / assistant dev dirs (AAGI canon hygiene)
+.claude/
+.positai/
+.cursor/
