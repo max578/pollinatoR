@@ -127,9 +127,11 @@ test_that("pollin_contribution from an estimand matches the spec path", {
     outcomes = "pods",
     by = "Region"
   ))$table
-  by_old <- suppressWarnings(pollin_contribution(sp, by = "Region"))$table
-  expect_equal(by_tab$estimate, by_old$estimate, tolerance = 1e-10)
-  expect_identical(by_tab$Region, by_old$Region)
+  by_fit <- suppressWarnings(pollin_fit(l3_estimand(d), by = "Region"))
+  by_eff <- suppressWarnings(pollin_effects(by_fit))$table
+  by_eff <- by_eff[by_eff$response == "pods", ]
+  expect_equal(by_tab$estimate, by_eff$estimate, tolerance = 1e-10)
+  expect_identical(by_tab$Region, by_eff$Region)
 
   expect_error(
     pollin_contribution(l3_estimand(d, scale = "ratio")),

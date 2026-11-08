@@ -6,7 +6,7 @@
 \usage{
 pollin_effects(
   fit,
-  by = NULL,
+  by = fit$by,
   interval = c("delta", "bootstrap"),
   n_boot = 999L,
   seed = NULL,
@@ -16,8 +16,11 @@ pollin_effects(
 \arguments{
 \item{fit}{A \code{\link[=pollin_fit]{pollin_fit()}} object.}
 
-\item{by}{Optional name of a column of the model data. Gives one unpooled
-contrast per level, each averaged over the rows at that level.}
+\item{by}{The column the fit was made with, \code{pollin_fit(..., by = )}.
+Defaults to the fit's \code{by}, giving one contrast per level from the fixed
+treatment-by-level effects, each averaged over the rows at that level.
+\code{NULL} gives one contrast averaged over all rows. A column the fit was not
+made with is an error: refit with \code{pollin_fit(..., by = )}.}
 
 \item{interval}{\code{"delta"} (the default) or \code{"bootstrap"}.}
 
@@ -72,7 +75,7 @@ d <- data.frame(
   trt = rep(rep(c("Cage", "Open"), each = 10L), 8L),
   Site = rep(paste0("s", seq_len(8L)), each = 20L)
 )
-d$pods <- rpois(nrow(d), exp(3 + 0.3 * (d$trt == "Open")))
+d$pods <- rnbinom(nrow(d), mu = exp(3 + 0.3 * (d$trt == "Open")), size = 10)
 pd <- pollin_data(d, "pods", "trt", unit = "Site")
 ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "rcbd")
 est <- pollin_estimand(ds, "dependence", "ratio", "loss")

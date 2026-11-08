@@ -66,7 +66,7 @@ pollin_contribution <- function(
   .check_outcomes(outcomes, inputs$responses)
   .check_family_arg(families, inputs$responses)
 
-  fit <- .new_fit(x, inputs, outcomes, families, ...)
+  fit <- .new_fit(x, inputs, outcomes, families, ..., by = by)
   tab <- pollin_effects(fit, by = by)$table
   high <- x$contrast[["high"]]
   slope_sd <- vapply(

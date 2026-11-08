@@ -4,7 +4,7 @@
 \alias{pollin_fit}
 \title{Fit the outcome models for an estimand}
 \usage{
-pollin_fit(estimand, engine = "glmmTMB", family = NULL, ...)
+pollin_fit(estimand, engine = "glmmTMB", family = NULL, by = NULL, ...)
 }
 \arguments{
 \item{estimand}{A \code{\link[=pollin_estimand]{pollin_estimand()}} object.}
@@ -18,25 +18,32 @@ with zeros). A single \code{glmmTMB} family object applies to every response; a
 named list gives one per response, and responses it does not name are
 chosen from their values.}
 
+\item{by}{Optional name of a column of the data (for example variety or
+region). The treatment effect is fitted separately at each of its levels,
+as an interaction, and \code{\link[=pollin_effects]{pollin_effects()}} then reports one contrast per
+level. The column is treated as a factor.}
+
 \item{...}{Passed to \code{\link[glmmTMB:glmmTMB]{glmmTMB::glmmTMB()}}.}
 }
 \value{
 An object of class \code{pollin_fit}: a list holding the \code{estimand}, the
 \code{engine}, the fitted models \code{fits} (named by response), the model \code{data}
-for each response, the right-hand-side terms \code{rhs}, the \code{families}, and
-the further fitting arguments \code{args}.
+for each response, the right-hand-side terms \code{rhs}, the \code{families}, the
+\code{by} column (or \code{NULL}), and the further fitting arguments \code{args}.
 }
 \description{
 Fits one generalised linear mixed model per response in the estimand's data,
 with the pollination treatment as the fixed effect and the random terms of
-the design: \verb{response ~ treatment + <design random terms>}. The treatment is
-releveled so the estimand's \code{low} arm is the reference level. Every
-treatment level in the data is kept in the fit; the contrast is read from
-the fitted model by \code{\link[=pollin_effects]{pollin_effects()}}.
+the design: \verb{response ~ treatment + <design random terms>}. With \code{by}, the
+fixed part is \code{treatment * by}, so the treatment effect has its own fixed
+estimate at each level of \code{by}. The treatment is releveled so the
+estimand's \code{low} arm is the reference level. Every treatment level in the
+data is kept in the fit; the contrast is read from the fitted model by
+\code{\link[=pollin_effects]{pollin_effects()}}.
 }
 \details{
-Rows with a missing value in the response, the treatment or a unit column
-are dropped for that response's model.
+Rows with a missing value in the response, the treatment, a unit column or
+the \code{by} column are dropped for that response's model.
 }
 \examples{
 \donttest{
@@ -45,7 +52,7 @@ d <- data.frame(
   trt = rep(rep(c("Cage", "Open"), each = 10L), 8L),
   Site = rep(paste0("s", seq_len(8L)), each = 20L)
 )
-d$pods <- rpois(nrow(d), exp(3 + 0.3 * (d$trt == "Open")))
+d$pods <- rnbinom(nrow(d), mu = exp(3 + 0.3 * (d$trt == "Open")), size = 10)
 pd <- pollin_data(d, "pods", "trt", unit = "Site")
 ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "rcbd")
 est <- pollin_estimand(ds, "dependence", "ratio", "loss")

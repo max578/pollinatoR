@@ -24,10 +24,20 @@ l4_df <- function(seed = 5L) {
 }
 l4_arms <- c(excluded = "Cage", open = "Open")
 
-l4_fit <- function(scale, basis = "loss", response = "pods", family = NULL) {
+l4_fit <- function(
+  scale,
+  basis = "loss",
+  response = "pods",
+  family = NULL,
+  by = NULL
+) {
   pd <- pollin_data(l4_df(), response, "trt", unit = "Block")
   ds <- pollin_design(pd, l4_arms, "rcbd")
-  pollin_fit(pollin_estimand(ds, "dependence", scale, basis), family = family)
+  pollin_fit(
+    pollin_estimand(ds, "dependence", scale, basis),
+    family = family,
+    by = by
+  )
 }
 
 effects_quiet <- function(...) suppressWarnings(pollin_effects(...))
@@ -151,10 +161,11 @@ test_that("bounded scales stay bounded under a wide interval", {
   expect_lt(wide$conf.low, wide$estimate)
 })
 
-test_that("by gives one unpooled contrast per level", {
+test_that("by gives one contrast per level from the interaction fit", {
   skip_on_cran()
-  fit <- l4_fit("ratio", "loss")
-  ef <- effects_quiet(fit, by = "Region")
+  fit <- l4_fit("ratio", "loss", by = "Region")
+  expect_identical(fit$rhs[1L], "trt * Region")
+  ef <- effects_quiet(fit)
   expect_identical(ef$table$Region, c("north", "south"))
   d <- fit$data$pods
   m <- .arm_means(fit$fits$pods, d, "trt", "Open", "Cage", "Region")
@@ -163,7 +174,44 @@ test_that("by gives one unpooled contrast per level", {
     as.vector(1 - m$low / m$high),
     tolerance = 1e-8
   )
-  expect_error(effects_quiet(fit, by = "Zone"), "`by`")
+  expect_error(effects_quiet(fit, by = "Zone"), "refit with `pollin_fit")
+  expect_error(
+    effects_quiet(l4_fit("ratio", "loss"), by = "Region"),
+    "refit with `pollin_fit\\(\\.\\.\\., by = \"Region\"\\)`"
+  )
+  pooled <- effects_quiet(fit, by = NULL)$table
+  expect_identical(nrow(pooled), 1L)
+  expect_error(l4_fit("ratio", "loss", by = "trt"), "other than the treatment")
+  expect_error(l4_fit("ratio", "loss", by = "Zone"), "`by`")
+})
+
+test_that("by recovers planted levels that a pooled fit would merge", {
+  skip_on_cran()
+  set.seed(1)
+  d <- expand.grid(
+    rep = 1:10,
+    trt = c("Cage", "Open"),
+    grp = c("a", "b"),
+    site = paste0("s", 1:6),
+    stringsAsFactors = FALSE
+  )
+  open_mean <- ifelse(d$grp == "a", 40, 80)
+  d$y <- stats::rpois(nrow(d), ifelse(d$trt == "Open", open_mean, 30))
+  pd <- pollin_data(d, "y", "trt", unit = "site", groups = "grp")
+  ds <- pollin_design(pd, l4_arms, "rcbd")
+  est <- pollin_estimand(ds, "dependence", "ratio", "loss")
+  fit <- pollin_fit(est, family = stats::poisson(), by = "grp")
+  expect_no_warning(ef <- pollin_effects(fit))
+  tab <- ef$table
+  truth <- c(a = 1 - 30 / 40, b = 1 - 30 / 80)
+  expect_identical(tab$grp, c("a", "b"))
+  # Poisson cells of 60 plants give loss-share SEs near 0.023 (a) and 0.010
+  # (b). Four SEs leave about a 1-in-10,000 chance of a false failure per level.
+  expect_true(all(abs(tab$estimate - truth) < 4 * tab$std.error))
+  expect_lt(tab$std.error[1L], 0.04)
+  expect_lt(tab$std.error[2L], 0.02)
+  expect_lt(tab$conf.high[1L], tab$conf.low[2L])
+  expect_output(print(ef), "fixed-effect uncertainty only")
 })
 
 test_that("the parametric bootstrap is seeded and reproducible", {
@@ -188,8 +236,7 @@ test_that("the parametric bootstrap is seeded and reproducible", {
   expect_output(print(b1), "parametric bootstrap \\(20 refits\\)")
 
   b_by <- effects_quiet(
-    fit,
-    by = "Region",
+    l4_fit("ratio", "loss", by = "Region"),
     interval = "bootstrap",
     n_boot = 10L,
     seed = 4L

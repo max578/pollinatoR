@@ -26,8 +26,11 @@
 #' `std.error` is their standard deviation and `p.value` is `NA`.
 #'
 #' @param fit A [pollin_fit()] object.
-#' @param by Optional name of a column of the model data. Gives one unpooled
-#'   contrast per level, each averaged over the rows at that level.
+#' @param by The column the fit was made with, `pollin_fit(..., by = )`.
+#'   Defaults to the fit's `by`, giving one contrast per level from the fixed
+#'   treatment-by-level effects, each averaged over the rows at that level.
+#'   `NULL` gives one contrast averaged over all rows. A column the fit was not
+#'   made with is an error: refit with `pollin_fit(..., by = )`.
 #' @param interval `"delta"` (the default) or `"bootstrap"`.
 #' @param n_boot Number of parametric bootstrap refits, used when
 #'   `interval = "bootstrap"`.
@@ -51,7 +54,7 @@
 #'   trt = rep(rep(c("Cage", "Open"), each = 10L), 8L),
 #'   Site = rep(paste0("s", seq_len(8L)), each = 20L)
 #' )
-#' d$pods <- rpois(nrow(d), exp(3 + 0.3 * (d$trt == "Open")))
+#' d$pods <- rnbinom(nrow(d), mu = exp(3 + 0.3 * (d$trt == "Open")), size = 10)
 #' pd <- pollin_data(d, "pods", "trt", unit = "Site")
 #' ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "rcbd")
 #' est <- pollin_estimand(ds, "dependence", "ratio", "loss")
@@ -61,7 +64,7 @@
 #' }
 pollin_effects <- function(
   fit,
-  by = NULL,
+  by = fit$by,
   interval = c("delta", "bootstrap"),
   n_boot = 999L,
   seed = NULL,
@@ -77,6 +80,7 @@ pollin_effects <- function(
     .check_n_boot(n_boot)
     .check_seed(seed)
   }
+  .check_effects_by(by, fit$by)
   for (d in fit$data) {
     .check_by(by, d)
   }
@@ -85,7 +89,9 @@ pollin_effects <- function(
   est <- fit$estimand
   rows <- lapply(names(fit$fits), function(r) {
     tab <- if (interval == "delta") {
-      .effects_delta(fit$fits[[r]], fit$treatment, est, by, conf_level)
+      .muffle_fixed_only(
+        .effects_delta(fit$fits[[r]], fit$treatment, est, by, conf_level)
+      )
     } else {
       .effects_boot(fit, r, by, n_boot, seed, conf_level)
     }
@@ -147,6 +153,9 @@ print.pollin_effects <- function(x, ...) {
     },
     "\n"
   )
+  if (x$interval == "delta") {
+    cat("  note     : delta intervals cover fixed-effect uncertainty only\n")
+  }
   print(x$table, row.names = FALSE)
   invisible(x)
 }
@@ -230,9 +239,31 @@ print.pollin_effects <- function(x, ...) {
     out$conf.high <- .from_ratio(exp(cmp$conf.high), s, b)
   }
   if (!is.null(by)) {
-    out <- cbind(cmp[by], out)
+    lv <- data.frame(as.character(cmp[[by]]), stringsAsFactors = FALSE)
+    names(lv) <- by
+    out <- cbind(lv, out)
   }
   out
+}
+
+#' Evaluate `expr`, muffling only the `marginaleffects` warning that its
+#' intervals for mixed models cover the fixed effects only. That statement is
+#' printed with every delta result instead.
+#' @noRd
+#' @keywords internal
+.muffle_fixed_only <- function(expr) {
+  withCallingHandlers(
+    expr,
+    warning = function(w) {
+      msg <- conditionMessage(w)
+      if (
+        grepl("marginaleffects", msg, fixed = TRUE) &&
+          grepl("uncertainty in fixed-effect parameters", msg, fixed = TRUE)
+      ) {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
 }
 
 # Parametric bootstrap --------------------------------------------------------
@@ -382,6 +413,23 @@ print.pollin_effects <- function(x, ...) {
     stop("`by` must name one column of the data.", call. = FALSE)
   }
   invisible(TRUE)
+}
+
+#' Stop when `by` asks for levels the fit was not made with
+#' @noRd
+#' @keywords internal
+.check_effects_by <- function(by, fit_by) {
+  if (is.null(by) || identical(by, fit_by)) {
+    return(invisible(TRUE))
+  }
+  stop(
+    "The fit was not made with `by = \"",
+    paste(by, collapse = ", "),
+    "\"`; refit with `pollin_fit(..., by = \"",
+    paste(by, collapse = ", "),
+    "\")`.",
+    call. = FALSE
+  )
 }
 
 #' Stop unless `conf_level` is one number strictly between 0 and 1

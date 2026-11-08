@@ -4,13 +4,15 @@
 #'
 #' Fits one generalised linear mixed model per response in the estimand's data,
 #' with the pollination treatment as the fixed effect and the random terms of
-#' the design: `response ~ treatment + <design random terms>`. The treatment is
-#' releveled so the estimand's `low` arm is the reference level. Every
-#' treatment level in the data is kept in the fit; the contrast is read from
-#' the fitted model by [pollin_effects()].
+#' the design: `response ~ treatment + <design random terms>`. With `by`, the
+#' fixed part is `treatment * by`, so the treatment effect has its own fixed
+#' estimate at each level of `by`. The treatment is releveled so the
+#' estimand's `low` arm is the reference level. Every treatment level in the
+#' data is kept in the fit; the contrast is read from the fitted model by
+#' [pollin_effects()].
 #'
-#' Rows with a missing value in the response, the treatment or a unit column
-#' are dropped for that response's model.
+#' Rows with a missing value in the response, the treatment, a unit column or
+#' the `by` column are dropped for that response's model.
 #'
 #' @param estimand A [pollin_estimand()] object.
 #' @param engine The fitting engine. Only `"glmmTMB"` is available;
@@ -20,12 +22,16 @@
 #'   with zeros). A single `glmmTMB` family object applies to every response; a
 #'   named list gives one per response, and responses it does not name are
 #'   chosen from their values.
+#' @param by Optional name of a column of the data (for example variety or
+#'   region). The treatment effect is fitted separately at each of its levels,
+#'   as an interaction, and [pollin_effects()] then reports one contrast per
+#'   level. The column is treated as a factor.
 #' @param ... Passed to [glmmTMB::glmmTMB()].
 #'
 #' @return An object of class `pollin_fit`: a list holding the `estimand`, the
 #'   `engine`, the fitted models `fits` (named by response), the model `data`
-#'   for each response, the right-hand-side terms `rhs`, the `families`, and
-#'   the further fitting arguments `args`.
+#'   for each response, the right-hand-side terms `rhs`, the `families`, the
+#'   `by` column (or `NULL`), and the further fitting arguments `args`.
 #' @seealso [pollin_effects()] for estimates and intervals on the estimand's
 #'   scale.
 #' @export
@@ -36,18 +42,24 @@
 #'   trt = rep(rep(c("Cage", "Open"), each = 10L), 8L),
 #'   Site = rep(paste0("s", seq_len(8L)), each = 20L)
 #' )
-#' d$pods <- rpois(nrow(d), exp(3 + 0.3 * (d$trt == "Open")))
+#' d$pods <- rnbinom(nrow(d), mu = exp(3 + 0.3 * (d$trt == "Open")), size = 10)
 #' pd <- pollin_data(d, "pods", "trt", unit = "Site")
 #' ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "rcbd")
 #' est <- pollin_estimand(ds, "dependence", "ratio", "loss")
 #' pollin_fit(est)
 #' }
-pollin_fit <- function(estimand, engine = "glmmTMB", family = NULL, ...) {
+pollin_fit <- function(
+  estimand,
+  engine = "glmmTMB",
+  family = NULL,
+  by = NULL,
+  ...
+) {
   .check_class(estimand, "pollin_estimand", arg = "estimand")
   .check_engine(engine)
   inputs <- .estimand_inputs(estimand)
   .check_family_arg(family, inputs$responses)
-  .new_fit(estimand, inputs, inputs$responses, family, ...)
+  .new_fit(estimand, inputs, inputs$responses, family, by = by, ...)
 }
 
 #' @export
@@ -58,6 +70,9 @@ print.pollin_fit <- function(x, ...) {
   cat("  family    :", e$family, "\n")
   cat("  contrast  :", e$contrast[["high"]], "vs", e$contrast[["low"]], "\n")
   cat("  model     : <response> ~", paste(x$rhs, collapse = " + "), "\n")
+  if (!is.null(x$by)) {
+    cat("  by        :", x$by, "\n")
+  }
   for (r in names(x$fits)) {
     cat(sprintf(
       "  %-10s: %s, %d rows\n",
@@ -163,20 +178,29 @@ print.pollin_fit <- function(x, ...) {
   glmmTMB::glmmTMB(form, data = d, family = family, ...)
 }
 
-#' Fit `treatment + random` for each response. A response whose model fails
-#' is dropped with a warning; no fitted response is an error.
+#' Fit `treatment + random` for each response, or `treatment * by + random`
+#' when `by` is given. A response whose model fails is dropped with a warning;
+#' no fitted response is an error.
 #' @noRd
 #' @keywords internal
-.fit_responses <- function(inputs, responses, family, ...) {
-  rhs <- c(inputs$treatment, inputs$random)
+.fit_responses <- function(inputs, responses, family, ..., by = NULL) {
+  fixed <- if (is.null(by)) {
+    inputs$treatment
+  } else {
+    paste(inputs$treatment, "*", by)
+  }
+  rhs <- c(fixed, inputs$random)
   fits <- list()
   data <- list()
   families <- list()
   for (r in responses) {
     d <- inputs$data
-    keep <- stats::complete.cases(d[c(r, inputs$treatment, inputs$unit)])
+    keep <- stats::complete.cases(d[c(r, inputs$treatment, inputs$unit, by)])
     if (!all(keep)) {
       d <- d[keep, , drop = FALSE]
+    }
+    if (!is.null(by)) {
+      d[[by]] <- factor(d[[by]])
     }
     fam <- .family_for(family, r, d[[r]])
     fit <- tryCatch(
@@ -206,8 +230,9 @@ print.pollin_fit <- function(x, ...) {
 #' Build a `pollin_fit` for the given responses
 #' @noRd
 #' @keywords internal
-.new_fit <- function(estimand, inputs, responses, family, ...) {
-  f <- .fit_responses(inputs, responses, family, ...)
+.new_fit <- function(estimand, inputs, responses, family, ..., by = NULL) {
+  .check_fit_by(by, inputs$data, inputs$treatment)
+  f <- .fit_responses(inputs, responses, family, ..., by = by)
   structure(
     list(
       estimand = estimand,
@@ -217,6 +242,7 @@ print.pollin_fit <- function(x, ...) {
       rhs = f$rhs,
       families = f$families,
       treatment = inputs$treatment,
+      by = by,
       slope_key = inputs$slope_key,
       args = list(...)
     ),
@@ -256,6 +282,28 @@ print.pollin_fit <- function(x, ...) {
 }
 
 # Internal checks -------------------------------------------------------------
+
+#' Stop unless `by` is NULL or one column of the data other than the
+#' treatment
+#' @noRd
+#' @keywords internal
+.check_fit_by <- function(by, data, treatment) {
+  if (is.null(by)) {
+    return(invisible(TRUE))
+  }
+  if (
+    !is.character(by) ||
+      length(by) != 1L ||
+      !by %in% names(data) ||
+      identical(by, treatment)
+  ) {
+    stop(
+      "`by` must name one column of the data other than the treatment.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
 
 #' Stop unless `engine` is "glmmTMB"; "flexyBayes" points to 0.2.0
 #' @noRd
