@@ -1,0 +1,156 @@
+# Changelog
+
+## pollinatoR 0.1.0
+
+An analysis is now declared in layers: the data
+([`pollin_data()`](https://max578.github.io/pollinatoR/reference/pollin_data.md)),
+the design
+([`pollin_design()`](https://max578.github.io/pollinatoR/reference/pollin_design.md))
+and the estimand
+([`pollin_estimand()`](https://max578.github.io/pollinatoR/reference/pollin_estimand.md)),
+then fitted
+([`pollin_fit()`](https://max578.github.io/pollinatoR/reference/pollin_fit.md))
+and read on the estimand’s scale
+([`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)).
+
+### Breaking changes
+
+- The first argument of
+  [`pollin_validate()`](https://max578.github.io/pollinatoR/reference/pollin_validate.md),
+  [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md)
+  and
+  [`pollin_moderation()`](https://max578.github.io/pollinatoR/reference/pollin_moderation.md)
+  is renamed from `spec` to `x`. Calls that pass it by position are
+  unaffected.
+- [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md)
+  takes a `pollin_estimand` with `family = "dependence"` and
+  `scale = "difference"`. Its table carries the columns of
+  [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
+  plus `slope_sd` and `p.fdr`. With `by`, it fits the treatment-by-level
+  interaction and reports each level’s own contrast. A `pollin_spec`
+  with `by` is fitted as before.
+- [`pollin_moderation()`](https://max578.github.io/pollinatoR/reference/pollin_moderation.md)
+  takes a `pollin_design` whose data declare `exposures`. The default of
+  `exposures` is now `NULL`, meaning every declared exposure.
+- [`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
+  is deprecated and is removed at version 0.2.0. It warns once per
+  session.
+  [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md),
+  [`pollin_moderation()`](https://max578.github.io/pollinatoR/reference/pollin_moderation.md)
+  and
+  [`pollin_validate()`](https://max578.github.io/pollinatoR/reference/pollin_validate.md)
+  still accept a `pollin_spec` until then.
+- Removed six unused packages from Suggests (DHARMa, emmeans, brms,
+  boot, fst, data.table).
+
+### New features
+
+- [`pollin_data()`](https://max578.github.io/pollinatoR/reference/pollin_data.md)
+  declares the unit-of-record table: response, treatment, unit nesting,
+  and optional grouping, denominator, exposure and adjustment columns.
+  Roles are checked against the data and the structural checks are
+  stored with the object.
+- [`pollin_design()`](https://max578.github.io/pollinatoR/reference/pollin_design.md)
+  declares the arms (excluded, open, supplemented), the layout (`crd`,
+  `rcbd`, `split_plot`, `matched_pairs`, `multi_site`) and the reference
+  arm. The layout sets the random structure; a random treatment slope
+  sits on the site in `multi_site` and is opt-in elsewhere through
+  `slope`. Units lacking an arm are counted in a warning.
+- [`pollin_estimand()`](https://max578.github.io/pollinatoR/reference/pollin_estimand.md)
+  names the estimand: deficit (supplemented versus open) or dependence
+  (excluded versus the reference arm), on the difference, ratio, RII or
+  lnRR scale. `basis` (`"loss"` or `"gain"`) has no default, so a loss
+  share cannot be read as a gain.
+  [`pollin_assumptions()`](https://max578.github.io/pollinatoR/reference/pollin_assumptions.md)
+  lists the assumptions the estimand rests on for its layout.
+- [`pollin_fit()`](https://max578.github.io/pollinatoR/reference/pollin_fit.md)
+  fits one `glmmTMB` model per response, with the treatment as the fixed
+  effect and the design’s random terms. The family is chosen from each
+  response’s values unless given, singly or per response. With `by`, the
+  fixed part is `treatment * by`, so each level of `by` has its own
+  treatment effect.
+- [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
+  reports the estimand on its declared scale from averaged model
+  predictions (a ratio of expected values, never a mean of unit ratios),
+  with a delta interval computed on the log-ratio scale and transformed,
+  so a loss share stays below 1 and the RII inside (-1, 1), or with a
+  parametric bootstrap interval (`interval = "bootstrap"`, `n_boot`,
+  `seed`). Every table records the family, scale and basis. Per-level
+  contrasts come from a fit made with `by`; asking for a `by` the fit
+  was not made with is an error. The printed result states that delta
+  intervals cover fixed-effect uncertainty only.
+- [`pollin_index()`](https://max578.github.io/pollinatoR/reference/pollin_index.md)
+  and
+  [`pollin_rii()`](https://max578.github.io/pollinatoR/reference/pollin_rii.md)
+  accept a `pollin_design` and work from unit-level arm means;
+  [`pollin_compensation()`](https://max578.github.io/pollinatoR/reference/pollin_compensation.md)
+  accepts a `pollin_data` and uses its responses as the components. The
+  vector and data-frame interfaces are unchanged and return the same
+  numbers.
+- [`pollin_guard_bounded()`](https://max578.github.io/pollinatoR/reference/pollin_guard_bounded.md)
+  refuses to average unit-level RII or dependence values unless
+  `allow = TRUE`, and reports the index of the arm means beside the
+  average.
+- [`pollin_guard_ecological()`](https://max578.github.io/pollinatoR/reference/pollin_guard_ecological.md)
+  splits an exposure into between-unit and within-unit parts and warns
+  when an exposure slope exists only between units, or when the two
+  slopes disagree in sign.
+- [`pollin_guard_posttreatment()`](https://max578.github.io/pollinatoR/reference/pollin_guard_posttreatment.md)
+  stops when an adjustment covariate is among the variables the user
+  declares to be downstream of the treatment.
+- New vignettes: *A three-arm trial: deficit and dependence*, *A
+  split-plot trial: dependence by variety* and *A matched-pair field
+  study*. The getting-started vignette is rewritten around the layered
+  workflow.
+
+### Known limitations
+
+- In the planted-truth recovery study
+  (`validation/planted_truth_S1_report.md`), 24 of 25 design-by-estimand
+  cells meet the pre-set rule. The matched-pair dependence estimate on
+  the difference scale is biased by -0.19 standard errors; its interval
+  coverage (0.950) and the ratio-scale estimates pass. For matched-pair
+  designs the ratio scale is the better-supported report.
+
+### Moving from earlier calls
+
+| Before | Now |
+|----|----|
+| `pollin_spec(data, outcomes, treatment, control, random)` | `pollin_data(data, response, treatment, unit)` then `pollin_design(x, arms = c(excluded = control, open = ...), layout)` |
+| `pollin_spec(..., latent_unit = "Site")` | `pollin_design(..., layout = "multi_site")`, or `slope = "Site"` with another layout |
+| `pollin_spec(..., exposures, adjust)` | `pollin_data(..., exposures, adjust)` |
+| `pollin_contribution(spec)` | `pollin_contribution(pollin_estimand(design, "dependence", "difference", basis = "loss"))` |
+| Any other scale or interval | `pollin_effects(pollin_fit(estimand))` |
+| `pollin_contribution(spec, by = "Region")` | `pollin_effects(pollin_fit(estimand, by = "Region"))`, now one fixed treatment effect per region |
+| `pollin_moderation(spec, outcome)` | `pollin_moderation(design, outcome)` |
+| `pollin_validate(spec)` | `pollin_validate(pollin_data(...))`, also run when the object is built |
+| `pollin_index(open_means, cage_means)` | Unchanged, or `pollin_index(design, response)` |
+
+## pollinatoR 0.0.0.9000
+
+- Initial development scaffold.
+- [`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
+  declares an exclusion-experiment study (outcomes, treatment, nested
+  random structure, exposures, adjustment, latent grouping).
+- [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md)
+  estimates the per-outcome pollinator contribution (open minus
+  exclusion) as a model-based average treatment effect with propagated
+  uncertainty, carrying a random treatment slope on the latent unit to
+  absorb unobserved between-unit (e.g. genotype) heterogeneity.
+- [`pollin_moderation()`](https://max578.github.io/pollinatoR/reference/pollin_moderation.md)
+  estimates how the contribution varies with exposures
+  (treatment-by-exposure conditional effects) using a within-between
+  decomposition so the within-unit estimate is robust to site-level
+  confounders.
+- [`pollin_index()`](https://max578.github.io/pollinatoR/reference/pollin_index.md)
+  /
+  [`pollin_rii()`](https://max578.github.io/pollinatoR/reference/pollin_rii.md)
+  provide uncertainty-aware dependence indices, including the Relative
+  Interaction Index with a bootstrap interval.
+- [`pollin_guard_spurious()`](https://max578.github.io/pollinatoR/reference/pollin_guard_spurious.md)
+  tests an index-versus-yield slope against a permutation null that
+  isolates the mechanical (shared-term) coupling.
+- [`pollin_validate()`](https://max578.github.io/pollinatoR/reference/pollin_validate.md)
+  runs structural and internal-consistency integrity checks.
+- [`pollin_compensation()`](https://max578.github.io/pollinatoR/reference/pollin_compensation.md)
+  summarises yield-component trade-offs.
