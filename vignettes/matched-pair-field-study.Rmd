@@ -1,0 +1,186 @@
+---
+title: "A matched-pair field study"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{A matched-pair field study}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(pollinatoR)
+options(marginaleffects_safe = FALSE)
+```
+
+Delta intervals in `pollin_effects()` carry the uncertainty in the fixed
+effects only. `marginaleffects` warns about this on every call for mixed
+models; the option above turns that reminder off.
+
+## The design
+
+Field studies of crop pollination often work in commercial paddocks rather
+than on a trial site. In each field, a caged quadrat is matched with a nearby
+open quadrat, and several plants are harvested from each. Fields differ in
+soil, sowing date and management, so the comparison is read within each field,
+where those differences cancel.
+
+The data below are simulated with the shape of such a study in canola: 24
+fields in three regions, one caged and one open quadrat per field, five plants
+per quadrat. Honey bee visits are counted on each open-quadrat plant. Two yield
+components are recorded per plant: pod count and seed weight.
+
+```{r data}
+set.seed(31)
+n_field <- 24L
+n_plant <- 5L
+fields <- sprintf("F%02d", seq_len(n_field))
+fertility <- setNames(rnorm(n_field, 0, 0.25), fields)
+region <- setNames(rep(c("North", "Central", "South"), each = 8L), fields)
+
+study <- expand.grid(
+  plant = seq_len(n_plant),
+  trt = c("Caged", "Open"),
+  field = fields,
+  stringsAsFactors = FALSE
+)
+study$region <- region[study$field]
+f <- fertility[study$field]
+open <- study$trt == "Open"
+
+# Busier fields are also more fertile; visits do not change yield within a field
+study$visits <- ifelse(open, rpois(nrow(study), exp(1.5 + 1.2 * f)), 0)
+pod_mu <- 120 * exp(f) * ifelse(open, 1, 0.8)
+seed_mu <- 6 * exp(f) * ifelse(open, 1, 0.85)
+study$pods <- rnbinom(nrow(study), mu = pod_mu, size = 25)
+study$seed_g <- rgamma(nrow(study), shape = 20, rate = 20 / seed_mu)
+study$rainfall <- round(300 + 200 * f)
+study$veg_biomass <- round(rgamma(nrow(study), shape = 15, rate = 15 / (90 * exp(f))), 1)
+head(study)
+```
+
+Pollinator access was planted to add 25% to pod count over the caged plants
+(a loss share of $1 - 0.8 = 0.20$) and about 18% to seed weight (a loss share of
+0.15).
+
+## Data, design and estimand
+
+Each field is one matched pair. In a `matched_pairs` layout the pair carries a
+random intercept, and the design warns if any pair lacks an arm.
+
+```{r declare}
+pd <- pollin_data(
+  study,
+  response = c("pods", "seed_g"),
+  treatment = "trt",
+  unit = "field",
+  groups = "region",
+  exposures = "visits",
+  adjust = "rainfall"
+)
+pd
+ds <- pollin_design(
+  pd,
+  arms = c(excluded = "Caged", open = "Open"),
+  layout = "matched_pairs"
+)
+ds
+```
+
+The dependence compares caged plants with open ones. The assumptions for this
+layout include one that a randomised plot trial does not need: the two
+quadrats in a field must be alike apart from the cage.
+
+```{r assumptions}
+est_loss <- pollin_estimand(ds, family = "dependence", scale = "ratio", basis = "loss")
+knitr::kable(pollin_assumptions(est_loss))
+```
+
+## Loss share and gain, side by side
+
+A loss share answers "what part of the yield now harvested do pollinators
+supply?". A gain answers "how much would a pollinator-free crop rise if they
+returned?". For an economic valuation of pollination the loss share is the
+right number. Both come from the same pair of expected values, so the gain is
+always the larger of the two: with a loss share $D$, the gain is $D/(1 - D)$.
+
+```{r basis}
+est_gain <- pollin_estimand(ds, family = "dependence", scale = "ratio", basis = "gain")
+loss <- pollin_effects(pollin_fit(est_loss))
+gain <- pollin_effects(pollin_fit(est_gain))
+loss
+rbind(loss$table, gain$table)[, c("response", "basis", "estimate", "conf.low", "conf.high")]
+```
+
+Each response gets its own model and family: a negative binomial for the pod
+counts and a Gamma with a log link for seed weight, chosen from the values.
+
+## Further scales
+
+The difference scale keeps the response's units (pods per plant, grams per
+plant), which is what a yield budget needs. The RII and the log response ratio
+are the scales most often used to compare studies.
+
+```{r scales}
+scale_rows <- lapply(c("difference", "rii", "lnrr"), function(s) {
+  est <- pollin_estimand(ds, family = "dependence", scale = s, basis = "loss")
+  pollin_effects(pollin_fit(est))$table
+})
+do.call(rbind, scale_rows)[, c("response", "scale", "estimate", "conf.low", "conf.high")]
+```
+
+For comparison with earlier work, `pollin_index()` gives the descriptive
+indices from the field-level arm means, with intervals.
+
+```{r index}
+pollin_index(ds, response = "pods", n_boot = 500, seed = 1)
+```
+
+## Guard: a between-field slope is not a plant-level effect
+
+The fields with more honey bee visits also yield more. Read across fields, that
+looks like a pollinator effect on yield. In these data it is not: the busier
+fields are the more fertile ones, and within a field the plants with more visits
+yield no more than the others. `pollin_guard_ecological()` splits the exposure
+into its between-field and within-field parts and warns when only the
+between-field slope is distinguishable from zero.
+
+```{r ecological}
+open_plants <- study[study$trt == "Open", ]
+pollin_guard_ecological(
+  open_plants,
+  exposure = "visits",
+  response = "pods",
+  unit = "field"
+)
+```
+
+## Guard: adjusting for a downstream covariate
+
+A cage does not change the rainfall a field receives, so adjusting for rainfall
+is safe. Vegetative
+biomass is different: plants that set fewer pods may put more into leaves and
+stems, so biomass sits downstream of the treatment. Adjusting for it would
+remove part of the pollination effect from the contrast. Whether a variable is
+downstream is a judgement about the crop that the data cannot settle, so
+`pollin_guard_posttreatment()` takes it as a declaration and checks the
+declared adjustment covariates against it.
+
+```{r posttreatment}
+pollin_guard_posttreatment(pd, downstream = "veg_biomass")
+
+pd_bad <- pollin_data(
+  study,
+  response = c("pods", "seed_g"),
+  treatment = "trt",
+  unit = "field",
+  adjust = c("rainfall", "veg_biomass")
+)
+try(pollin_guard_posttreatment(pd_bad, downstream = "veg_biomass"))
+```
+
+The first call returns silently because rainfall is not declared downstream.
+The second stops before any analysis uses the biomass adjustment.

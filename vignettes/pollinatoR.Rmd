@@ -1,163 +1,289 @@
 ---
-title: "Pollinator-dependence analytics for exclusion experiments"
+title: "Getting started with pollinatoR"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Pollinator-dependence analytics for exclusion experiments}
+  %\VignetteIndexEntry{Getting started with pollinatoR}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
-set.seed(1)
-library(pollinatoR)
 ```
 
-## What this package is for
+```{r setup}
+library(pollinatoR)
+options(marginaleffects_safe = FALSE)
+```
 
-`pollinatoR` estimates the contribution of insect pollinators to crop yield from
-*pollinator-exclusion experiments* -- paired open and caged (exclusion) plots, and
-related contrasts -- and relates that contribution to the pollinator community. The
-methods are general to open-versus-exclusion designs; canola is one application, not
-a constraint.
+Delta intervals in `pollin_effects()` carry the uncertainty in the fixed
+effects only. `marginaleffects` warns about this on every call for mixed
+models; the option above turns that reminder off.
 
-The package is a small set of verbs around one declared study object. This vignette
-runs every one of them end to end on a simulated canola-shaped dataset, so each step
-produces real output you can read.
+## What the package does
 
-| Verb | Question it answers |
-| --- | --- |
-| `pollin_spec()` | What is the study -- outcomes, treatment, nesting, exposures? |
-| `pollin_contribution()` | How much yield does pollinator access add, with uncertainty? |
-| `pollin_fdr()` | Which contributions survive multiple-testing control? |
-| `pollin_moderation()` | Which insects drive the contribution, free of unit confounders? |
-| `pollin_rii()` / `pollin_index()` | The dependence index, with an interval, not a bare ratio. |
-| `pollin_guard_spurious()` | Is an index-versus-yield slope real or mechanical coupling? |
-| `pollin_within_between()` | The Mundlak split that makes moderation confounder-robust. |
-| `pollin_compensation()` | Do yield components trade off against each other? |
-| `pollin_validate()` | Does the data pass structural integrity checks? |
+`pollinatoR` estimates how much of a crop's yield depends on insect
+pollinators, from experiments that compare plants with and without pollinator
+access: caged or bagged plants against open ones, and, where a trial has it, a
+hand-supplemented arm. The methods apply to any crop studied with such a
+design.
+
+An analysis is built in layers. Each layer is one function that returns an
+object you can print and check before going on.
+
+| Layer | Function | What you declare or get |
+|---|---|---|
+| Data | `pollin_data()` | Which columns are responses, treatment, units, groups and exposures |
+| Design | `pollin_design()` | Which treatment level is which arm, and the layout of the experiment |
+| Estimand | `pollin_estimand()` | The contrast, the scale and the basis of the number you want |
+| Fit | `pollin_fit()` | One mixed model per response |
+| Effects | `pollin_effects()` | The estimate with its interval, on the declared scale |
+| Guards | `pollin_guard_*()` | Checks against common errors of analysis and reading |
 
 ## A simulated study
 
-One open-versus-cage design: 10 sites, 16 plants each, two insect exposures, and two
-yield-component outcomes. Open access lifts pod set, and does so more where honeybees
-are abundant -- the moderation signal we will recover.
+Twelve sites, sixteen plants per site, half caged and half open. Two yield
+components are recorded per plant, along with counts of honey bees and other
+insects. Open access raises pod count by an amount that varies between sites,
+and slightly more on plants with more honey bees.
 
-```{r}
-ns <- 10L
-per <- 16L
-site <- rep(sprintf("s%02d", seq_len(ns)), each = per)
-trt <- rep(rep(c("Cage", "Open"), each = per / 2L), ns)
-honeybee <- rep(rpois(ns, 8), each = per) + rpois(ns * per, 1)
-wild <- rep(rpois(ns, 4), each = per) + rpois(ns * per, 1)
-site_eff <- rnorm(ns, 0, 0.3)[as.integer(factor(site))]
+```{r data}
+set.seed(1)
+n_site <- 12L
+n_plant <- 16L
+site <- rep(sprintf("s%02d", seq_len(n_site)), each = n_plant)
+trt <- rep(rep(c("Cage", "Open"), each = n_plant / 2L), n_site)
+honeybee <- rep(rpois(n_site, 8), each = n_plant) + rpois(n_site * n_plant, 1)
+wild <- rep(rpois(n_site, 4), each = n_plant) + rpois(n_site * n_plant, 1)
+idx <- as.integer(factor(site))
+site_effect <- rnorm(n_site, 0, 0.3)[idx]
+site_slope <- rnorm(n_site, 0, 0.25)[idx]
 open <- trt == "Open"
-pod_mu <- exp(1.8 + 0.35 * open + 0.015 * honeybee * open + site_eff)
-pods <- rpois(ns * per, pod_mu)
-seeds_per_pod <- rpois(ns * per, exp(2.6 + 0.12 * open + site_eff))
+pod_mu <- exp(1.8 + site_effect + (0.35 + site_slope + 0.015 * honeybee) * open)
+seed_mu <- exp(2.6 + site_effect + (0.12 + site_slope / 2) * open)
+pods <- rnbinom(n_site * n_plant, mu = pod_mu, size = 15)
+seeds_per_pod <- rnbinom(n_site * n_plant, mu = seed_mu, size = 15)
 canola <- data.frame(site, trt, honeybee, wild, pods, seeds_per_pod)
 head(canola)
 ```
 
-## Declare the study once
+## Data
 
-```{r}
+`pollin_data()` pairs the table with a map of what each column is. The roles
+are checked against the data, and the structural checks of `pollin_validate()`
+are run and stored.
+
+```{r pollin-data}
+pd <- pollin_data(
+  canola,
+  response = c("pods", "seeds_per_pod"),
+  treatment = "trt",
+  unit = "site",
+  exposures = c("honeybee", "wild")
+)
+pd
+```
+
+## Design
+
+`pollin_design()` says which treatment level is the excluded arm and which is
+the open arm, and names the layout. The layout sets the random structure of the
+models: here each site carries a random intercept and a random treatment slope,
+so the pollinator effect may differ between sites.
+
+```{r pollin-design}
+ds <- pollin_design(
+  pd,
+  arms = c(excluded = "Cage", open = "Open"),
+  layout = "multi_site"
+)
+ds
+```
+
+The five layouts are `crd`, `rcbd`, `split_plot`, `matched_pairs` and
+`multi_site`; `?pollin_design` gives the random structure each one implies.
+
+## Estimand
+
+`pollin_estimand()` names the number the analysis is for. The dependence (E2)
+compares excluded plants with the reference arm; the deficit (E1), available
+when a trial has a supplemented arm, compares supplemented with open plants.
+The scale is one of `"difference"`, `"ratio"`, `"rii"` or `"lnrr"`.
+
+The basis has no default. A loss share, $1 - E[Y_\mathrm{excl}]/E[Y_\mathrm{open}]$,
+is the part of the present yield that pollinators supply. A gain,
+$E[Y_\mathrm{open}]/E[Y_\mathrm{excl}] - 1$, is the rise over a crop without
+them. Excluded plants yielding 75% of open ones give a loss share of 25% and a
+gain of 33%. They answer different questions, and the package records which
+one every result is.
+
+```{r pollin-estimand}
+est <- pollin_estimand(ds, family = "dependence", scale = "ratio", basis = "loss")
+est
+knitr::kable(pollin_assumptions(est))
+```
+
+The assumptions are statements about the experiment that the data cannot
+confirm. They belong in the methods section of any report.
+
+## Fit and effects
+
+`pollin_fit()` fits one `glmmTMB` model per response, with the treatment as the
+fixed effect and the design's random terms. The family is chosen from each
+response's values unless supplied.
+
+```{r pollin-fit}
+fit <- pollin_fit(est)
+fit
+```
+
+`pollin_effects()` reads the contrast from each model: every plant is predicted
+under each arm, the predictions are averaged, and the scale is applied to the
+two averages. A ratio-type estimate is a ratio of averaged predictions, not an
+average of plant-level ratios.
+
+```{r pollin-effects}
+eff <- pollin_effects(fit)
+eff
+```
+
+A parametric bootstrap interval is available with `interval = "bootstrap"`;
+*A three-arm trial: deficit and dependence* shows it.
+
+For the contribution on the difference scale, with a false discovery rate
+adjustment across responses and the standard deviation of the site-level
+treatment slope, `pollin_contribution()` wraps the fit and the effects.
+
+```{r contribution}
+est_diff <- pollin_estimand(
+  ds,
+  family = "dependence",
+  scale = "difference",
+  basis = "loss"
+)
+contribution <- pollin_contribution(est_diff)
+contribution$table[
+  c("response", "estimate", "conf.low", "conf.high", "slope_sd", "p.fdr")
+]
+```
+
+## Which insects drive the effect
+
+`pollin_moderation()` fits treatment-by-exposure interactions, with each
+exposure split into a between-site part (the site mean) and a within-site part
+(the deviation from it). The within-site interaction is estimated from
+variation inside a site, where anything constant at site level, such as an
+unrecorded variety, is held fixed.
+
+```{r moderation}
+pollin_moderation(ds, outcome = "pods")
+```
+
+Within a site, honey bee counts here differ by only a bee or two between
+plants, too little for this small trial to separate the planted effect from
+zero. The within-site terms are the ones to read; the between-site terms carry
+whatever differs between sites along with the insects.
+
+The split itself is `pollin_within_between()`.
+
+```{r within-between}
+wb <- pollin_within_between(canola$honeybee, group = canola$site)
+head(as.data.frame(wb))
+```
+
+## Guards
+
+Guards stop or warn on common analysis errors. `pollin_guard_spurious()`
+tests the regression of a dependence index on open-arm yield across units. The
+open-arm value sits on both axes, so part of any slope is built in. The guard
+permutes the excluded arm while holding the open arm fixed and compares the
+observed slope with that null.
+
+```{r spurious}
+open_mean <- tapply(canola$pods[open], canola$site[open], mean)
+cage_mean <- tapply(canola$pods[!open], canola$site[!open], mean)
+pollin_guard_spurious(open_mean, cage_mean, n_perm = 200, seed = 1)
+```
+
+`pollin_guard_bounded()` refuses to average site-level ratios unless asked,
+because the mean of ratios is not the ratio of means.
+
+```{r bounded}
+try(pollin_guard_bounded(ds, index = "rii", response = "pods"))
+```
+
+The other two guards are `pollin_guard_ecological()`, which warns when an
+exposure slope exists only between units, and `pollin_guard_posttreatment()`,
+which refuses an adjustment covariate declared to be affected by the treatment.
+Both are shown in *A matched-pair field study*.
+
+## Descriptive indices
+
+`pollin_index()` and `pollin_rii()` give the Relative Interaction Index, the
+log response ratio and the dependence ratio from unit-level arm means, with
+intervals where one is available. They are for comparison with published
+work; the model-based estimate above is the primary one.
+
+```{r index}
+pollin_index(ds, response = "pods", n_boot = 500, seed = 1)
+```
+
+`pollin_compensation()` summarises how the yield components trade off against
+each other across plants.
+
+```{r compensation}
+pollin_compensation(pd)
+```
+
+## Checking the data
+
+`pollin_validate()` reports missing values in declared columns, expected factor
+levels and any identities supplied, as counts only.
+
+```{r validate}
+pollin_validate(pd, expect_levels = list(trt = c("Cage", "Open")))
+```
+
+## Moving from `pollin_spec()`
+
+`pollin_spec()` is deprecated and is removed at version 0.2.0. It declared the
+data and the design in one call; they are now two layers.
+
+```r
+# Before
 spec <- pollin_spec(
-  data = canola,
+  canola,
   outcomes = c("pods", "seeds_per_pod"),
   treatment = "trt",
   control = "Cage",
   random = "site",
   exposures = c("honeybee", "wild"),
-  latent_unit = "site" # carries the random treatment slope
+  latent_unit = "site"
 )
-spec
+pollin_contribution(spec)
+pollin_moderation(spec, outcome = "pods")
 ```
 
-## The contribution, with uncertainty
-
-`pollin_contribution()` fits a `glmmTMB` mixed model per outcome (family chosen
-heuristically) and reports the open-minus-exclusion contrast through
-`marginaleffects`, with a confidence interval and the standard deviation of the
-random treatment slope -- a reportable measure of how much the contribution varies
-between units.
-
-```{r, warning = FALSE, message = FALSE}
-contribution <- pollin_contribution(spec)
-contribution
+```r
+# Now
+pd <- pollin_data(
+  canola,
+  response = c("pods", "seeds_per_pod"),
+  treatment = "trt",
+  unit = "site",
+  exposures = c("honeybee", "wild")
+)
+ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+pollin_contribution(pollin_estimand(ds, "dependence", "difference", basis = "loss"))
+pollin_moderation(ds, outcome = "pods")
 ```
 
-With more than one outcome, control the false-discovery rate across them:
+`outcomes` becomes `response`, `random` becomes `unit`, `control` becomes the
+`excluded` entry of `arms`, and `latent_unit` becomes the `slope` argument of
+`pollin_design()` (the `multi_site` layout puts the slope on the site by
+default).
 
-```{r}
-contribution$table$fdr <- pollin_fdr(contribution$table$p.value)
-contribution$table[, c("outcome", "estimate", "p.value", "fdr")]
-```
+## Further reading
 
-## Which insects drive it
-
-`pollin_moderation()` enters each exposure through a within-between (Mundlak) split.
-The within-unit treatment-by-exposure term is the confounder-robust estimate: it is
-identified from variation inside a site, so an unrecorded site-level genotype cannot
-masquerade as a pollinator effect.
-
-```{r, warning = FALSE, message = FALSE}
-moderation <- pollin_moderation(spec, outcome = "pods")
-moderation
-```
-
-The split itself is available directly; `between` is the unit mean and `within` the
-deviation within a unit, robust to any unit-level confounder.
-
-```{r}
-wb <- pollin_within_between(canola$honeybee, group = canola$site)
-str(wb)
-```
-
-## Uncertainty-aware indices
-
-Per-site open and exclusion means give a dependence index with an interval, rather
-than a single ratio. `pollin_rii()` returns the Relative Interaction Index with a
-bootstrap interval; `pollin_index()` adds the log response ratio with a closed-form
-interval.
-
-```{r}
-open_mean <- tapply(canola$pods[open], canola$site[open], mean)
-cage_mean <- tapply(canola$pods[!open], canola$site[!open], mean)
-pollin_rii(open_mean, cage_mean, n_boot = 500, seed = 1)
-pollin_index(open_mean, cage_mean, n_boot = 500, seed = 1)
-```
-
-## Guard against spurious index-versus-yield slopes
-
-Regressing a dependence index on absolute (open-arm) yield is hazardous: the open
-term sits on both axes, so a positive slope is partly mechanical (Pearson 1897). The
-guard permutes the exclusion arm while holding the open arm fixed and reports how much
-of the slope is coupling.
-
-```{r}
-pollin_guard_spurious(open_mean, cage_mean, n_perm = 200, seed = 1)
-```
-
-A permutation p-value near 1 means the observed slope is indistinguishable from the
-coupling null -- spurious. Supply `decouple =` (the exclusion arm, or an independent
-vigour covariate) to regress the index on an axis that shares no term.
-
-## Yield-component compensation
-
-When pollinators lift one yield component, plants may down-regulate another.
-`pollin_compensation()` summarises the trade-off structure across components as a
-correlation matrix.
-
-```{r}
-pollin_compensation(canola[, c("pods", "seeds_per_pod")])
-```
-
-## Integrity checks
-
-`pollin_validate()` runs structural checks -- missingness, expected factor levels, and
-user-supplied identities -- before any model is fitted.
-
-```{r}
-pollin_validate(spec, expect_levels = list(trt = c("Cage", "Open")))
-```
+* *A three-arm trial: deficit and dependence*
+* *A matched-pair field study*

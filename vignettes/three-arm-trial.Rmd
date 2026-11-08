@@ -1,0 +1,197 @@
+---
+title: "A three-arm trial: deficit and dependence"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{A three-arm trial: deficit and dependence}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(pollinatoR)
+options(marginaleffects_safe = FALSE)
+```
+
+Delta intervals in `pollin_effects()` carry the uncertainty in the fixed
+effects only. `marginaleffects` warns about this on every call for mixed
+models; the option above turns that reminder off.
+
+## The design
+
+A three-arm trial puts three pollination treatments side by side: plants
+*excluded* from insects (caged or bagged), plants left *open* to whatever
+pollinators visit, and plants *supplemented* by hand with extra pollen. The
+three arms answer two different questions.
+
+* The deficit (E1) compares supplemented with open plants. It asks how much
+  yield was left on the table by the pollination the crop actually received.
+* The dependence (E2) compares excluded plants with a reference arm. It asks
+  how much yield is owed to pollinators. The reference is usually the open arm;
+  in a three-arm trial it can also be the supplemented arm, which gives the
+  dependence under full pollination.
+
+This vignette simulates a small randomised complete block trial: eight blocks,
+each holding all three arms, with six plants per arm in each block. The
+response is pod count per plant.
+
+```{r data}
+set.seed(2024)
+n_block <- 8L
+n_plant <- 6L
+arms <- c("Bagged", "Open", "Hand")
+trial <- expand.grid(
+  plant = seq_len(n_plant),
+  trt = arms,
+  block = sprintf("B%d", seq_len(n_block)),
+  stringsAsFactors = FALSE
+)
+block_effect <- rnorm(n_block, 0, 0.15)
+arm_mean <- c(Bagged = 40, Open = 60, Hand = 70)
+names(block_effect) <- sprintf("B%d", seq_len(n_block))
+mu <- arm_mean[trial$trt] * exp(block_effect[trial$block])
+trial$pods <- rnbinom(nrow(trial), mu = mu, size = 30)
+head(trial)
+```
+
+The planted arm means are 40, 60 and 70 pods. On these values the dependence on
+the open arm is a loss share of $1 - 40/60 = 0.33$, and the deficit is a loss
+share of $1 - 60/70 = 0.14$.
+
+## Data, design and estimand
+
+The data step names the columns; the design step maps each treatment level to
+its role and fixes the layout. In a randomised complete block layout the block
+carries a random intercept.
+
+```{r declare}
+pd <- pollin_data(trial, response = "pods", treatment = "trt", unit = "block")
+ds <- pollin_design(
+  pd,
+  arms = c(excluded = "Bagged", open = "Open", supplemented = "Hand"),
+  layout = "rcbd"
+)
+ds
+```
+
+The estimand step names the contrast, the scale and the basis. Neither the scale
+nor the basis has a default.
+
+```{r estimand}
+deficit <- pollin_estimand(ds, family = "deficit", scale = "ratio", basis = "loss")
+deficit
+knitr::kable(pollin_assumptions(deficit))
+```
+
+The assumption table is the part of the analysis the data cannot check. For the
+deficit, the key one is that hand supplementation adds pollen and nothing else;
+for the dependence, it is that the bag or cage excludes insects without changing
+the plant's microclimate.
+
+## Loss share or gain
+
+The same pair of arm means can be reported in two ways. The loss share is the
+fraction of the higher arm's yield that is lost without the contrast,
+$1 - \mathrm{low}/\mathrm{high}$. The gain is the increase over the lower arm,
+$\mathrm{high}/\mathrm{low} - 1$. For the dependence planted here, the loss share
+is 0.33 and the gain is 0.50. The two answer different questions: the loss
+share is the part of current yield that pollinators supply, which is what a
+valuation of their service needs, and the gain is how much a crop without them
+would rise if they returned. Reporting a gain where a loss share was meant
+overstates the value by a factor of $1/(1 - D)$.
+
+`basis` is therefore stated every time, and printed on every result.
+
+```{r basis}
+fit_effect <- function(design, family, scale, basis) {
+  est <- pollin_estimand(design, family = family, scale = scale, basis = basis)
+  pollin_effects(pollin_fit(est))$table
+}
+dep_loss <- fit_effect(ds, "dependence", "ratio", "loss")
+dep_gain <- fit_effect(ds, "dependence", "ratio", "gain")
+rbind(dep_loss, dep_gain)[, c("contrast", "basis", "estimate", "conf.low", "conf.high")]
+```
+
+The interval for a ratio-type scale is a delta interval for the log ratio of
+the averaged predictions, transformed to the scale, so a loss share stays below
+one.
+
+Both intervals cover the planted values. A parametric bootstrap gives a
+second interval: responses are simulated from the fitted model, the model is
+refitted to each simulated set, and the interval is taken from the percentiles
+of the refitted estimates. Use several hundred refits in an analysis; the 100
+here keep the example quick.
+
+```{r bootstrap}
+est_dep <- pollin_estimand(ds, family = "dependence", scale = "ratio", basis = "loss")
+pollin_effects(pollin_fit(est_dep), interval = "bootstrap", n_boot = 100L, seed = 1L)
+```
+
+## Both estimands on several scales
+
+The estimate is always formed from the model's expected response in each arm,
+averaged over the trial's plants: a ratio of averaged predictions, never an
+average of plant-level ratios. The scale only changes how that pair of
+expected values is reported.
+
+```{r scales}
+grid <- expand.grid(
+  family = c("deficit", "dependence"),
+  scale = c("difference", "ratio", "rii", "lnrr"),
+  stringsAsFactors = FALSE
+)
+rows <- lapply(seq_len(nrow(grid)), function(i) {
+  fit_effect(ds, grid$family[i], grid$scale[i], basis = "loss")
+})
+effects <- do.call(rbind, rows)
+effects[, c("family", "contrast", "scale", "estimate", "conf.low", "conf.high")]
+```
+
+The RII and the loss share are linked by $\mathrm{RII} = D/(2 - D)$, and the log
+response ratio is $\log(\mathrm{high}/\mathrm{low})$, so the three ratio-type
+rows for each family carry the same information on different scales. All rows
+here use `basis = "loss"`; the basis changes the value only on the ratio scale.
+The difference scale is in pods per plant.
+
+## Dependence against the supplemented arm
+
+With `reference = "supplemented"` the dependence compares excluded plants with
+hand-pollinated ones. This is the dependence under full pollination, an upper
+reference for the crop's need for pollinators, while the open reference gives
+the dependence realised in the field.
+
+```{r reference}
+ds_sup <- pollin_design(
+  pd,
+  arms = c(excluded = "Bagged", open = "Open", supplemented = "Hand"),
+  layout = "rcbd",
+  reference = "supplemented"
+)
+est_sup <- pollin_estimand(ds_sup, "dependence", scale = "ratio", basis = "loss")
+pollin_effects(pollin_fit(est_sup))
+```
+
+## A guard on plant-level ratios
+
+A common shortcut computes the RII or the dependence ratio for each block (or
+each plant) and averages them. The mean of bounded unit-level ratios is not the
+ratio of the expected values, and `pollin_guard_bounded()` refuses it unless
+asked.
+
+```{r guard-refuse}
+try(pollin_guard_bounded(ds, index = "dependence"))
+```
+
+When the average is wanted for comparison with earlier work, `allow = TRUE`
+returns it with the statement attached and the ratio of the arm means beside it.
+
+```{r guard-allow}
+pollin_guard_bounded(ds, index = "dependence", allow = TRUE)
+```
+
+Here the block means differ only a little, so the two numbers are close. They
+separate when units differ widely in yield, which is common across sites and
+varieties.
