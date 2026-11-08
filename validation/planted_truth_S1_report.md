@@ -113,3 +113,12 @@ matched-pair field design (20 sites x 5 pairs, site SD 0.50, pair SD 0.30) the
 estimate is biased low by 0.19 empirical SE, which fails the pre-registered bias
 criterion. Any change to that, such as a different difference-scale target or a
 larger design, needs a new dated rule and a new run, reported beside this one.
+
+## Re-run at bcfea32 (2026-11-08)
+
+After `pollin_fit(by =)` and the delta-warning handling changed `R/fit.R`,
+`R/effects.R` and `R/contribution.R` (commits 88229fc to bcfea32), the suite was
+re-run unchanged (`Rscript --vanilla validation/planted_truth_S1.R 1000 8 <scratch dir>`,
+16.0 min). The per-seed output was byte-identical to `planted_truth_S1_seeds.csv.gz`
+and the results table identical to `planted_truth_S1_results.csv`, so every verdict
+above holds for bcfea32. Session: `planted_truth_S1_session_rerun_bcfea32.txt`.
