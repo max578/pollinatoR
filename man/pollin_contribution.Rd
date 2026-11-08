@@ -4,54 +4,60 @@
 \alias{pollin_contribution}
 \title{Estimate the pollinator contribution per outcome}
 \usage{
-pollin_contribution(
-  spec,
-  outcomes = spec$outcomes,
-  by = NULL,
-  families = list(),
-  ...
-)
+pollin_contribution(x, outcomes = NULL, by = NULL, families = list(), ...)
 }
 \arguments{
-\item{spec}{A \code{\link[=pollin_spec]{pollin_spec()}} object.}
+\item{x}{A \code{\link[=pollin_estimand]{pollin_estimand()}} object with \code{family = "dependence"} and
+\code{scale = "difference"}, or a deprecated \code{\link[=pollin_spec]{pollin_spec()}} object.}
 
-\item{outcomes}{Outcomes to model (defaults to all in \code{spec}).}
+\item{outcomes}{Outcomes to model. \code{NULL} (the default) models every
+response.}
 
-\item{by}{Optional grouping for conditional contrasts (e.g. \code{spec$group}).}
+\item{by}{Optional name of a column for conditional contrasts, one per
+level (for example a region).}
 
 \item{families}{Optional named list of \code{glmmTMB} family objects, one per
-outcome; missing entries are chosen heuristically.}
+outcome; outcomes it does not name are chosen from their values.}
 
 \item{...}{Passed to \code{\link[glmmTMB:glmmTMB]{glmmTMB::glmmTMB()}}.}
 }
 \value{
 An object of class \code{pollin_contribution}: a list with \code{table} (a tidy
-data frame of contrasts with FDR-adjusted p-values and the latent-unit
-treatment-slope SD) and \code{fits} (the fitted models, for diagnostics).
+data frame of contrasts with FDR-adjusted p-values and the standard
+deviation of the random treatment slope) and \code{fits} (the fitted models,
+for diagnostics). From an estimand, \code{table} carries the columns of
+\code{\link[=pollin_effects]{pollin_effects()}}, and the list also holds the \code{estimand}.
 }
 \description{
-Fits, for each outcome, a generalised linear mixed model with the exclusion
-treatment as the fixed effect of interest, the nested random structure from
-the specification, and a random treatment slope on the latent unit so that
-unobserved between-unit heterogeneity in the contribution (for example an
-unrecorded genotype) is absorbed rather than ignored. The contribution is
-reported as a model-based average treatment effect (the open-minus-exclusion
-contrast) with propagated uncertainty, via G-computation. Family is chosen
-per outcome by a simple heuristic unless supplied.
+Fits, for each outcome, a generalised linear mixed model with the
+pollination treatment as the fixed effect of interest and the random
+structure of the design (\code{\link[=pollin_fit]{pollin_fit()}}), then reports the contribution as a
+model-based average treatment effect, the reference-minus-exclusion
+difference in expected response, with propagated uncertainty, via
+G-computation (\code{\link[=pollin_effects]{pollin_effects()}}). A random treatment slope, where the
+design carries one, absorbs unobserved between-unit heterogeneity in the
+contribution (for example an unrecorded genotype). Family is chosen per
+outcome from its values unless supplied.
 }
 \details{
 The treatment effect is causal by design here -- the exclusion contrast is an
 experimental manipulation -- so no covariate adjustment is applied; see
 \code{\link[=pollin_moderation]{pollin_moderation()}} for the observational "which insects" question.
+
+A \code{\link[=pollin_spec]{pollin_spec()}} is still accepted and is fitted as before; \code{pollin_spec()}
+is deprecated and is removed at version 0.2.0.
 }
 \examples{
 \donttest{
 set.seed(1)
-site <- rep(paste0("s", seq_len(12L)), each = 20L)
-trt <- rep(rep(c("Cage", "Open"), each = 10L), 12L)
-y <- rpois(length(trt), exp(1.7 + 0.35 * (trt == "Open")))
-d <- data.frame(y = y, trt = trt, Site = site)
-sp <- pollin_spec(d, "y", "trt", "Cage", "Site")
-pollin_contribution(sp)
+d <- data.frame(
+  trt = rep(rep(c("Cage", "Open"), each = 10L), 8L),
+  Site = rep(paste0("s", seq_len(8L)), each = 20L)
+)
+d$pods <- rnbinom(nrow(d), mu = exp(3 + 0.3 * (d$trt == "Open")), size = 10)
+pd <- pollin_data(d, "pods", "trt", unit = "Site")
+ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "rcbd")
+est <- pollin_estimand(ds, "dependence", "difference", "loss")
+pollin_contribution(est)
 }
 }

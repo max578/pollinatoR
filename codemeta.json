@@ -8,7 +8,7 @@
   "codeRepository": "https://github.com/max578/pollinatoR",
   "issueTracker": "https://github.com/max578/pollinatoR/issues",
   "license": "https://spdx.org/licenses/MIT",
-  "version": "0.0.0.9000",
+  "version": "0.1.0",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "R",
@@ -197,7 +197,7 @@
       ],
       "name": "pollinatoR: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion Experiments",
       "url": "https://github.com/max578/pollinatoR",
-      "description": "R package version 0.0.0.9000"
+      "description": "R package version 0.1.0"
     }
   ],
   "releaseNotes": "https://github.com/max578/pollinatoR/blob/main/NEWS.md"

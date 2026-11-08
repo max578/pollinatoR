@@ -12,13 +12,13 @@ test_that("pollin_contribution fits and returns a treatment effect", {
   site_eff <- rnorm(ns, 0, 0.3)[as.integer(factor(Site))]
   mu <- exp(1.7 + 0.35 * (trt == "Open") + site_eff)
   df <- data.frame(y = rpois(length(mu), mu), trt = trt, Site = Site)
-  sp <- pollin_spec(
+  sp <- suppressWarnings(pollin_spec(
     df,
     outcomes = "y",
     treatment = "trt",
     control = "Cage",
     random = "Site"
-  )
+  ))
   ct <- suppressWarnings(pollin_contribution(sp))
   expect_s3_class(ct, "pollin_contribution")
   expect_true("estimate" %in% names(ct$table))
@@ -44,14 +44,14 @@ test_that("pollin_moderation returns within and between interaction terms", {
     Site = Site,
     bees = bees
   )
-  sp <- pollin_spec(
+  sp <- suppressWarnings(pollin_spec(
     df,
     outcomes = "y",
     treatment = "trt",
     control = "Cage",
     random = "Site",
     exposures = "bees"
-  )
+  ))
   md <- suppressWarnings(pollin_moderation(sp, outcome = "y"))
   expect_s3_class(md, "pollin_moderation")
   expect_true(any(grepl("within", md$table$component)))

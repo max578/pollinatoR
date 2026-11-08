@@ -4,18 +4,35 @@
 \alias{pollin_index}
 \title{A menu of uncertainty-aware dependence indices}
 \usage{
-pollin_index(open, cage, n_boot = 2000L, conf = 0.95, seed = NULL)
+pollin_index(
+  open,
+  cage,
+  n_boot = 2000L,
+  conf = 0.95,
+  seed = NULL,
+  response = NULL,
+  unit = NULL
+)
 }
 \arguments{
-\item{open}{Numeric vector of the open-arm (pollinator-accessible) values.}
+\item{open}{Numeric vector of the open-arm (pollinator-accessible) values,
+or a \code{\link[=pollin_design]{pollin_design()}} with an \code{"excluded"} and an \code{"open"} arm.}
 
-\item{cage}{Numeric vector of the exclusion-arm values.}
+\item{cage}{Numeric vector of the exclusion-arm values. Leave it empty when
+\code{open} is a design.}
 
 \item{n_boot}{Number of bootstrap resamples.}
 
 \item{conf}{Confidence level.}
 
 \item{seed}{Optional integer seed for reproducibility.}
+
+\item{response}{With a design, the response column to use. It may be left
+\code{NULL} when the data declare one response.}
+
+\item{unit}{With a design, the unit column the arm means are taken over, one
+of the design's unit nesting. \code{NULL} (the default) uses the outermost
+unit; an inner unit is taken within its outer units.}
 }
 \value{
 A data frame of indices with estimates and intervals where available.
@@ -28,7 +45,22 @@ meta-analytic workhorse), and the proportional dependence ratio. Provided so
 an analysis can report a defensible, interval-bearing index instead of a bare
 ratio.
 }
+\details{
+Given a \code{\link[=pollin_design]{pollin_design()}}, the indices are computed from unit-level arm
+means, as described in \code{\link[=pollin_rii]{pollin_rii()}}.
+}
 \examples{
 set.seed(1)
 pollin_index(rpois(50, 9), rpois(50, 6), n_boot = 500, seed = 1)
+
+# From a design with two responses: name the one to use
+df <- data.frame(
+  pods = rpois(48, 30),
+  seed_wt = rgamma(48, 20, 5),
+  trt = rep(c("Cage", "Open"), 24),
+  Site = rep(letters[1:4], each = 12)
+)
+pd <- pollin_data(df, c("pods", "seed_wt"), "trt", unit = "Site")
+ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+pollin_index(ds, response = "pods", n_boot = 200, seed = 1)
 }

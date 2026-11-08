@@ -1,7 +1,7 @@
 Package: pollinatoR
 Title: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion
     Experiments
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R:
     person("Max", "Moldovan", email = "max.moldovan@gmail.com",
            role = c("aut", "cre"),
@@ -31,12 +31,6 @@ Imports:
     marginaleffects,
     stats
 Suggests:
-    DHARMa,
-    emmeans,
-    brms,
-    boot,
-    fst,
-    data.table,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown

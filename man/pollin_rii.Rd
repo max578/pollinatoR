@@ -4,18 +4,35 @@
 \alias{pollin_rii}
 \title{Relative Interaction Index with a bootstrap interval}
 \usage{
-pollin_rii(open, cage, n_boot = 2000L, conf = 0.95, seed = NULL)
+pollin_rii(
+  open,
+  cage,
+  n_boot = 2000L,
+  conf = 0.95,
+  seed = NULL,
+  response = NULL,
+  unit = NULL
+)
 }
 \arguments{
-\item{open}{Numeric vector of the open-arm (pollinator-accessible) values.}
+\item{open}{Numeric vector of the open-arm (pollinator-accessible) values,
+or a \code{\link[=pollin_design]{pollin_design()}} with an \code{"excluded"} and an \code{"open"} arm.}
 
-\item{cage}{Numeric vector of the exclusion-arm values.}
+\item{cage}{Numeric vector of the exclusion-arm values. Leave it empty when
+\code{open} is a design.}
 
 \item{n_boot}{Number of bootstrap resamples.}
 
 \item{conf}{Confidence level.}
 
 \item{seed}{Optional integer seed for reproducibility.}
+
+\item{response}{With a design, the response column to use. It may be left
+\code{NULL} when the data declare one response.}
+
+\item{unit}{With a design, the unit column the arm means are taken over, one
+of the design's unit nesting. \code{NULL} (the default) uses the outermost
+unit; an inner unit is taken within its outer units.}
 }
 \value{
 An object of class \code{pollin_rii}.
@@ -24,12 +41,29 @@ An object of class \code{pollin_rii}.
 The Relative Interaction Index (Armas et al. 2004) is widely reported for
 pollinator dependence as a bare point estimate, despite being a ratio of two
 correlated sums whose sampling distribution is awkward. This function returns
-the index with a nonparametric bootstrap interval -- the minimum honest
-upgrade over a point value. Prefer the model-based contribution
+the index with a nonparametric bootstrap interval, the minimum upgrade over a
+point value. Prefer the model-based contribution
 (\code{\link[=pollin_contribution]{pollin_contribution()}}) as the primary estimate and keep this for
 comparability with the existing literature.
+}
+\details{
+The arm values are given either as two vectors or as a \code{\link[=pollin_design]{pollin_design()}}.
+From a design, the values are unit-level arm means: the mean response of
+each unit in the open arm and in the excluded arm, for the units carrying
+both arms, in sorted unit order. The bootstrap then runs on those means as it
+does on two vectors.
 }
 \examples{
 set.seed(1)
 pollin_rii(rpois(50, 8), rpois(50, 6), n_boot = 500, seed = 1)
+
+# From a design: one mean per site and arm
+df <- data.frame(
+  pods = rpois(48, 30),
+  trt = rep(c("Cage", "Open"), 24),
+  Site = rep(letters[1:4], each = 12)
+)
+pd <- pollin_data(df, "pods", "trt", unit = "Site")
+ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+pollin_rii(ds, n_boot = 200, seed = 1)
 }

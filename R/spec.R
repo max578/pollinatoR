@@ -10,6 +10,10 @@
 #' latent unit on which a random treatment slope is carried to absorb
 #' unobserved between-unit heterogeneity (for example an unrecorded genotype).
 #'
+#' `pollin_spec()` is deprecated: [pollin_data()] and [pollin_design()]
+#' declare the same study in two layers. It warns once per session and is
+#' removed at version 0.2.0.
+#'
 #' @param data A data frame, one row per observational unit (e.g. one plant).
 #' @param outcomes Character vector of outcome column names (yield components).
 #' @param treatment Name of the treatment column (a factor with two or more
@@ -48,6 +52,7 @@ pollin_spec <- function(
   group = NULL,
   latent_unit = NULL
 ) {
+  .warn_spec_deprecated()
   stopifnot(is.data.frame(data))
   cols <- names(data)
   need <- c(outcomes, treatment, random, exposures, adjust, group)
@@ -94,20 +99,33 @@ pollin_spec <- function(
   )
 }
 
-# Build the random-effects term string for a glmmTMB formula.
-# Outer-to-inner nested intercepts, with a treatment slope on the latent unit.
-.random_terms <- function(spec) {
-  r <- spec$random
-  nested <- character(0)
-  for (i in seq_along(r)) {
-    key <- paste(r[seq_len(i)], collapse = ":")
-    if (r[i] == spec$latent_unit) {
-      nested <- c(nested, sprintf("(%s | %s)", spec$treatment, key))
-    } else {
-      nested <- c(nested, sprintf("(1 | %s)", key))
-    }
+# Deprecation ------------------------------------------------------------------
+
+#' Session state of the package (the once-per-session deprecation flag)
+#' @noRd
+#' @keywords internal
+.pollin_env <- new.env(parent = emptyenv())
+
+#' Warn, once per session, that `pollin_spec()` is deprecated
+#' @noRd
+#' @keywords internal
+.warn_spec_deprecated <- function() {
+  if (isTRUE(.pollin_env$spec_warned)) {
+    return(invisible(FALSE))
   }
-  nested
+  .pollin_env$spec_warned <- TRUE
+  warning(
+    "`pollin_spec()` is deprecated; use `pollin_data()` + `pollin_design()`. ",
+    "It is removed at pollinatoR 0.2.0. This warning is shown once per session.",
+    call. = FALSE
+  )
+  invisible(TRUE)
+}
+
+# Build the random-effects term string for a glmmTMB formula: nested
+# intercepts with a treatment slope on the latent unit (see `.nested_terms()`).
+.random_terms <- function(spec) {
+  .nested_terms(spec$random, spec$treatment, spec$latent_unit)
 }
 
 #' @export

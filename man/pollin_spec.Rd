@@ -55,6 +55,11 @@ optional adjustment covariates, an optional fixed grouping, and an optional
 latent unit on which a random treatment slope is carried to absorb
 unobserved between-unit heterogeneity (for example an unrecorded genotype).
 }
+\details{
+\code{pollin_spec()} is deprecated: \code{\link[=pollin_data]{pollin_data()}} and \code{\link[=pollin_design]{pollin_design()}}
+declare the same study in two layers. It warns once per session and is
+removed at version 0.2.0.
+}
 \examples{
 df <- data.frame(
   y = rpois(40, 5), trt = rep(c("Cage", "Open"), 20),
