@@ -62,14 +62,3 @@ pollin_fdr <- function(p) {
   }
   stats::Gamma(link = "log")
 }
-
-# Require a suggested package or stop with a helpful message.
-.need <- function(pkg) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    stop(
-      sprintf("Package '%s' is needed for this function. Install it.", pkg),
-      call. = FALSE
-    )
-  }
-  invisible(TRUE)
-}

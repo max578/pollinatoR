@@ -69,6 +69,14 @@ An analysis is now declared in layers: the data (`pollin_data()`), the design
   trial: dependence by variety* and *A matched-pair field study*. The getting-started vignette is rewritten around
   the layered workflow.
 
+## Known limitations
+
+* In the planted-truth recovery study (`validation/planted_truth_S1_report.md`),
+  24 of 25 design-by-estimand cells meet the pre-set rule. The matched-pair
+  dependence estimate on the difference scale is biased by -0.19 standard
+  errors; its interval coverage (0.950) and the ratio-scale estimates pass.
+  For matched-pair designs the ratio scale is the better-supported report.
+
 ## Moving from earlier calls
 
 | Before | Now |
