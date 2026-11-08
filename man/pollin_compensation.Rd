@@ -8,7 +8,8 @@ pollin_compensation(components, method = "spearman")
 }
 \arguments{
 \item{components}{A numeric matrix or data frame, one column per yield
-component, one row per unit.}
+component, one row per unit; or a \code{\link[=pollin_data]{pollin_data()}} object, whose response
+columns are taken as the components (at least two).}
 
 \item{method}{Correlation method passed to \code{\link[stats:cor]{stats::cor()}}.}
 }
@@ -28,4 +29,14 @@ model.
 \examples{
 m <- data.frame(pods = c(10, 8, 6), seeds_per_pod = c(20, 24, 28))
 pollin_compensation(m)
+
+# From a pollin_data object: its responses are the components
+df <- data.frame(
+  pods = c(10, 8, 6, 9, 7, 5),
+  seeds_per_pod = c(20, 24, 28, 21, 25, 27),
+  trt = rep(c("Cage", "Open"), 3),
+  Site = rep(c("a", "b", "c"), each = 2)
+)
+pd <- pollin_data(df, c("pods", "seeds_per_pod"), "trt", unit = "Site")
+pollin_compensation(pd)
 }
