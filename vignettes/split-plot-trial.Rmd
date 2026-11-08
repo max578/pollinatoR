@@ -1,0 +1,157 @@
+---
+title: "A split-plot trial: dependence by variety"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{A split-plot trial: dependence by variety}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(pollinatoR)
+```
+
+## The design
+
+Variety trials are often laid out as split plots. Each block holds one whole
+plot per variety, and each whole plot is split in two: one half caged against
+insects, the other left open. The pollination treatment is the sub-plot factor.
+Two sources of error follow: whole plots differ from one another, and so do
+sub-plots within a whole plot. The pollination contrast is read within whole
+plots, where the variety and the patch of ground are shared.
+
+The trial below is simulated: four blocks, eight canola varieties, and three
+plants harvested from each sub-plot. Varieties differ both in yield and in how
+much they depend on insects, and the two are unrelated.
+
+```{r data}
+set.seed(11)
+n_block <- 4L
+varieties <- sprintf("V%d", 1:8)
+open_pods <- setNames(c(70, 95, 80, 110, 60, 90, 100, 75), varieties)
+dependence <- c(0.10, 0.30, 0.20, 0.15, 0.35, 0.25, 0.05, 0.30)
+names(dependence) <- varieties
+
+trial <- expand.grid(
+  plant = 1:3,
+  trt = c("Cage", "Open"),
+  variety = varieties,
+  block = sprintf("B%d", seq_len(n_block)),
+  stringsAsFactors = FALSE
+)
+# Varieties are randomised to the whole plots of each block
+whole_plot <- unlist(lapply(seq_len(n_block), function(b) sample(8L)))
+blocks <- sprintf("B%d", seq_len(n_block))
+names(whole_plot) <- paste(rep(blocks, each = 8L), varieties)
+trial$plot <- sprintf("W%d", whole_plot[paste(trial$block, trial$variety)])
+
+block_effect <- setNames(rnorm(n_block, 0, 0.10), blocks)
+plot_effect <- setNames(rnorm(length(whole_plot), 0, 0.10), names(whole_plot))
+cage <- trial$trt == "Cage"
+mu <- open_pods[trial$variety] *
+  ifelse(cage, 1 - dependence[trial$variety], 1) *
+  exp(block_effect[trial$block] + plot_effect[paste(trial$block, trial$variety)])
+trial$pods <- rnbinom(nrow(trial), mu = mu, size = 30)
+head(trial)
+```
+
+## Data, design and estimand
+
+The unit nesting is block, then whole plot. Variety is a grouping column: it
+labels the whole plots but is not a level of the nesting.
+
+```{r declare}
+pd <- pollin_data(
+  trial,
+  response = "pods",
+  treatment = "trt",
+  unit = c("block", "plot"),
+  groups = "variety"
+)
+ds <- pollin_design(
+  pd,
+  arms = c(excluded = "Cage", open = "Open"),
+  layout = "split_plot"
+)
+ds
+```
+
+The `split_plot` layout gives each block and each whole plot its own random
+intercept. The assumptions for this layout name the sub-plot randomisation.
+
+```{r assumptions}
+est <- pollin_estimand(ds, family = "dependence", scale = "ratio", basis = "loss")
+knitr::kable(pollin_assumptions(est))
+```
+
+## The trial as a whole
+
+Over all eight varieties, the dependence on the loss basis is the share of
+open-plot yield lost under the cage. The same contrast on the gain basis is
+the rise from caged to open plots. Both are given here, labelled, because they
+are easily confused: the gain is always the larger of the two.
+
+```{r overall}
+loss <- pollin_effects(pollin_fit(est))
+loss
+est_gain <- pollin_estimand(ds, family = "dependence", scale = "ratio", basis = "gain")
+gain <- pollin_effects(pollin_fit(est_gain))
+gain$table[c("basis", "estimate", "conf.low", "conf.high")]
+```
+
+## Dependence by variety
+
+Breeders want the dependence of each variety. Giving `by = "variety"` to
+`pollin_fit()` fits the treatment-by-variety interaction, so each variety has
+its own fixed treatment effect, and `pollin_effects()` then reports one
+contrast per variety.
+
+```{r by-variety}
+fit_v <- pollin_fit(est, by = "variety")
+fit_v
+by_variety <- pollin_effects(fit_v)$table
+by_variety$planted <- dependence[by_variety$variety]
+by_variety[c("variety", "estimate", "conf.low", "conf.high", "planted")]
+```
+
+Each variety's estimate rests on its own 24 plants, so the intervals are wide.
+Seven of the eight intervals cover the planted value, about what 95% intervals
+should give. A variety-by-variety reading needs more blocks than this.
+
+On the difference scale the same fit gives pods per plant lost under the cage,
+which mixes a variety's dependence with its yield.
+
+```{r by-variety-difference}
+est_diff <- pollin_estimand(
+  ds,
+  family = "dependence",
+  scale = "difference",
+  basis = "loss"
+)
+pollin_effects(pollin_fit(est_diff, by = "variety"))$table[
+  c("variety", "estimate", "conf.low", "conf.high")
+]
+```
+
+## Guard: dependence against yield across varieties
+
+A tempting next step is to regress each variety's dependence index on its open
+yield, asking whether high-yielding varieties need insects more. When the index
+is the RII and the yield axis is the open-plot yield, the open value sits on
+both axes and part of any slope is built in. `pollin_guard_spurious()` permutes
+the caged values across varieties, holding the open values fixed, to show the
+slope that the shared term alone produces.
+
+```{r spurious}
+open_mean <- tapply(trial$pods[!cage], trial$variety[!cage], mean)
+cage_mean <- tapply(trial$pods[cage], trial$variety[cage], mean)
+pollin_guard_spurious(open_mean, cage_mean, n_perm = 500, seed = 1)
+```
+
+Eight varieties make a small panel, and the permutation null is wide. The
+planted dependences were chosen independently of yield, and the guard does not
+separate the observed slope from what the shared term would give.

@@ -11,7 +11,10 @@ An analysis is now declared in layers: the data (`pollin_data()`), the design
   position are unaffected.
 * `pollin_contribution()` takes a `pollin_estimand` with
   `family = "dependence"` and `scale = "difference"`. Its table carries the
-  columns of `pollin_effects()` plus `slope_sd` and `p.fdr`.
+  columns of `pollin_effects()` plus `slope_sd` and `p.fdr`. With `by`, it fits
+  the treatment-by-level interaction, so each level's contrast is its own
+  rather than the pooled effect read at that level. A `pollin_spec` with `by`
+  is fitted as before.
 * `pollin_moderation()` takes a `pollin_design` whose data declare
   `exposures`. The default of `exposures` is now `NULL`, meaning every declared
   exposure.
@@ -39,13 +42,18 @@ An analysis is now declared in layers: the data (`pollin_data()`), the design
   the estimand rests on for its layout.
 * `pollin_fit()` fits one `glmmTMB` model per response, with the treatment as
   the fixed effect and the design's random terms. The family is chosen from
-  each response's values unless given, singly or per response.
+  each response's values unless given, singly or per response. With `by`, the
+  fixed part is `treatment * by`, so each level of `by` has its own treatment
+  effect.
 * `pollin_effects()` reports the estimand on its declared scale from averaged
   model predictions (a ratio of expected values, never a mean of unit
   ratios), with a delta interval computed on the log-ratio scale and
   transformed, so a loss share stays below 1 and the RII inside (-1, 1), or
   with a parametric bootstrap interval (`interval = "bootstrap"`, `n_boot`,
-  `seed`). Every table records the family, scale and basis.
+  `seed`). Every table records the family, scale and basis. Per-level
+  contrasts come from a fit made with `by`; asking for a `by` the fit was not
+  made with is an error. The printed result states that delta intervals cover
+  fixed-effect uncertainty only.
 * `pollin_index()` and `pollin_rii()` accept a `pollin_design` and work from
   unit-level arm means; `pollin_compensation()` accepts a `pollin_data` and
   uses its responses as the components. The vector and data-frame interfaces
@@ -58,8 +66,8 @@ An analysis is now declared in layers: the data (`pollin_data()`), the design
   units, or when the two slopes disagree in sign.
 * `pollin_guard_posttreatment()` stops when an adjustment covariate is among
   the variables the user declares to be downstream of the treatment.
-* New vignettes: *A three-arm trial: deficit and dependence* and *A
-  matched-pair field study*. The getting-started vignette is rewritten around
+* New vignettes: *A three-arm trial: deficit and dependence*, *A split-plot
+  trial: dependence by variety* and *A matched-pair field study*. The getting-started vignette is rewritten around
   the layered workflow.
 
 ## Moving from earlier calls
@@ -71,6 +79,7 @@ An analysis is now declared in layers: the data (`pollin_data()`), the design
 | `pollin_spec(..., exposures, adjust)` | `pollin_data(..., exposures, adjust)` |
 | `pollin_contribution(spec)` | `pollin_contribution(pollin_estimand(design, "dependence", "difference", basis = "loss"))` |
 | Any other scale or interval | `pollin_effects(pollin_fit(estimand))` |
+| `pollin_contribution(spec, by = "Region")` | `pollin_effects(pollin_fit(estimand, by = "Region"))`, now one fixed treatment effect per region |
 | `pollin_moderation(spec, outcome)` | `pollin_moderation(design, outcome)` |
 | `pollin_validate(spec)` | `pollin_validate(pollin_data(...))`, also run when the object is built |
 | `pollin_index(open_means, cage_means)` | Unchanged, or `pollin_index(design, response)` |

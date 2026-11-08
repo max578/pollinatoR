@@ -13,12 +13,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 
 ```{r setup}
 library(pollinatoR)
-options(marginaleffects_safe = FALSE)
 ```
-
-Delta intervals in `pollin_effects()` carry the uncertainty in the fixed
-effects only. `marginaleffects` warns about this on every call for mixed
-models; the option above turns that reminder off.
 
 ## The design
 

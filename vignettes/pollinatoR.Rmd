@@ -13,12 +13,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 
 ```{r setup}
 library(pollinatoR)
-options(marginaleffects_safe = FALSE)
 ```
-
-Delta intervals in `pollin_effects()` carry the uncertainty in the fixed
-effects only. `marginaleffects` warns about this on every call for mixed
-models; the option above turns that reminder off.
 
 ## What the package does
 
@@ -102,6 +97,9 @@ ds
 
 The five layouts are `crd`, `rcbd`, `split_plot`, `matched_pairs` and
 `multi_site`; `?pollin_design` gives the random structure each one implies.
+A random treatment slope needs enough sites to estimate its variance; with only
+a handful of sites, `slope = FALSE` in `pollin_design()` fits a random
+intercept alone.
 
 ## Estimand
 
@@ -286,4 +284,5 @@ default).
 ## Further reading
 
 * *A three-arm trial: deficit and dependence*
+* *A split-plot trial: dependence by variety*
 * *A matched-pair field study*

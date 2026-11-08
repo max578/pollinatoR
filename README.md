@@ -50,8 +50,8 @@ excluded plants yielding 75% of open ones give a loss share of 25% and a gain of
 | Design | `pollin_design()` | Map treatment levels to the excluded, open and supplemented arms; set the layout |
 | Estimand | `pollin_estimand()` | Deficit or dependence, on the difference, ratio, RII or lnRR scale, with a loss or gain basis |
 | | `pollin_assumptions()` | The assumptions the estimand rests on |
-| Fit | `pollin_fit()` | One `glmmTMB` model per response |
-| Effects | `pollin_effects()` | Estimates with delta or parametric bootstrap intervals |
+| Fit | `pollin_fit()` | One `glmmTMB` model per response, optionally with the treatment effect fitted per level of a grouping column (`by`) |
+| Effects | `pollin_effects()` | Estimates with delta or parametric bootstrap intervals, overall or per level of `by` |
 | | `pollin_contribution()` | Dependence on the difference scale, with FDR-adjusted p-values and the treatment-slope SD |
 | | `pollin_moderation()` | Treatment-by-exposure terms, split within and between units |
 | Guards | `pollin_guard_spurious()` | Index-versus-yield slope against a permutation null |
@@ -71,6 +71,7 @@ getting-started vignette shows the equivalent calls.
 ```r
 vignette("pollinatoR")
 vignette("three-arm-trial", package = "pollinatoR")
+vignette("split-plot-trial", package = "pollinatoR")
 vignette("matched-pair-field-study", package = "pollinatoR")
 ```
 

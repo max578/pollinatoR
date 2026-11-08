@@ -53,4 +53,5 @@ articles:
     navbar: Designs
     contents:
       - three-arm-trial
+      - split-plot-trial
       - matched-pair-field-study
