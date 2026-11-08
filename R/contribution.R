@@ -2,23 +2,27 @@
 
 #' Estimate the pollinator contribution per outcome
 #'
-#' Fits, for each outcome, a generalised linear mixed model with the exclusion
-#' treatment as the fixed effect of interest, the nested random structure from
-#' the specification, and a random treatment slope on the latent unit, which
-#' absorbs unobserved between-unit heterogeneity in the contribution (for
-#' example an unrecorded genotype). The contribution is reported as a
-#' model-based average treatment effect (the open-minus-exclusion contrast)
-#' with propagated uncertainty, via G-computation. Family is chosen per
+#' Fits, for each outcome, a generalised linear mixed model with the
+#' pollination treatment as the fixed effect of interest and the random
+#' structure of the design ([pollin_fit()]), then reports the contribution as a
+#' model-based average treatment effect, the reference-minus-exclusion
+#' difference in expected response, with propagated uncertainty, via
+#' G-computation ([pollin_effects()]). A random treatment slope, where the
+#' design carries one, absorbs unobserved between-unit heterogeneity in the
+#' contribution (for example an unrecorded genotype). Family is chosen per
 #' outcome from its values unless supplied.
 #'
 #' The treatment effect is causal by design here -- the exclusion contrast is an
 #' experimental manipulation -- so no covariate adjustment is applied; see
 #' [pollin_moderation()] for the observational "which insects" question.
 #'
-#' @param x A [pollin_spec()] object. `pollin_spec()` is deprecated and is
-#'   removed at version 0.2.0.
+#' A [pollin_spec()] is still accepted and is fitted as before; `pollin_spec()`
+#' is deprecated and is removed at version 0.2.0.
+#'
+#' @param x A [pollin_estimand()] object with `family = "dependence"` and
+#'   `scale = "difference"`, or a deprecated [pollin_spec()] object.
 #' @param outcomes Outcomes to model. `NULL` (the default) models every
-#'   outcome.
+#'   response.
 #' @param by Optional name of a column for conditional contrasts, one per
 #'   level (for example a region).
 #' @param families Optional named list of `glmmTMB` family objects, one per
@@ -28,7 +32,8 @@
 #' @return An object of class `pollin_contribution`: a list with `table` (a tidy
 #'   data frame of contrasts with FDR-adjusted p-values and the standard
 #'   deviation of the random treatment slope) and `fits` (the fitted models,
-#'   for diagnostics).
+#'   for diagnostics). From an estimand, `table` carries the columns of
+#'   [pollin_effects()], and the list also holds the `estimand`.
 #' @export
 #' @examples
 #' \donttest{
@@ -37,8 +42,10 @@
 #' trt <- rep(rep(c("Cage", "Open"), each = 10L), 12L)
 #' y <- rpois(length(trt), exp(1.7 + 0.35 * (trt == "Open")))
 #' d <- data.frame(y = y, trt = trt, Site = site)
-#' sp <- pollin_spec(d, "y", "trt", "Cage", "Site")
-#' pollin_contribution(sp)
+#' pd <- pollin_data(d, "y", "trt", unit = "Site")
+#' ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+#' est <- pollin_estimand(ds, "dependence", "difference", "loss")
+#' pollin_contribution(est)
 #' }
 pollin_contribution <- function(
   x,
@@ -47,8 +54,34 @@ pollin_contribution <- function(
   families = list(),
   ...
 ) {
-  .check_class(x, "pollin_spec")
-  .contribution_spec(x, outcomes, by, families, ...)
+  if (inherits(x, "pollin_spec")) {
+    return(.contribution_spec(x, outcomes, by, families, ...))
+  }
+  .check_class(x, "pollin_estimand")
+  .check_contribution_estimand(x)
+  inputs <- .estimand_inputs(x)
+  if (is.null(outcomes)) {
+    outcomes <- inputs$responses
+  }
+  .check_outcomes(outcomes, inputs$responses)
+  .check_family_arg(families, inputs$responses)
+
+  fit <- .new_fit(x, inputs, outcomes, families, ...)
+  tab <- pollin_effects(fit, by = by)$table
+  high <- x$contrast[["high"]]
+  slope_sd <- vapply(
+    fit$fits,
+    .slope_sd,
+    numeric(1),
+    key = inputs$slope_key,
+    coef = paste0(inputs$treatment, high)
+  )
+  tab$slope_sd <- unname(slope_sd[tab$response])
+  tab$p.fdr <- pollin_fdr(tab$p.value)
+  structure(
+    list(table = tab, fits = fit$fits, estimand = x),
+    class = "pollin_contribution"
+  )
 }
 
 #' @export
@@ -141,6 +174,24 @@ print.pollin_contribution <- function(x, ...) {
 }
 
 # Internal checks -------------------------------------------------------------
+
+#' Stop unless the estimand is dependence on the difference scale
+#' @noRd
+#' @keywords internal
+.check_contribution_estimand <- function(estimand) {
+  if (estimand$family != "dependence" || estimand$scale != "difference") {
+    stop(
+      "`pollin_contribution()` reports dependence on the difference scale; ",
+      "this estimand is ",
+      estimand$family,
+      " on the ",
+      estimand$scale,
+      " scale. Use `pollin_effects(pollin_fit(estimand))`.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
 
 #' Stop unless every outcome is a declared response
 #' @noRd

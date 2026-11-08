@@ -103,6 +103,41 @@ test_that("a response that fails to fit is dropped with a warning", {
   expect_identical(names(fit$fits), "pods")
 })
 
+test_that("pollin_contribution from an estimand matches the spec path", {
+  skip_on_cran()
+  d <- l3_df()
+  sp <- suppressWarnings(pollin_spec(d, "pods", "trt", "Cage", "Site"))
+  old <- suppressWarnings(pollin_contribution(sp))$table
+  new <- suppressWarnings(pollin_contribution(
+    l3_estimand(d),
+    outcomes = "pods"
+  ))
+  expect_s3_class(new, "pollin_contribution")
+  tab <- new$table
+  expect_equal(tab$estimate, old$estimate, tolerance = 1e-10)
+  expect_equal(tab$std.error, old$std.error, tolerance = 1e-10)
+  expect_equal(tab$conf.low, old$conf.low, tolerance = 1e-10)
+  expect_equal(tab$slope_sd, old$slope_sd, tolerance = 1e-10)
+  expect_identical(tab$scale, "difference")
+  expect_identical(tab$contrast, "Open vs Cage")
+  expect_true("p.fdr" %in% names(tab))
+
+  by_tab <- suppressWarnings(pollin_contribution(
+    l3_estimand(d),
+    outcomes = "pods",
+    by = "Region"
+  ))$table
+  by_old <- suppressWarnings(pollin_contribution(sp, by = "Region"))$table
+  expect_equal(by_tab$estimate, by_old$estimate, tolerance = 1e-10)
+  expect_identical(by_tab$Region, by_old$Region)
+
+  expect_error(
+    pollin_contribution(l3_estimand(d, scale = "ratio")),
+    "difference scale"
+  )
+  expect_error(pollin_contribution(l3_estimand(d), outcomes = "x"), "x")
+})
+
 test_that("the spec path accepts a column in several roles", {
   skip_on_cran()
   d <- l3_df()

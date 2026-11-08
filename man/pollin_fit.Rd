@@ -32,7 +32,7 @@ with the pollination treatment as the fixed effect and the random terms of
 the design: \verb{response ~ treatment + <design random terms>}. The treatment is
 releveled so the estimand's \code{low} arm is the reference level. Every
 treatment level in the data is kept in the fit; the contrast is read from
-the fitted model.
+the fitted model by \code{\link[=pollin_effects]{pollin_effects()}}.
 }
 \details{
 Rows with a missing value in the response, the treatment or a unit column
@@ -51,4 +51,8 @@ ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "rcbd")
 est <- pollin_estimand(ds, "dependence", "ratio", "loss")
 pollin_fit(est)
 }
+}
+\seealso{
+\code{\link[=pollin_effects]{pollin_effects()}} for estimates and intervals on the estimand's
+scale.
 }

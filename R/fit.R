@@ -7,7 +7,7 @@
 #' the design: `response ~ treatment + <design random terms>`. The treatment is
 #' releveled so the estimand's `low` arm is the reference level. Every
 #' treatment level in the data is kept in the fit; the contrast is read from
-#' the fitted model.
+#' the fitted model by [pollin_effects()].
 #'
 #' Rows with a missing value in the response, the treatment or a unit column
 #' are dropped for that response's model.
@@ -26,6 +26,8 @@
 #'   `engine`, the fitted models `fits` (named by response), the model `data`
 #'   for each response, the right-hand-side terms `rhs`, the `families`, and
 #'   the further fitting arguments `args`.
+#' @seealso [pollin_effects()] for estimates and intervals on the estimand's
+#'   scale.
 #' @export
 #' @examples
 #' \donttest{
