@@ -33,7 +33,7 @@ Names the role of each treatment level (the arms) and the layout of the
 experiment. The layout fixes the random structure used when models are
 fitted: one random intercept for each level of the unit nesting declared in
 \code{\link[=pollin_data]{pollin_data()}}, outer to inner, with an optional random treatment slope on
-one unit level so that the pollination effect can vary between those units.
+one unit level, giving a pollination effect that varies between those units.
 }
 \details{
 \tabular{llll}{

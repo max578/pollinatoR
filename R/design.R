@@ -6,7 +6,7 @@
 #' experiment. The layout fixes the random structure used when models are
 #' fitted: one random intercept for each level of the unit nesting declared in
 #' [pollin_data()], outer to inner, with an optional random treatment slope on
-#' one unit level so that the pollination effect can vary between those units.
+#' one unit level, giving a pollination effect that varies between those units.
 #'
 #' | Layout | Units, outer to inner | Treatment varies | Default slope |
 #' |---|---|---|---|
@@ -63,9 +63,9 @@ pollin_design <- function(x, arms, layout, reference = "open", slope = NULL) {
     n_mixed <- .n_units_varying(d, trt, unit)
     if (n_mixed > 0L) {
       stop(
-        "In a `crd` layout the treatment is applied to whole units, but ",
-        n_mixed,
-        " innermost unit(s) carry more than one treatment level.",
+        "In a `crd` layout the treatment is applied to whole units; found ",
+        .n_noun(n_mixed, "innermost unit"),
+        " carrying more than one treatment level.",
         call. = FALSE
       )
     }
@@ -80,10 +80,10 @@ pollin_design <- function(x, arms, layout, reference = "open", slope = NULL) {
     n_short <- .n_units_missing_arm(d, trt, key, unname(arms))
     if (n_short > 0L) {
       warning(
-        n_short,
-        " unit(s) of `",
+        .n_noun(n_short, "unit"),
+        " of `",
         paste(key, collapse = ":"),
-        "` lack at least one arm.",
+        "` lacking at least one arm.",
         call. = FALSE
       )
     }
@@ -138,15 +138,22 @@ print.pollin_design <- function(x, ...) {
 
 # Internal checks -------------------------------------------------------------
 
+#' A count with its noun, pluralised: "1 unit", "2 units"
+#' @noRd
+#' @keywords internal
+.n_noun <- function(n, noun) {
+  paste(n, if (n == 1L) noun else paste0(noun, "s"))
+}
+
 .arm_roles <- c("excluded", "open", "supplemented")
 .layouts <- c("crd", "rcbd", "split_plot", "matched_pairs", "multi_site")
 
 #' Stop unless `x` inherits from `class`
 #' @noRd
 #' @keywords internal
-.check_class <- function(x, class) {
+.check_class <- function(x, class, arg = "x") {
   if (!inherits(x, class)) {
-    stop("`x` must be a `", class, "` object.", call. = FALSE)
+    stop("`", arg, "` must be a `", class, "` object.", call. = FALSE)
   }
   invisible(TRUE)
 }
@@ -181,7 +188,7 @@ print.pollin_design <- function(x, ...) {
   bad <- setdiff(names(arms), .arm_roles)
   if (length(bad)) {
     stop(
-      "Unknown arm role(s): ",
+      "Unknown arm roles: ",
       paste(bad, collapse = ", "),
       ". Use ",
       paste(.arm_roles, collapse = ", "),
@@ -202,7 +209,7 @@ print.pollin_design <- function(x, ...) {
   absent <- setdiff(arms, lev)
   if (length(absent)) {
     stop(
-      "Arm level(s) not found in `",
+      "Arm levels not found in `",
       x$roles$treatment,
       "`: ",
       paste(absent, collapse = ", "),
@@ -212,7 +219,7 @@ print.pollin_design <- function(x, ...) {
   unmapped <- setdiff(lev, arms)
   if (length(unmapped)) {
     stop(
-      "Treatment level(s) with no arm: ",
+      "Treatment levels with no arm: ",
       paste(unmapped, collapse = ", "),
       call. = FALSE
     )

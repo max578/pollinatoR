@@ -56,7 +56,10 @@ test_that("a crd needs the treatment constant within each unit", {
   ds <- pollin_design(pd, l1_arms, "crd")
   expect_identical(ds$random, "(1 | Unit)")
   pd_bad <- pollin_data(d, "pods", "trt", unit = "Site")
-  expect_error(pollin_design(pd_bad, l1_arms, "crd"), "2 innermost unit")
+  expect_error(
+    pollin_design(pd_bad, l1_arms, "crd"),
+    "2 innermost units carrying"
+  )
 })
 
 test_that("a unit lacking an arm is counted in a warning", {
@@ -65,11 +68,11 @@ test_that("a unit lacking an arm is counted in a warning", {
   pd <- pollin_data(d, "pods", "trt", unit = c("Site", "Plot"))
   expect_warning(
     pollin_design(pd, l1_arms, "multi_site"),
-    "1 unit\\(s\\) of `Site` lack"
+    "1 unit of `Site` lacking"
   )
   expect_warning(
     pollin_design(pd, l1_arms, "split_plot"),
-    "2 unit\\(s\\) of `Site:Plot` lack"
+    "2 units of `Site:Plot` lacking"
   )
   expect_silent(pollin_design(
     pollin_data(l1_df(), "pods", "trt", unit = "Site"),
@@ -86,7 +89,7 @@ test_that("pollin_design refuses a mis-declared design", {
   expect_error(pollin_design(pd, c("Cage", "Open"), "rcbd"), "named")
   expect_error(
     pollin_design(pd, c(caged = "Cage", open = "Open"), "rcbd"),
-    "Unknown arm role"
+    "Unknown arm roles"
   )
   expect_error(
     pollin_design(pd, c(excluded = "Cage", open = "Cage"), "rcbd"),

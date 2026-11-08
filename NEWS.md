@@ -9,6 +9,11 @@
   reference arm. The layout sets the random structure; a random treatment
   slope sits on the site in `multi_site` and is opt-in elsewhere. Units lacking
   an arm are counted in a warning.
+* New `pollin_estimand()` names the estimand: deficit (supplemented versus
+  open) or dependence (excluded versus the reference arm), on the difference,
+  ratio, RII or lnRR scale. `basis` (`"loss"` or `"gain"`) has no default, so
+  a loss share cannot be read as a gain share. `pollin_assumptions()` lists
+  the assumptions the estimand rests on.
 * `pollin_validate()` now takes a `pollin_data` object. Its first argument is
   renamed from `spec` to `x`; a `pollin_spec` is still accepted.
 * Removed six unused packages from Suggests (DHARMa, emmeans, brms, boot, fst,
