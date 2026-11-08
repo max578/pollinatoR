@@ -10,6 +10,10 @@
 #' latent unit on which a random treatment slope is carried to absorb
 #' unobserved between-unit heterogeneity (for example an unrecorded genotype).
 #'
+#' `pollin_spec()` is deprecated: [pollin_data()] and [pollin_design()]
+#' declare the same study in two layers. It warns once per session and is
+#' removed at version 0.2.0.
+#'
 #' @param data A data frame, one row per observational unit (e.g. one plant).
 #' @param outcomes Character vector of outcome column names (yield components).
 #' @param treatment Name of the treatment column (a factor with two or more
@@ -27,9 +31,6 @@
 #' @param latent_unit Optional name of the unit carrying the random treatment
 #'   slope (defaults to the outermost `random`). This absorbs unobserved
 #'   unit-level modifiers of the contribution, such as genotype.
-#'
-#' [pollin_data()] and [pollin_design()] declare the same study in two layers
-#' and are the form the package is moving to.
 #'
 #' @return An object of class `pollin_spec`.
 #' @export
@@ -51,6 +52,7 @@ pollin_spec <- function(
   group = NULL,
   latent_unit = NULL
 ) {
+  .warn_spec_deprecated()
   stopifnot(is.data.frame(data))
   cols <- names(data)
   need <- c(outcomes, treatment, random, exposures, adjust, group)
@@ -95,6 +97,29 @@ pollin_spec <- function(
     ),
     class = "pollin_spec"
   )
+}
+
+# Deprecation ------------------------------------------------------------------
+
+#' Session state of the package (the once-per-session deprecation flag)
+#' @noRd
+#' @keywords internal
+.pollin_env <- new.env(parent = emptyenv())
+
+#' Warn, once per session, that `pollin_spec()` is deprecated
+#' @noRd
+#' @keywords internal
+.warn_spec_deprecated <- function() {
+  if (isTRUE(.pollin_env$spec_warned)) {
+    return(invisible(FALSE))
+  }
+  .pollin_env$spec_warned <- TRUE
+  warning(
+    "`pollin_spec()` is deprecated; use `pollin_data()` + `pollin_design()`. ",
+    "It is removed at pollinatoR 0.2.0. This warning is shown once per session.",
+    call. = FALSE
+  )
+  invisible(TRUE)
 }
 
 # Build the random-effects term string for a glmmTMB formula: nested

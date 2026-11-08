@@ -15,19 +15,27 @@
 #' Asks which exposures (e.g. honey-bee versus other-insect abundance) drive
 #' the open-minus-exclusion contribution, as treatment-by-exposure
 #' interactions. Each exposure enters through a within-between (Mundlak)
-#' decomposition: a between-unit part (the latent-unit mean) and a within-unit
-#' part (the deviation from it). The **within-unit** treatment-by-exposure
+#' decomposition: a between-unit part (the unit mean) and a within-unit part
+#' (the deviation from it). The **within-unit** treatment-by-exposure
 #' coefficient is robust to any unit-level confounder -- observed or not,
 #' including an unrecorded genotype -- because it is identified from variation
 #' that occurs within the unit, where
 #' the confounder is constant. The between-unit part is reported but flagged as
-#' confounder-vulnerable. Adjustment covariates from the specification enter as
-#' fixed effects.
+#' confounder-vulnerable. Adjustment covariates enter as fixed effects.
 #'
-#' @param spec A [pollin_spec()] object with `exposures` set.
+#' From a [pollin_design()], the unit of the split is the design's slope unit
+#' (with the unit levels outside it), or the outermost unit when the design
+#' carries no slope; the treatment reference level is the excluded arm, or the
+#' open arm when the design has no excluded arm. A deprecated [pollin_spec()]
+#' is still accepted and splits on its `latent_unit`.
+#'
+#' @param x A [pollin_design()] object whose data declare `exposures`, or a
+#'   deprecated [pollin_spec()] object with `exposures` set.
 #' @param outcome Single outcome to model.
-#' @param exposures Exposures to use (defaults to `spec$exposures`).
-#' @param family Optional `glmmTMB` family (chosen heuristically if missing).
+#' @param exposures Exposures to use. `NULL` (the default) uses every declared
+#'   exposure.
+#' @param family Optional `glmmTMB` family (chosen from the outcome's values if
+#'   missing).
 #' @param ... Passed to [glmmTMB::glmmTMB()].
 #'
 #' @return An object of class `pollin_moderation` with a tidy `table` of the
@@ -39,47 +47,57 @@
 #' set.seed(1)
 #' site <- rep(paste0("s", seq_len(14L)), each = 20L)
 #' trt <- rep(rep(c("Cage", "Open"), each = 10L), 14L)
-#' bees <- rep(rpois(14L, 8), each = 20L)
+#' bees <- rep(rpois(14L, 8), each = 20L) + rpois(280L, 1)
 #' y <- rpois(length(trt), exp(1.6 + 0.3 * (trt == "Open") +
 #'                             0.02 * bees * (trt == "Open")))
 #' d <- data.frame(y = y, trt = trt, Site = site, bees = bees)
-#' sp <- pollin_spec(d, "y", "trt", "Cage", "Site", exposures = "bees")
-#' pollin_moderation(sp, outcome = "y")
+#' pd <- pollin_data(d, "y", "trt", unit = "Site", exposures = "bees")
+#' ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+#' pollin_moderation(ds, outcome = "y")
 #' }
 pollin_moderation <- function(
-  spec,
+  x,
   outcome,
-  exposures = spec$exposures,
+  exposures = NULL,
   family = NULL,
   ...
 ) {
-  stopifnot(inherits(spec, "pollin_spec"))
-  if (is.null(exposures) || length(exposures) == 0L) {
-    stop("No exposures supplied (set them in `pollin_spec()`).", call. = FALSE)
+  if (inherits(x, "pollin_spec")) {
+    inputs <- .spec_inputs(x)
+  } else {
+    .check_class(x, "pollin_design")
+    .check_outcomes(outcome, x$data$roles$response)
+    low <- x$arms[[intersect(c("excluded", "open"), names(x$arms))[1L]]]
+    inputs <- .design_inputs(x, low)
   }
-  d <- spec$data
-  d[[spec$treatment]] <- stats::relevel(
-    factor(d[[spec$treatment]]),
-    ref = spec$control
-  )
+  if (is.null(exposures)) {
+    exposures <- inputs$exposures
+  }
+  if (is.null(exposures) || length(exposures) == 0L) {
+    stop("No exposures supplied (declare them in the data).", call. = FALSE)
+  }
+
+  # Within-between split of each exposure --------------------------------------
+  d <- inputs$data
   ex_terms <- character(0)
   for (ex in exposures) {
-    wb <- pollin_within_between(d[[ex]], d[[spec$latent_unit]])
+    wb <- pollin_within_between(d[[ex]], inputs$wb_group)
     wn <- paste0(ex, "_within")
     bn <- paste0(ex, "_between")
     d[[wn]] <- .z(wb$within)
     d[[bn]] <- .z(wb$between)
     ex_terms <- c(ex_terms, wn, bn)
   }
+
+  # Fit and tidy the interaction terms -----------------------------------------
   fam <- if (!is.null(family)) family else .pick_family(d[[outcome]])
   fixed <- sprintf(
     "%s * (%s)",
-    spec$treatment,
+    inputs$treatment,
     paste(ex_terms, collapse = " + ")
   )
-  rhs <- c(fixed, spec$adjust, .random_terms(spec))
-  form <- stats::as.formula(paste(outcome, "~", paste(rhs, collapse = " + ")))
-  fit <- glmmTMB::glmmTMB(form, data = d, family = fam, ...)
+  rhs <- c(fixed, inputs$adjust, inputs$random)
+  fit <- .fit_glmm(outcome, rhs, d, fam, ...)
   co <- summary(fit)$coefficients$cond
   is_int <- grepl(":", rownames(co))
   tab <- data.frame(
@@ -101,10 +119,9 @@ pollin_moderation <- function(
   if (any(w)) {
     tab$p.fdr[w] <- pollin_fdr(tab$p.value[w])
   }
-  structure(
-    list(table = tab, fit = fit, outcome = outcome, spec = spec),
-    class = "pollin_moderation"
-  )
+  out <- list(table = tab, fit = fit, outcome = outcome)
+  out[[if (inherits(x, "pollin_spec")) "spec" else "design"]] <- x
+  structure(out, class = "pollin_moderation")
 }
 
 #' @export

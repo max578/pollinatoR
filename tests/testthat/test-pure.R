@@ -64,10 +64,16 @@ test_that("spec validates columns and control level", {
     trt = rep(c("Cage", "Open"), 10),
     Site = rep(letters[1:4], each = 5)
   )
-  sp <- pollin_spec(df, "y", "trt", "Cage", "Site")
+  sp <- suppressWarnings(pollin_spec(df, "y", "trt", "Cage", "Site"))
   expect_s3_class(sp, "pollin_spec")
-  expect_error(pollin_spec(df, "nope", "trt", "Cage", "Site"))
-  expect_error(pollin_spec(df, "y", "trt", "Nonexist", "Site"))
+  expect_error(suppressWarnings(pollin_spec(df, "nope", "trt", "Cage", "Site")))
+  expect_error(suppressWarnings(pollin_spec(
+    df,
+    "y",
+    "trt",
+    "Nonexist",
+    "Site"
+  )))
 })
 
 test_that("validate reports levels and user identities", {
@@ -79,7 +85,7 @@ test_that("validate reports levels and user identities", {
     p = c(1, 2, 3, 4),
     q = c(2, 1, 4, 3)
   )
-  sp <- pollin_spec(df, "y", "trt", "Cage", "Site")
+  sp <- suppressWarnings(pollin_spec(df, "y", "trt", "Cage", "Site"))
   v <- pollin_validate(
     sp,
     expect_levels = list(trt = c("Cage", "Open")),

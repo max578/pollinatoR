@@ -4,22 +4,19 @@
 \alias{pollin_moderation}
 \title{Estimate exposure moderation of the contribution}
 \usage{
-pollin_moderation(
-  spec,
-  outcome,
-  exposures = spec$exposures,
-  family = NULL,
-  ...
-)
+pollin_moderation(x, outcome, exposures = NULL, family = NULL, ...)
 }
 \arguments{
-\item{spec}{A \code{\link[=pollin_spec]{pollin_spec()}} object with \code{exposures} set.}
+\item{x}{A \code{\link[=pollin_design]{pollin_design()}} object whose data declare \code{exposures}, or a
+deprecated \code{\link[=pollin_spec]{pollin_spec()}} object with \code{exposures} set.}
 
 \item{outcome}{Single outcome to model.}
 
-\item{exposures}{Exposures to use (defaults to \code{spec$exposures}).}
+\item{exposures}{Exposures to use. \code{NULL} (the default) uses every declared
+exposure.}
 
-\item{family}{Optional \code{glmmTMB} family (chosen heuristically if missing).}
+\item{family}{Optional \code{glmmTMB} family (chosen from the outcome's values if
+missing).}
 
 \item{...}{Passed to \code{\link[glmmTMB:glmmTMB]{glmmTMB::glmmTMB()}}.}
 }
@@ -32,25 +29,32 @@ FDR-adjusted across the within terms, and the fitted model in \code{fit}.
 Asks which exposures (e.g. honey-bee versus other-insect abundance) drive
 the open-minus-exclusion contribution, as treatment-by-exposure
 interactions. Each exposure enters through a within-between (Mundlak)
-decomposition: a between-unit part (the latent-unit mean) and a within-unit
-part (the deviation from it). The \strong{within-unit} treatment-by-exposure
+decomposition: a between-unit part (the unit mean) and a within-unit part
+(the deviation from it). The \strong{within-unit} treatment-by-exposure
 coefficient is robust to any unit-level confounder -- observed or not,
 including an unrecorded genotype -- because it is identified from variation
 that occurs within the unit, where
 the confounder is constant. The between-unit part is reported but flagged as
-confounder-vulnerable. Adjustment covariates from the specification enter as
-fixed effects.
+confounder-vulnerable. Adjustment covariates enter as fixed effects.
+}
+\details{
+From a \code{\link[=pollin_design]{pollin_design()}}, the unit of the split is the design's slope unit
+(with the unit levels outside it), or the outermost unit when the design
+carries no slope; the treatment reference level is the excluded arm, or the
+open arm when the design has no excluded arm. A deprecated \code{\link[=pollin_spec]{pollin_spec()}}
+is still accepted and splits on its \code{latent_unit}.
 }
 \examples{
 \donttest{
 set.seed(1)
 site <- rep(paste0("s", seq_len(14L)), each = 20L)
 trt <- rep(rep(c("Cage", "Open"), each = 10L), 14L)
-bees <- rep(rpois(14L, 8), each = 20L)
+bees <- rep(rpois(14L, 8), each = 20L) + rpois(280L, 1)
 y <- rpois(length(trt), exp(1.6 + 0.3 * (trt == "Open") +
                             0.02 * bees * (trt == "Open")))
 d <- data.frame(y = y, trt = trt, Site = site, bees = bees)
-sp <- pollin_spec(d, "y", "trt", "Cage", "Site", exposures = "bees")
-pollin_moderation(sp, outcome = "y")
+pd <- pollin_data(d, "y", "trt", unit = "Site", exposures = "bees")
+ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+pollin_moderation(ds, outcome = "y")
 }
 }

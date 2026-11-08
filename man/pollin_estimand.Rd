@@ -49,8 +49,8 @@ supplemented) and \code{low} for the lower one, the scales are:\tabular{ll}{
 
 A loss share and a gain share answer different questions: an excluded arm
 yielding 75\% of the open arm is a 25\% loss share and a 33\% gain. \code{basis} has
-no default so that the choice is always written in the analysis. It changes
-the value only on the ratio scale and is recorded on every scale.
+no default; every analysis states it. It changes the value only on the ratio
+scale and is recorded on every scale.
 }
 \examples{
 df <- data.frame(

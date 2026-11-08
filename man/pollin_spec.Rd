@@ -41,10 +41,7 @@ landscape, climate) -- context, not the inferential target.}
 
 \item{latent_unit}{Optional name of the unit carrying the random treatment
 slope (defaults to the outermost \code{random}). This absorbs unobserved
-unit-level modifiers of the contribution, such as genotype.
-
-\code{\link[=pollin_data]{pollin_data()}} and \code{\link[=pollin_design]{pollin_design()}} declare the same study in two layers
-and are the form the package is moving to.}
+unit-level modifiers of the contribution, such as genotype.}
 }
 \value{
 An object of class \code{pollin_spec}.
@@ -57,6 +54,11 @@ the nested random structure, optional exposures (the pollinator community),
 optional adjustment covariates, an optional fixed grouping, and an optional
 latent unit on which a random treatment slope is carried to absorb
 unobserved between-unit heterogeneity (for example an unrecorded genotype).
+}
+\details{
+\code{pollin_spec()} is deprecated: \code{\link[=pollin_data]{pollin_data()}} and \code{\link[=pollin_design]{pollin_design()}}
+declare the same study in two layers. It warns once per session and is
+removed at version 0.2.0.
 }
 \examples{
 df <- data.frame(

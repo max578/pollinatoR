@@ -22,13 +22,20 @@ test_that("each layout builds the random terms of the equivalent spec", {
   for (lay in c("rcbd", "split_plot", "matched_pairs", "multi_site")) {
     for (s in unit) {
       ds <- pollin_design(pd, l1_arms, layout = lay, slope = s)
-      sp <- pollin_spec(d, "pods", "trt", "Cage", unit, latent_unit = s)
+      sp <- suppressWarnings(pollin_spec(
+        d,
+        "pods",
+        "trt",
+        "Cage",
+        unit,
+        latent_unit = s
+      ))
       expect_identical(ds$random, .random_terms(sp))
     }
   }
   expect_identical(
     pollin_design(pd, l1_arms, "multi_site")$random,
-    .random_terms(pollin_spec(d, "pods", "trt", "Cage", unit))
+    .random_terms(suppressWarnings(pollin_spec(d, "pods", "trt", "Cage", unit)))
   )
 })
 

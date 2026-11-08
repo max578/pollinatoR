@@ -5,8 +5,14 @@ g <- golden_inputs()
 
 golden_specs <- function(g) {
   list(
-    one = pollin_spec(g$plants, "pods", "trt", "Cage", "Site"),
-    nest = pollin_spec(
+    one = suppressWarnings(pollin_spec(
+      g$plants,
+      "pods",
+      "trt",
+      "Cage",
+      "Site"
+    )),
+    nest = suppressWarnings(pollin_spec(
       g$plants,
       outcomes = c("pods", "seed_wt"),
       treatment = "trt",
@@ -15,7 +21,7 @@ golden_specs <- function(g) {
       exposures = c("bees", "wild"),
       adjust = "rain",
       group = "Region"
-    )
+    ))
   )
 }
 
@@ -38,7 +44,10 @@ test_that("index, guard and utility outputs match 0.0.0.9000 exactly", {
     )),
     gold$spurious
   )
-  expect_identical(unclass(pollin_compensation(g$components)), gold$compensation)
+  expect_identical(
+    unclass(pollin_compensation(g$components)),
+    gold$compensation
+  )
   expect_identical(
     pollin_within_between(g$plants$bees, g$plants$Site),
     gold$within_between
@@ -81,7 +90,10 @@ test_that("model-based contributions match 0.0.0.9000", {
     tolerance = tol
   )
   expect_equal(
-    golden_strip(suppressWarnings(pollin_moderation(sp$nest, outcome = "pods"))),
+    golden_strip(suppressWarnings(pollin_moderation(
+      sp$nest,
+      outcome = "pods"
+    ))),
     gold$moderation,
     tolerance = tol
   )
