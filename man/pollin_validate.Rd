@@ -4,10 +4,10 @@
 \alias{pollin_validate}
 \title{Validate the structure and internal consistency of a study's data}
 \usage{
-pollin_validate(spec, expect_levels = NULL, identities = NULL)
+pollin_validate(x, expect_levels = NULL, identities = NULL)
 }
 \arguments{
-\item{spec}{A \code{\link[=pollin_spec]{pollin_spec()}} object.}
+\item{x}{A \code{\link[=pollin_data]{pollin_data()}} object, or a \code{\link[=pollin_spec]{pollin_spec()}} object.}
 
 \item{expect_levels}{Optional named list mapping column names to the expected
 set of factor levels.}
@@ -20,15 +20,17 @@ number of violations is reported.}
 An object of class \code{pollin_validate} carrying a tidy \code{table}.
 }
 \description{
-Runs aggregate structural checks against a specification: declared columns
-present, missingness per declared column, expected factor levels, and any
-user-supplied internal-consistency identities (for example that a total
-equals a sum of parts, or that a ratio equals its definition). Returns counts
-and pass/warn flags only -- no raw rows -- so it is safe on sensitive data.
+Runs aggregate structural checks against a declared table: missingness per
+declared column, expected factor levels, and any user-supplied
+internal-consistency identities (for example that a total equals a sum of
+parts, or that a ratio equals its definition). Returns counts and pass/warn
+flags only -- no raw rows -- so it is safe on sensitive data.
+\code{\link[=pollin_data]{pollin_data()}} runs these checks without levels or identities when it
+builds its object.
 }
 \examples{
 df <- data.frame(y = c(1, 2, NA), trt = c("Cage", "Open", "Open"),
                  Site = c("a", "a", "b"))
-sp <- pollin_spec(df, "y", "trt", "Cage", "Site")
-pollin_validate(sp, expect_levels = list(trt = c("Cage", "Open")))
+pd <- pollin_data(df, response = "y", treatment = "trt", unit = "Site")
+pollin_validate(pd, expect_levels = list(trt = c("Cage", "Open")))
 }

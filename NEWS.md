@@ -1,3 +1,14 @@
+# pollinatoR (development version)
+
+* New `pollin_data()` declares the unit-of-record table: response, treatment,
+  unit nesting, and optional grouping, denominator, exposure and adjustment
+  columns. Roles are checked against the data and the structural checks are
+  stored with the object.
+* `pollin_validate()` now takes a `pollin_data` object. Its first argument is
+  renamed from `spec` to `x`; a `pollin_spec` is still accepted.
+* Removed six unused packages from Suggests (DHARMa, emmeans, brms, boot, fst,
+  data.table).
+
 # pollinatoR 0.0.0.9000
 
 * Initial development scaffold.

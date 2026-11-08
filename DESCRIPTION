@@ -31,12 +31,6 @@ Imports:
     marginaleffects,
     stats
 Suggests:
-    DHARMa,
-    emmeans,
-    brms,
-    boot,
-    fst,
-    data.table,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown

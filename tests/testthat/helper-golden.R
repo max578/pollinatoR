@@ -1,8 +1,4 @@
-# Fixed inputs for the golden-value tests -------------------------------------
-#
-# The golden file `_golden/golden_v0.0.0.9000.rds` holds the outputs the ten
-# exports returned on these inputs at version 0.0.0.9000. The tests recompute
-# them with the current code and require the same numbers.
+# Fixed inputs for the golden-value tests (outputs at 0.0.0.9000) -------------
 
 golden_inputs <- function() {
   set.seed(20261108L)
