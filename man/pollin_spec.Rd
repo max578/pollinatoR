@@ -41,7 +41,10 @@ landscape, climate) -- context, not the inferential target.}
 
 \item{latent_unit}{Optional name of the unit carrying the random treatment
 slope (defaults to the outermost \code{random}). This absorbs unobserved
-unit-level modifiers of the contribution, such as genotype.}
+unit-level modifiers of the contribution, such as genotype.
+
+\code{\link[=pollin_data]{pollin_data()}} and \code{\link[=pollin_design]{pollin_design()}} declare the same study in two layers
+and are the form the package is moving to.}
 }
 \value{
 An object of class \code{pollin_spec}.

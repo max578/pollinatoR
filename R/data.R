@@ -97,7 +97,12 @@ print.pollin_data <- function(x, ...) {
     }
   }
   n_warn <- sum(x$checks$status == "WARN")
-  cat("  checks      :", n_warn, "warning(s); see `$checks`\n")
+  cat(
+    "  checks      :",
+    n_warn,
+    if (n_warn == 1L) "warning;" else "warnings;",
+    "see `$checks`\n"
+  )
   invisible(x)
 }
 
