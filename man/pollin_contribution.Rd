@@ -50,12 +50,13 @@ is deprecated and is removed at version 0.2.0.
 \examples{
 \donttest{
 set.seed(1)
-site <- rep(paste0("s", seq_len(12L)), each = 20L)
-trt <- rep(rep(c("Cage", "Open"), each = 10L), 12L)
-y <- rpois(length(trt), exp(1.7 + 0.35 * (trt == "Open")))
-d <- data.frame(y = y, trt = trt, Site = site)
-pd <- pollin_data(d, "y", "trt", unit = "Site")
-ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+d <- data.frame(
+  trt = rep(rep(c("Cage", "Open"), each = 10L), 8L),
+  Site = rep(paste0("s", seq_len(8L)), each = 20L)
+)
+d$pods <- rnbinom(nrow(d), mu = exp(3 + 0.3 * (d$trt == "Open")), size = 10)
+pd <- pollin_data(d, "pods", "trt", unit = "Site")
+ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "rcbd")
 est <- pollin_estimand(ds, "dependence", "difference", "loss")
 pollin_contribution(est)
 }
