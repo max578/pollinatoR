@@ -4,19 +4,53 @@ template:
   bootstrap: 5
 
 reference:
-  - title: Declare a study
+  - title: Data
+    desc: Declare the unit-of-record table and check it.
     contents:
-      - pollin_spec
+      - pollin_data
       - pollin_validate
-  - title: Estimate the contribution
+  - title: Design
+    desc: Map treatment levels to arms and set the layout.
     contents:
+      - pollin_design
+  - title: Estimand
+    desc: Name the contrast, the scale and the basis.
+    contents:
+      - pollin_estimand
+      - pollin_assumptions
+  - title: Fit
+    contents:
+      - pollin_fit
+  - title: Effects
+    desc: Estimates and intervals on the estimand's scale.
+    contents:
+      - pollin_effects
       - pollin_contribution
       - pollin_moderation
-  - title: Indices, guards, and helpers
+  - title: Guards
+    contents:
+      - pollin_guard_spurious
+      - pollin_guard_bounded
+      - pollin_guard_ecological
+      - pollin_guard_posttreatment
+  - title: Indices and utilities
     contents:
       - pollin_index
       - pollin_rii
-      - pollin_guard_spurious
-      - pollin_within_between
       - pollin_compensation
+      - pollin_within_between
       - pollin_fdr
+  - title: Deprecated
+    contents:
+      - pollin_spec
+
+articles:
+  - title: Get started
+    navbar: ~
+    contents:
+      - pollinatoR
+  - title: Designs
+    navbar: Designs
+    contents:
+      - three-arm-trial
+      - matched-pair-field-study
