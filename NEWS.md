@@ -12,9 +12,8 @@ An analysis is now declared in layers: the data (`pollin_data()`), the design
 * `pollin_contribution()` takes a `pollin_estimand` with
   `family = "dependence"` and `scale = "difference"`. Its table carries the
   columns of `pollin_effects()` plus `slope_sd` and `p.fdr`. With `by`, it fits
-  the treatment-by-level interaction, so each level's contrast is its own
-  rather than the pooled effect read at that level. A `pollin_spec` with `by`
-  is fitted as before.
+  the treatment-by-level interaction and reports each level's own contrast. A
+  `pollin_spec` with `by` is fitted as before.
 * `pollin_moderation()` takes a `pollin_design` whose data declare
   `exposures`. The default of `exposures` is now `NULL`, meaning every declared
   exposure.
