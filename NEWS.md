@@ -1,36 +1,55 @@
 # pollinatoR 0.3.0 (development)
 
+This release adds a Bayesian engine and per-level effects with partial
+pooling. A fit made through flexyBayes on INLA gives posterior draws, and
+effects, populations, values and guards take them as they take the glmmTMB
+draws. The vignette *Bayesian fits with flexyBayes* compares the two engines.
+
 ## New features
 
 * `pollin_fit(engine = "flexyBayes")` fits each response with
   `flexyBayes::flexybayes()` on INLA, with the fixed part of the glmmTMB
-  engine and the design's random terms. The treatment slope enters as a
-  random intercept per unit plus an independent effect per unit-by-arm
-  cell, because flexyBayes fits correlated random slopes on brms only.
-  Families `nbinom2()`, `poisson()`, `binomial()`, `Gamma(link = "log")` and
-  `beta_family()` are mapped to their flexyBayes names; others are refused
-  by name. Priors and the seed pass through `...`. The brms backend is
-  refused: its posterior draws are not in the flexyBayes extension API
-  version 1, which is checked when the fit is made. flexyBayes and INLA are
-  suggested packages.
+  engine and the design's random terms. The families `nbinom2()`,
+  `poisson()`, `binomial()`, `Gamma(link = "log")` and `beta_family()` are
+  mapped to the flexyBayes families `negative_binomial`, `poisson`,
+  `binomial`, `gamma` and `beta`, with their log or logit links. Priors pass
+  through `...` as written. flexyBayes and INLA are suggested packages, and
+  the extension API version of flexyBayes is checked when the fit is made.
 * `pollin_draws(method = "posterior")`, the default and only method for a
   flexyBayes fit, draws the fixed effects, random effects and variance
-  parameters jointly from the INLA posterior and recomputes the arm means
-  per draw by the G-computation rule of the glmmTMB engine (each row keeps
-  its own random effects). With a seed the draws are reproducible.
-  Population, value and the double-count guard take these draws unchanged.
+  parameters jointly from the posterior and recomputes the arm means per
+  draw by the G-computation rule of the glmmTMB engine. With a seed, which
+  sets both R's generator and INLA's, the draws repeat exactly.
 * `pollin_effects(interval = "posterior")`, the default for a flexyBayes
   fit, reports the posterior median, standard deviation and equal-tailed
-  interval of the estimand, with `p.value` `NA`; new argument `n_draws`.
-* `pollin_cate()` reports the contrast at each level of a column carrying a
-  random treatment slope, with partial pooling: the design's slope unit, or a
-  column declared with the new `pollin_fit(pooled = )`, which gives its
-  levels a random intercept and treatment slope. On glmmTMB the estimate
-  uses the conditional modes and the interval is approximate (fixed-effect
-  covariance plus the conditional variance of each slope coefficient, drawn
-  independently); on flexyBayes it comes from the posterior draws. The
-  print separates the pooled table from the unpooled per-level contrasts,
-  which come from a fit with `by` and are read with `pollin_effects()`.
+  interval of the estimand, with `p.value` `NA`. New argument `n_draws`.
+* `pollin_cate()` reports the contrast at each level of a column with a
+  random treatment slope, partially pooled towards the overall effect. The
+  column is the design's slope unit (`pollin_design(slope = )`) or one
+  declared with the new `pollin_fit(pooled = )`. On flexyBayes the estimate
+  and interval come from the posterior draws. The print points to the
+  unpooled per-level contrasts, from a fit with `by` and no slope, read with
+  `pollin_effects()`.
+
+## Validation
+
+* Engine agreement, posterior coverage and recovery of per-level effects
+  are tested on planted-truth simulations; see
+  `validation/planted_truth_S3_report.md`.
+
+## Known limitations
+
+* flexyBayes on INLA does not fit a correlated random treatment slope. The
+  flexyBayes engine fits a unit intercept plus an independent unit-by-arm
+  effect instead, a restricted form of glmmTMB's unstructured slope: equal
+  variances across arms and a non-negative correlation between them.
+* The brms backend of flexyBayes is refused, because posterior draws of a
+  brms fit are not in the flexyBayes extension API version 1. Families
+  other than the five above, Tweedie among them, are refused by name.
+* On glmmTMB, `pollin_cate()` intervals are approximate. The fixed effects
+  and the slope coefficients are drawn independently, since glmmTMB gives
+  the conditional variance of each coefficient on its own. When the slope
+  variance is estimated at zero, `pollin_cate()` stops.
 
 # pollinatoR 0.2.0
 

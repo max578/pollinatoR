@@ -15,6 +15,20 @@ methods apply to any crop studied with such a design.
 remotes::install_github("max578/pollinatoR")
 ```
 
+### Optional Bayesian engine
+
+`pollin_fit(engine = "flexyBayes")` fits on INLA through the flexyBayes
+package. Neither is on CRAN, and neither is needed for the rest of the package.
+
+```r
+remotes::install_github("AAGI-AUS/flexyBayes")
+install.packages(
+  "INLA",
+  repos = c(getOption("repos"), INLA = "https://inla.r-inla-download.org/R/stable"),
+  dependencies = TRUE
+)
+```
+
 ## A minimal example
 
 An analysis is declared in layers: the data, the design, the estimand. It is
@@ -66,12 +80,13 @@ pollin_value(dr, mk, channel = "dependence")
 | Design | `pollin_design()` | Map treatment levels to the excluded, open and supplemented arms; set the layout |
 | Estimand | `pollin_estimand()` | Deficit or dependence, on the difference, ratio, RII or lnRR scale, with a loss or gain basis |
 | | `pollin_assumptions()` | The assumptions the estimand rests on |
-| Fit | `pollin_fit()` | One `glmmTMB` model per response, optionally with the treatment effect fitted per level of a grouping column (`by`) |
-| Effects | `pollin_effects()` | Estimates with delta or parametric bootstrap intervals, overall or per level of `by` |
+| Fit | `pollin_fit()` | One model per response, on `glmmTMB` or, with `engine = "flexyBayes"`, a Bayesian fit on INLA; the treatment effect fitted per level of a column (`by`), or pooled across its levels (`pooled`) |
+| Effects | `pollin_effects()` | Estimates with delta, parametric bootstrap or posterior intervals, overall or per level of `by` |
+| | `pollin_cate()` | The effect at each level of a column with a random treatment slope, partially pooled |
 | | `pollin_contribution()` | Dependence on the difference scale, with FDR-adjusted p-values and the treatment-slope SD |
 | | `pollin_moderation()` | Treatment-by-exposure terms, split within and between units |
 | Population | `pollin_population()` | Strata of one column (distance bands, regions) weighted by area, passed to `pollin_estimand()` |
-| Draws | `pollin_draws()` | Draws of the arm means and the estimand, by simulation of the fixed effects or parametric bootstrap |
+| Draws | `pollin_draws()` | Draws of the arm means and the estimand, by simulation of the fixed effects, parametric bootstrap, or from the posterior of a flexyBayes fit |
 | Value | `pollin_market()` | Current production and price, as values or draws, with unit, currency, price year and source |
 | | `pollin_value()` | Value per draw through the `dependence` or `deficit` channel, with the assumptions it rests on |
 | Guards | `pollin_guard_spurious()` | Index-versus-yield slope against a permutation null |
@@ -95,6 +110,7 @@ vignette("three-arm-trial", package = "pollinatoR")
 vignette("split-plot-trial", package = "pollinatoR")
 vignette("matched-pair-field-study", package = "pollinatoR")
 vignette("dependence-to-value", package = "pollinatoR")
+vignette("bayesian-fits", package = "pollinatoR")
 ```
 
 ## Status
