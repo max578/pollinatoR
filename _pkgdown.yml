@@ -18,6 +18,9 @@ reference:
     contents:
       - pollin_estimand
       - pollin_assumptions
+  - title: Population
+    desc: Carry the estimand from the trial to a population of strata.
+    contents:
       - pollin_population
   - title: Fit
     contents:
@@ -65,3 +68,7 @@ articles:
       - three-arm-trial
       - split-plot-trial
       - matched-pair-field-study
+  - title: Value
+    navbar: Value
+    contents:
+      - dependence-to-value
