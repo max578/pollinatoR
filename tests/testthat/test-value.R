@@ -195,6 +195,57 @@ test_that("the wrong family is refused, with the call for the right one", {
   )
 })
 
+test_that("a cage estimand is refused as not a pollination quantity", {
+  d <- data.frame(
+    pods = rep(c(20, 30, 29), 8L),
+    trt = rep(c("Cage", "Open", "Sham"), 8L),
+    Block = rep(sprintf("b%d", 1:4), each = 6L),
+    stringsAsFactors = FALSE
+  )
+  pd <- pollin_data(d, "pods", "trt", unit = "Block")
+  ds <- pollin_design(
+    pd,
+    c(excluded = "Cage", open = "Open", sham = "Sham"),
+    "rcbd"
+  )
+  dr <- va_draws(pollin_estimand(ds, "cage", "ratio"))
+  for (ch in c("dependence", "deficit")) {
+    expect_error(
+      pollin_value(dr, va_market(), channel = ch),
+      "not a pollination quantity"
+    )
+  }
+  # The sham-referenced dependence estimand of the same design is valued
+  ds_s <- pollin_design(
+    pd,
+    c(excluded = "Cage", open = "Open", sham = "Sham"),
+    "rcbd",
+    reference = "sham"
+  )
+  v <- pollin_value(
+    va_draws(pollin_estimand(ds_s, "dependence", "ratio", "loss")),
+    va_market(),
+    channel = "dependence"
+  )
+  expect_s3_class(v, "pollin_value")
+})
+
+test_that("a direct effect is refused; the total effect is valued", {
+  e <- va_estimand()
+  expect_identical(e$effect, "total")
+  expect_s3_class(
+    pollin_value(va_draws(e), va_market(), channel = "dependence"),
+    "pollin_value"
+  )
+  # A direct estimand cannot be fitted yet, so its label is set by hand
+  e$effect <- "direct"
+  e$mediators <- "veg_weight"
+  expect_error(
+    pollin_value(va_draws(e), va_market(), channel = "dependence"),
+    "holds `veg_weight` fixed.*value the total effect"
+  )
+})
+
 test_that("a scale other than the ratio is refused", {
   for (s in c("difference", "rii", "lnrr")) {
     dr <- va_draws(va_estimand(scale = s))

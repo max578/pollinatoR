@@ -167,3 +167,65 @@ test_that("posttreatment guard passes when nothing adjusted is downstream", {
   expect_error(pollin_guard_posttreatment(pd), "character vector")
   expect_error(pollin_guard_posttreatment(df, "rain"), "`pollin_data`")
 })
+
+test_that("posttreatment guard refuses a graph descendant of treatment", {
+  skip_if_not_installed("dagitty")
+  df <- data.frame(
+    pods = 1:8,
+    trt = rep(c("Cage", "Open"), 4L),
+    Site = rep(c("a", "b"), each = 4L),
+    rain = rep(c(250, 300), each = 4L),
+    veg_weight = 11:18
+  )
+  pd <- pollin_data(df, "pods", "trt", "Site", adjust = c("rain", "veg_weight"))
+  ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+  # Branch H: veg_weight is a mediator, so the graph alone refuses it
+  g_h <- pollin_dag(
+    ds,
+    "dag { rain -> pods; trt -> veg_weight -> pods; trt -> pods }",
+    "pods"
+  )
+  expect_error(
+    pollin_guard_posttreatment(ds, dag = g_h),
+    "`veg_weight` is in the graph downstream of `trt`"
+  )
+  # Both sources name it
+  expect_error(
+    pollin_guard_posttreatment(ds, "veg_weight", dag = g_h),
+    "is declared and in the graph downstream"
+  )
+  # A direct effect holding veg_weight fixed passes the same graph
+  es_d <- pollin_estimand(
+    ds,
+    "dependence",
+    "ratio",
+    "loss",
+    effect = "direct",
+    mediators = "veg_weight",
+    dag = g_h
+  )
+  expect_identical(pollin_guard_posttreatment(es_d, dag = g_h), es_d)
+  # A graph from another design is refused
+  pd2 <- pollin_data(df, "pods", "trt", "Site", adjust = "rain")
+  expect_error(pollin_guard_posttreatment(pd2, dag = g_h), "different design")
+})
+
+test_that("posttreatment guard passes a graph with no treatment descendant", {
+  skip_if_not_installed("dagitty")
+  df <- data.frame(
+    pods = 1:8,
+    trt = rep(c("Cage", "Open"), 4L),
+    Site = rep(c("a", "b"), each = 4L),
+    rain = rep(c(250, 300), each = 4L),
+    veg_weight = 11:18
+  )
+  pd <- pollin_data(df, "pods", "trt", "Site", adjust = c("rain", "veg_weight"))
+  ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+  # Branch P: veg_weight measured before flowering, no trt -> veg_weight edge
+  g_p <- pollin_dag(
+    ds,
+    "dag { rain -> pods; veg_weight -> pods; trt -> pods }",
+    "pods"
+  )
+  expect_identical(pollin_guard_posttreatment(ds, dag = g_p), ds)
+})

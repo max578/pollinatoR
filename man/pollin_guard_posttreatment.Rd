@@ -4,26 +4,39 @@
 \alias{pollin_guard_posttreatment}
 \title{Guard against adjusting for a covariate downstream of treatment}
 \usage{
-pollin_guard_posttreatment(x, downstream)
+pollin_guard_posttreatment(x, downstream = NULL, dag = NULL)
 }
 \arguments{
 \item{x}{A \code{\link[=pollin_data]{pollin_data()}}, \code{\link[=pollin_design]{pollin_design()}} or \code{\link[=pollin_estimand]{pollin_estimand()}}
 object.}
 
 \item{downstream}{Character vector of variables declared downstream of
-treatment. \code{character(0)} declares none. There is no default.}
+treatment. \code{character(0)} declares none. Give \code{downstream}, \code{dag} or
+both.}
+
+\item{dag}{A \code{\link[=pollin_dag]{pollin_dag()}} object built from the same design.}
 }
 \value{
-\code{x}, invisibly, when no adjustment covariate is declared downstream.
+\code{x}, invisibly, when no adjustment covariate is downstream.
 }
 \description{
 Adjusting a treatment contrast for a variable the treatment itself changes
 (for example vegetative weight, or a pollinator visit count under a cage)
 blocks part of the effect and can open a collider path. Whether a covariate
 is downstream of treatment is a fact about the system that the data cannot
-reveal. The declaration is the user's: \code{downstream} names the variables the
-user holds to be affected by treatment, and the guard stops if any
-adjustment covariate in \code{x} is among them.
+reveal. It comes from one of two sources, or both:
+}
+\details{
+\itemize{
+\item a declaration: \code{downstream} names the variables the user holds to be
+affected by treatment;
+\item a graph: with \code{dag}, every observed descendant of the treatment in the
+\code{\link[=pollin_dag]{pollin_dag()}} graph is downstream.
+}
+
+The guard stops if any adjustment covariate in \code{x} is downstream. For an
+estimand with \code{effect = "direct"}, the declared \code{mediators} are held fixed
+on purpose and pass; any other downstream covariate is still refused.
 }
 \examples{
 df <- data.frame(
@@ -39,4 +52,14 @@ pollin_guard_posttreatment(pd, downstream = "veg_weight")
 pd2 <- pollin_data(df, "pods", "trt", unit = "Site",
                    adjust = c("rain", "veg_weight"))
 try(pollin_guard_posttreatment(pd2, downstream = "veg_weight"))
+\dontshow{if (requireNamespace("dagitty", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+# The same refusal from a graph: veg_weight is a descendant of trt
+ds <- pollin_design(pd2, c(excluded = "Cage", open = "Open"), "multi_site")
+g <- pollin_dag(
+  ds,
+  "dag { rain -> pods; trt -> veg_weight -> pods; trt -> pods }",
+  "pods"
+)
+try(pollin_guard_posttreatment(ds, dag = g))
+\dontshow{\}) # examplesIf}
 }
