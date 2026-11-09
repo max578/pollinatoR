@@ -1,3 +1,10 @@
+# pollinatoR 0.2.0 (development)
+
+* Golden-value tests now also hold the 0.1.0 outputs: deficit and dependence
+  on every scale, with delta and bootstrap intervals, overall and by level, and
+  the layered contribution, moderation, validation and index results
+  (`validation/golden/make_golden_v0.1.0.R`).
+
 # pollinatoR 0.1.0
 
 An analysis is now declared in layers: the data (`pollin_data()`), the design

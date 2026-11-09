@@ -62,3 +62,52 @@ golden_strip <- function(x) {
 golden_path <- function() {
   testthat::test_path("_golden", "golden_v0.0.0.9000.rds")
 }
+
+# Fixed inputs for the golden-value tests (outputs at 0.1.0) ------------------
+
+# A three-arm randomised-block trial with two regions: eight blocks x three
+# arms x four plants, a count response and a positive continuous response.
+golden_inputs_v010 <- function() {
+  set.seed(20261109L)
+  n_block <- 8L
+  d <- expand.grid(
+    plant = seq_len(4L),
+    trt = c("Cage", "Open", "Hand"),
+    Block = sprintf("b%02d", seq_len(n_block)),
+    stringsAsFactors = FALSE
+  )
+  blk <- as.integer(factor(d$Block))
+  d$Region <- ifelse(blk <= n_block / 2L, "north", "south")
+  blk_eff <- stats::rnorm(n_block, 0, 0.3)[blk]
+  beta <- c(Cage = 0, Open = 0.4, Hand = 0.55)[d$trt]
+  d$pods <- stats::rnbinom(nrow(d), mu = exp(3 + beta + blk_eff), size = 8)
+  d$seed_wt <- stats::rgamma(
+    nrow(d),
+    shape = 15,
+    rate = 15 / exp(1 + beta / 3 + blk_eff / 2)
+  )
+  d$bees <- stats::rpois(n_block, 8)[blk] + stats::rpois(nrow(d), 1)
+  d$plant <- NULL
+  d
+}
+
+golden_arms_v010 <- c(excluded = "Cage", open = "Open", supplemented = "Hand")
+
+# The scale-by-basis grid of the 0.1.0 effects capture.
+golden_grid_v010 <- function() {
+  data.frame(
+    scale = c("difference", "ratio", "ratio", "rii", "lnrr"),
+    basis = c("loss", "loss", "gain", "loss", "loss"),
+    stringsAsFactors = FALSE
+  )
+}
+
+# The numbers an analyst reads from a pollin_effects object.
+golden_effects <- function(x) {
+  x <- unclass(x)
+  x[c("table", "interval", "n_boot", "seed", "conf_level", "by")]
+}
+
+golden_path_v010 <- function() {
+  testthat::test_path("_golden", "golden_v0.1.0.rds")
+}
