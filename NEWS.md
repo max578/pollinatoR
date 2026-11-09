@@ -1,3 +1,29 @@
+# pollinatoR 0.3.1 (development)
+
+## Bug fixes
+
+* `pollin_data(denominator = )` now reaches the fit. Each response is a
+  count of successes out of the denominator's trials (seeds out of ovules,
+  pods out of flowers) and is fitted as binomial with a logit link:
+  `cbind(response, denominator - response)` on glmmTMB, and one 0/1 row per
+  trial on flexyBayes, which takes no trials argument. The arm means of
+  `pollin_effects()` and `pollin_draws()` are expected proportions,
+  averaged over the original rows with equal weight whatever their number
+  of trials, as for every other response. The delta, bootstrap, simulation
+  and posterior paths all take the binomial fit, and the posterior draws
+  are averaged over the original rows. `pollin_contribution()` fits the
+  same way; `pollin_moderation()` still models the count itself.
+* With a denominator, `family = NULL` picks `binomial()`; any other family
+  is an error that names the family, the response and the denominator. The
+  response must be a whole number between 0 and the denominator and the
+  denominator positive on the rows fitted; a row with a missing
+  denominator is dropped, and a row with a denominator of 0 is an error.
+  On flexyBayes, an expansion beyond two million trial rows is an error
+  that points to the glmmTMB engine.
+* Data that declared a denominator were fitted as the count itself up to
+  0.3.0. They are now fitted as binomial, so their estimates change, and
+  data whose counts exceed the denominator stop.
+
 # pollinatoR 0.3.0
 
 This release adds a Bayesian engine and per-level effects with partial
