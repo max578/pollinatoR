@@ -17,7 +17,9 @@
 #' @param estimand A [pollin_estimand()] object.
 #' @param engine The fitting engine: `"glmmTMB"` (the default) or
 #'   `"flexyBayes"`, a Bayesian fit on INLA through flexyBayes
-#'   (see Details).
+#'   (see Details). The flexyBayes engine is experimental: its posterior
+#'   intervals are calibrated on designs with unit intercepts and run
+#'   slightly narrow on designs with a random treatment slope.
 #' @param family `NULL` (the default) chooses a family per response from its
 #'   values (count, proportion in (0, 1), positive continuous, or continuous
 #'   with zeros). A single `glmmTMB` family object applies to every response; a
@@ -106,7 +108,12 @@ pollin_fit <- function(
 print.pollin_fit <- function(x, ...) {
   e <- x$estimand
   cat("<pollin_fit>\n")
-  cat("  engine    :", x$engine, "\n")
+  cat(
+    "  engine    :",
+    x$engine,
+    if (identical(x$engine, "flexyBayes")) "(experimental)",
+    "\n"
+  )
   cat("  family    :", e$family, "\n")
   cat("  contrast  :", e$contrast[["high"]], "vs", e$contrast[["low"]], "\n")
   cat("  model     : <response> ~", paste(x$rhs, collapse = " + "), "\n")

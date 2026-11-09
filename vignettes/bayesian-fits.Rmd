@@ -26,6 +26,11 @@ the uncertainty in the variance components as well as in the fixed effects.
 The rest of the package takes those draws as it takes the glmmTMB ones:
 effects, populations, values and guards work unchanged.
 
+The engine is experimental in this release. In planted-truth simulations its
+95% intervals cover close to 95% on designs with unit intercepts, and between
+91% and 93% on designs with a random treatment slope. The package NEWS gives
+the full results.
+
 This vignette fits one simulated trial on both engines and compares the
 results: the overall effect, its value, and the effect in each variety.
 

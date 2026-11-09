@@ -1,9 +1,11 @@
-# pollinatoR 0.3.0 (development)
+# pollinatoR 0.3.0
 
 This release adds a Bayesian engine and per-level effects with partial
 pooling. A fit made through flexyBayes on INLA gives posterior draws, and
 effects, populations, values and guards take them as they take the glmmTMB
 draws. The vignette *Bayesian fits with flexyBayes* compares the two engines.
+The flexyBayes engine is experimental in this release; the validation below
+says where its intervals are and are not calibrated.
 
 ## New features
 
@@ -33,12 +35,32 @@ draws. The vignette *Bayesian fits with flexyBayes* compares the two engines.
 
 ## Validation
 
-* Engine agreement, posterior coverage and recovery of per-level effects
-  are tested on planted-truth simulations; see
-  `validation/planted_truth_S3_report.md`.
+* Planted-truth simulations, 200 trials per cell (100 for per-level
+  effects), compare the engines and check posterior coverage
+  (`validation/planted_truth_S3_report.md`). None of the three pre-set
+  criteria is met in full:
+  * The two engines agree on the estimate (within 0.25 glmmTMB standard
+    errors) in 97% to 100% of trials in every cell. On designs with a
+    random treatment slope, glmmTMB stops at a variance on its boundary in
+    4% to 12% of trials; flexyBayes fits every trial.
+  * Posterior 95% intervals cover 0.945 to 0.960 on designs with unit
+    intercepts (negative binomial, Poisson, deficit) and 0.932 to 0.939 on
+    the overall effect of pooled fits, but 0.909 to 0.925 on designs with a
+    site slope, and 0.925 on a binary response. On slope designs the glmmTMB
+    delta interval over-covers (0.989 to 1.000) at about 1.7 times the
+    posterior width.
+  * `pollin_cate()` lowers the error of per-level effects by 12% to 15% on
+    average against unpooled contrasts, but does better in only 69% to 79%
+    of trials, against a 90% target. Posterior per-level coverage is 0.940
+    to 0.941.
 
 ## Known limitations
 
+* The flexyBayes engine is experimental: its intervals run slightly
+  narrow on designs with a random treatment slope (see Validation).
+* `pollin_data(denominator = )` does not reach the fit on either engine, so
+  a count out of a known number of trials (seeds out of ovules) cannot yet
+  be fitted as binomial; one 0/1 row per trial works.
 * flexyBayes on INLA does not fit a correlated random treatment slope. The
   flexyBayes engine fits a unit intercept plus an independent unit-by-arm
   effect instead, a restricted form of glmmTMB's unstructured slope: equal
