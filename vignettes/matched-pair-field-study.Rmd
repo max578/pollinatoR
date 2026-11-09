@@ -134,6 +134,48 @@ indices from the field-level arm means, with intervals.
 pollin_index(ds, response = "pods", n_boot = 500, seed = 1)
 ```
 
+## From the sampled fields to the growing area
+
+The 24 fields are eight per region, but the regions grow different areas of
+canola. Suppose the North grows 2,000 ha, the Central region 1,000 ha and the
+South 500 ha. `pollin_population()` declares the regions as strata weighted
+by area. The model is fitted with the region as `by`, and `pollin_draws()`
+returns the loss share per region and for the population.
+
+```{r population}
+regions <- pollin_population(
+  "region",
+  c(North = 2000, Central = 1000, South = 500),
+  label = "canola area by region"
+)
+est_pop <- pollin_estimand(ds, "dependence", "ratio", "loss", population = regions)
+dr <- pollin_draws(
+  pollin_fit(est_pop, by = "region"),
+  n = 1000L,
+  response = "seed_g",
+  seed = 1L
+)
+summary(dr)[, c("level", "median", "conf.low", "conf.high")]
+```
+
+The population loss share is $1 - \sum w\,\mathrm{caged} / \sum w\,\mathrm{open}$,
+a ratio of the area-weighted arm means. It is not the area-weighted mean of
+the regional loss shares, shown below for comparison.
+
+```{r weighted-mean}
+w <- regions$weights
+weighted_mean <- dr$estimate[, names(w)] %*% w
+quantile(weighted_mean, c(0.5, 0.025, 0.975))
+```
+
+The ratio of means weights each region by its area times its open yield,
+that is, by its share of the seed harvested. A loss share is a share of
+harvested seed, so that is the weighting it needs.
+In these estimates the North yields most and loses least, so the weighted
+mean of the regional shares comes out higher. (The regions were simulated
+with the same loss share; their estimates differ by chance.) The gap widens
+as regions differ more in yield and in dependence.
+
 ## Guard: a between-field slope is not a plant-level effect
 
 The fields with more honey bee visits also yield more. Read across fields, that

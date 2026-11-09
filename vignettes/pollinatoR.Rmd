@@ -286,3 +286,4 @@ default).
 * *A three-arm trial: deficit and dependence*
 * *A split-plot trial: dependence by variety*
 * *A matched-pair field study*
+* *From dependence to value*

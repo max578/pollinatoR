@@ -1,0 +1,321 @@
+---
+title: "From dependence to value"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{From dependence to value}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(pollinatoR)
+```
+
+## From a ratio to a dollar figure
+
+A dependence ratio says what share of a crop's yield is owed to pollinators.
+Multiplied by the crop's production and price, it gives the value of that
+pollination: the dependence-ratio method of Gallai et al. (2009). This
+vignette takes a fitted estimand through to such a value, with an interval.
+The value is computed for each draw of the estimand, and the interval comes
+from the value draws.
+
+Each printed value lists the estimand and its basis, the population, the
+price year, the currency and the source of the market inputs.
+
+## A simulated trial
+
+The trial has three arms in twelve blocks: plants *bagged* against insects,
+plants left *open*, and plants pollinated by *hand*. The blocks lie in canola
+fields at three distances from native vegetation, four blocks per distance
+band. Open plants yield less the further the field is from vegetation;
+bagged and hand-pollinated plants do not depend on distance. The response is
+seed yield per plant in grams.
+
+```{r data}
+set.seed(2025)
+n_block <- 12L
+n_plant <- 6L
+blocks <- sprintf("B%02d", seq_len(n_block))
+bands <- c("0-100 m", "100-300 m", "over 300 m")
+band <- setNames(rep(bands, each = 4L), blocks)
+trial <- expand.grid(
+  plant = seq_len(n_plant),
+  trt = c("Bagged", "Open", "Hand"),
+  block = blocks,
+  stringsAsFactors = FALSE
+)
+trial$band <- band[trial$block]
+block_effect <- setNames(rnorm(n_block, 0, 0.1), blocks)
+open_mean <- setNames(c(2.4, 2.1, 1.8), bands)
+arm_mean <- ifelse(
+  trial$trt == "Bagged",
+  1.4,
+  ifelse(trial$trt == "Hand", 2.6, open_mean[trial$band])
+)
+mu <- arm_mean * exp(block_effect[trial$block])
+trial$yield <- rgamma(nrow(trial), shape = 25, rate = 25 / mu)
+
+pd <- pollin_data(trial, response = "yield", treatment = "trt", unit = "block")
+ds <- pollin_design(
+  pd,
+  arms = c(excluded = "Bagged", open = "Open", supplemented = "Hand"),
+  layout = "rcbd"
+)
+```
+
+## A population of distance bands
+
+The trial's blocks are not a sample of the district's canola. Suppose a land
+use map shows 300 ha of canola within 100 m of native vegetation, 500 ha at
+100 to 300 m and 1,200 ha beyond. `pollin_population()` declares the bands as
+strata weighted by those areas.
+
+```{r population}
+district <- pollin_population(
+  "band",
+  c("0-100 m" = 300, "100-300 m" = 500, "over 300 m" = 1200),
+  label = "district canola, by distance to vegetation"
+)
+district
+```
+
+The estimand takes the population, and fitting with the bands as `by` gives
+each band its own treatment effect.
+
+```{r estimand}
+dep <- pollin_estimand(ds, "dependence", "ratio", "loss", population = district)
+fit_dep <- pollin_fit(dep, by = "band")
+```
+
+## Draws of the estimand
+
+`pollin_draws()` draws the fixed effects from their sampling distribution and
+recomputes the expected yield in each arm for every draw. The loss share is
+formed from each pair of arm means. A further column holds the population:
+the area-weighted arm means, and the loss share formed from them.
+
+```{r draws}
+dr_dep <- pollin_draws(fit_dep, n = 1000L, seed = 1L)
+dr_dep
+summary(dr_dep)[, c("level", "median", "conf.low", "conf.high")]
+```
+
+The planted loss shares are 0.42, 0.33 and 0.22 in the three bands. The
+population loss share is a ratio of population means,
+$1 - \sum w\,\mathrm{low} / \sum w\,\mathrm{high}$, and so weights each band by
+its area and its open yield.
+
+## Market inputs
+
+`pollin_market()` records current production and its price. Current production
+means the crop as it is pollinated now, the open arm in the trial's terms.
+The figures below are illustrative.
+
+```{r market}
+canola <- pollin_market(
+  quantity = 3600,
+  price = 700,
+  unit = "t",
+  currency = "AUD",
+  year = 2025,
+  source = "Illustrative inputs",
+  crop = "canola"
+)
+canola
+```
+
+## The dependence channel
+
+`pollin_value()` needs a channel; there is no default. The `dependence`
+channel values the production that would be lost if pollinators were wholly
+excluded.
+
+```{r value-dep}
+val_dep <- pollin_value(dr_dep, canola, channel = "dependence")
+val_dep
+```
+
+The value is computed per draw as $D \times P \times Q$, with
+$D = 1 - \mathrm{excluded}/\mathrm{open}$. Production without pollinators
+would be $Q \times \mathrm{excluded}/\mathrm{open}$, a loss of $D \times Q$.
+
+Price and production are rarely known exactly. They can be given as draws,
+one per estimand draw, matched by position.
+
+```{r value-draws}
+set.seed(7)
+canola_unc <- pollin_market(
+  quantity = 3600,
+  price = 700,
+  unit = "t",
+  currency = "AUD",
+  year = 2025,
+  source = "Illustrative inputs with uncertainty",
+  quantity_draws = rlnorm(1000L, log(3600), 0.10),
+  price_draws = rlnorm(1000L, log(700), 0.15),
+  crop = "canola"
+)
+summary(pollin_value(dr_dep, canola_unc, channel = "dependence"))[
+  , c("median", "conf.low", "conf.high", "currency")
+]
+```
+
+The median barely moves. The interval is wider because price and
+production are now uncertain too.
+
+## The deficit channel
+
+The `deficit` channel values the yield lost because the crop's pollination
+falls short of hand pollination: the gain if every plant were pollinated as
+well as by hand. It needs a supplemented arm, and a deficit estimand with
+`basis = "gain"`.
+
+```{r value-deficit}
+def <- pollin_estimand(ds, "deficit", "ratio", "gain", population = district)
+dr_def <- pollin_draws(pollin_fit(def, by = "band"), n = 1000L, seed = 1L)
+pollin_value(dr_def, canola, channel = "deficit")
+```
+
+Here the value per draw is
+$(\mathrm{hand}/\mathrm{open} - 1) \times P \times Q$, the gain over current
+production. In both channels the ratio is taken relative to the open arm,
+because $Q$ is open-pollinated production. That is why each channel accepts
+one ratio only: a loss share for `dependence` and a gain for `deficit`.
+
+## Why the dependence channel refuses a gain
+
+The loss share $D$ and the gain $g = \mathrm{open}/\mathrm{excluded} - 1$ come
+from the same two arm means, and $g = D/(1 - D)$. A gain multiplied by
+current production overstates the loss by the factor $1/(1 - D)$, so the
+dependence channel refuses it.
+
+```{r refuse-gain, error = TRUE}
+dep_gain <- pollin_estimand(ds, "dependence", "ratio", "gain", population = district)
+dr_gain <- pollin_draws(pollin_fit(dep_gain, by = "band"), n = 1000L, seed = 1L)
+try(pollin_value(dr_gain, canola, channel = "dependence"))
+```
+
+A descriptive index from `pollin_index()` or a plain number is refused as
+well, because neither records the estimand it came from.
+
+## Sensitivity: two populations
+
+The area weights are an input, and a different map gives a different value.
+To see how much, value the estimand under a second population and compare. Here a second population puts
+most of the canola close to vegetation.
+
+```{r sensitivity}
+near <- pollin_population(
+  "band",
+  c("0-100 m" = 1000, "100-300 m" = 600, "over 300 m" = 400),
+  label = "canola mostly near vegetation"
+)
+dep_near <- pollin_estimand(ds, "dependence", "ratio", "loss", population = near)
+dr_near <- pollin_draws(pollin_fit(dep_near, by = "band"), n = 1000L, seed = 1L)
+rbind(
+  summary(pollin_value(dr_dep, canola, channel = "dependence")),
+  summary(pollin_value(dr_near, canola, channel = "dependence"))
+)[, c("median", "conf.low", "conf.high", "currency")]
+```
+
+The first row is the district map, the second the map with most canola near
+vegetation. With production held at 3,600 t, the second value is higher,
+because the crop near vegetation loses a larger share without pollinators.
+
+## Adding values without counting twice
+
+Values can be added only when they count different things.
+`pollin_guard_doublecount()` adds values draw by draw and stops when two of
+them overlap. It compares the pollinators each exclusion removed (`agent`, all
+of them here), the product valued and the crop.
+
+The value of canola seed and the value of the oil pressed from it are not
+separate contributions: the oil's value includes the seed's. The guard
+refuses the sum.
+
+```{r guard-refuse, error = TRUE}
+oil <- pollin_market(
+  quantity = 1500,
+  price = 1600,
+  unit = "t",
+  currency = "AUD",
+  year = 2025,
+  source = "Illustrative inputs",
+  crop = "canola"
+)
+try(pollin_guard_doublecount(
+  seed = pollin_value(dr_dep, canola, channel = "dependence", product = "seed"),
+  oil = pollin_value(dr_dep, oil, channel = "dependence", product = "oil")
+))
+```
+
+Values for two crops, each from its own trial, do not overlap. A second
+small trial in faba bean gives a second value, and the guard adds the two.
+
+```{r guard-allow}
+set.seed(11)
+faba_trial <- expand.grid(
+  plant = seq_len(6L),
+  trt = c("Bagged", "Open"),
+  block = sprintf("F%d", seq_len(8L)),
+  stringsAsFactors = FALSE
+)
+faba_mu <- ifelse(faba_trial$trt == "Open", 30, 24)
+faba_trial$yield <- rgamma(nrow(faba_trial), shape = 20, rate = 20 / faba_mu)
+faba_ds <- pollin_design(
+  pollin_data(faba_trial, "yield", "trt", unit = "block"),
+  c(excluded = "Bagged", open = "Open"),
+  "rcbd"
+)
+faba_dr <- pollin_draws(
+  pollin_fit(pollin_estimand(faba_ds, "dependence", "ratio", "loss")),
+  n = 1000L,
+  seed = 2L
+)
+faba <- pollin_market(
+  quantity = 900,
+  price = 450,
+  unit = "t",
+  currency = "AUD",
+  year = 2025,
+  source = "Illustrative inputs",
+  crop = "faba bean"
+)
+pollin_guard_doublecount(
+  canola = pollin_value(dr_dep, canola, channel = "dependence", product = "seed"),
+  faba = pollin_value(faba_dr, faba, channel = "dependence", product = "seed")
+)
+```
+
+## What the value assumes
+
+Each printed value lists its assumptions:
+
+* No price response. The price is held fixed, although losing a large share
+  of a crop's production would raise its price.
+* A total-loss counterfactual, for the dependence channel. The value is the
+  production lost if every pollinator were removed, with nothing in their
+  place. It is not the loss from a partial decline.
+* Independence of the estimand and the market draws. A season that is poor
+  for pollination may also be a season of high prices; the draws are paired
+  as if the two were unrelated.
+
+Within each stratum of a population, the trial's expected yields are taken to
+hold across the stratum's area, and the areas are taken as exact.
+
+The value is gross: the revenue from the production at stake, before any
+costs. With the default simulation draws the interval covers the uncertainty
+in the fixed effects only, not the variation between blocks; `pollin_draws()`
+with `method = "bootstrap"` includes it, at the cost of refitting the model.
+
+## References
+
+Gallai, N., Salles, J.-M., Settele, J., & Vaissière, B. E. (2009). Economic
+valuation of the vulnerability of world agriculture confronted with
+pollinator decline. *Ecological Economics*, *68*(3), 810--821.
+https://doi.org/10.1016/j.ecolecon.2008.06.014
