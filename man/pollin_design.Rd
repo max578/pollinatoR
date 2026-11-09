@@ -11,13 +11,17 @@ pollin_design(x, arms, layout, reference = "open", slope = NULL)
 
 \item{arms}{Named character vector mapping arm roles to treatment levels, for
 example \code{c(excluded = "Cage", open = "Open")}. Roles are \code{"excluded"},
-\code{"open"} and \code{"supplemented"}; every treatment level must be mapped.}
+\code{"open"}, \code{"supplemented"} and \code{"sham"}; every treatment level must be
+mapped. A sham arm carries a device identical to the exclusion device that
+admits pollinators (an open cage, a cage with its mesh removed); it needs
+an open arm beside it.}
 
 \item{layout}{One of \code{"crd"}, \code{"rcbd"}, \code{"split_plot"}, \code{"matched_pairs"}
 or \code{"multi_site"}. There is no default.}
 
 \item{reference}{The arm that dependence is measured against: \code{"open"} (the
-default) or \code{"supplemented"}. It must be one of the declared arms.}
+default), \code{"supplemented"} or \code{"sham"}. It must be one of the declared
+arms. Against \code{"sham"} the dependence is net of the cage effect.}
 
 \item{slope}{The unit level carrying a random treatment slope. \code{NULL} (the
 default) uses the layout's default from the table above; \code{FALSE} fits no

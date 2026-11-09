@@ -34,12 +34,13 @@ for a declared \code{\link[=pollin_design]{pollin_design()}}. Two estimand famil
 \itemize{
 \item \code{"deficit"} (E1): supplemented versus open, the yield gap left by the
 pollination the crop received.
-\item \code{"dependence"} (E2): excluded versus the design's reference arm (open, or
-supplemented), the yield owed to pollinators.
+\item \code{"dependence"} (E2): excluded versus the design's reference arm (open,
+supplemented or sham), the yield owed to pollinators. Against a sham arm
+it is net of the cage effect.
 }
 
 Writing \code{high} for the expected response in the higher arm (open or
-supplemented) and \code{low} for the lower one, the scales are:\tabular{ll}{
+supplemented or sham) and \code{low} for the lower one, the scales are:\tabular{ll}{
    Scale \tab Value \cr
    \code{"difference"} \tab \code{high - low} \cr
    \code{"ratio"}, \code{basis = "loss"} \tab \code{1 - low / high}, the share of \code{high} lost without the contrast \cr

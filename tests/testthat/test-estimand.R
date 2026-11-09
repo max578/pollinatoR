@@ -62,6 +62,32 @@ test_that("deficit needs a supplemented arm and contrasts it with open", {
   expect_identical(est$contrast, c(high = "Hand", low = "Open"))
 })
 
+test_that("a sham reference nets out the cage and says so", {
+  d <- data.frame(
+    pods = rep(c(20, 30, 29), 8),
+    trt = rep(c("Cage", "Open", "Sham"), 8),
+    Site = rep(letters[1:4], each = 6)
+  )
+  pd <- pollin_data(d, "pods", "trt", unit = "Site")
+  arms <- c(excluded = "Cage", open = "Open", sham = "Sham")
+  excl <- function(est) {
+    a <- pollin_assumptions(est)
+    a$statement[a$assumption == "excludability"]
+  }
+  ds_sham <- pollin_design(pd, arms, "multi_site", reference = "sham")
+  est <- pollin_estimand(ds_sham, "dependence", "ratio", "loss")
+  expect_identical(est$contrast, c(high = "Sham", low = "Cage"))
+  expect_match(excl(est), "net of the cage effect")
+  ds_open <- pollin_design(pd, arms, "multi_site")
+  est_o <- pollin_estimand(ds_open, "dependence", "ratio", "loss")
+  expect_identical(est_o$contrast, c(high = "Open", low = "Cage"))
+  expect_match(excl(est_o), "sham versus open, and this contrast includes it")
+  expect_match(
+    excl(pollin_estimand(l2_design(), "dependence", "ratio", "loss")),
+    "no cage effect on microclimate"
+  )
+})
+
 test_that("assumptions follow the layout, family and scale", {
   a <- pollin_assumptions(pollin_estimand(
     l2_design(),

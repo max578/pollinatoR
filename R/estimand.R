@@ -7,11 +7,12 @@
 #'
 #' * `"deficit"` (E1): supplemented versus open, the yield gap left by the
 #'   pollination the crop received.
-#' * `"dependence"` (E2): excluded versus the design's reference arm (open, or
-#'   supplemented), the yield owed to pollinators.
+#' * `"dependence"` (E2): excluded versus the design's reference arm (open,
+#'   supplemented or sham), the yield owed to pollinators. Against a sham arm
+#'   it is net of the cage effect.
 #'
 #' Writing `high` for the expected response in the higher arm (open or
-#' supplemented) and `low` for the lower one, the scales are:
+#' supplemented or sham) and `low` for the lower one, the scales are:
 #'
 #' | Scale | Value |
 #' |---|---|
@@ -99,7 +100,9 @@ pollin_estimand <- function(
         family,
         scale,
         basis,
-        population
+        population,
+        reference = design$reference,
+        sham = "sham" %in% names(arms)
       )
     ),
     class = "pollin_estimand"
@@ -205,10 +208,22 @@ print.pollin_estimand <- function(x, ...) {
 #' Assumption table for a layout, family and scale
 #' @noRd
 #' @keywords internal
-.assumptions <- function(layout, family, scale, basis, population = "trial") {
+.assumptions <- function(
+  layout,
+  family,
+  scale,
+  basis,
+  population = "trial",
+  reference = "open",
+  sham = FALSE
+) {
   a <- c(
     consistency = "Each arm is one well-defined treatment, applied the same way on every unit.",
-    excludability = if (family == "dependence") {
+    excludability = if (family == "dependence" && reference == "sham") {
+      "The sham device matches the exclusion device in every effect but excluding pollinators, and the cage changes the response by the same factor with and without pollinators; the contrast is then net of the cage effect."
+    } else if (family == "dependence" && sham) {
+      "The exclusion device changes the response only by excluding pollinators. The design has a sham arm, so this can be checked: the cage effect is sham versus open, and this contrast includes it."
+    } else if (family == "dependence") {
       "The exclusion device changes the response only by excluding pollinators (no cage effect on microclimate, pests or handling)."
     } else {
       "Hand supplementation changes the response only through the pollen added (no damage from handling)."

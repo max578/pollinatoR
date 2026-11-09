@@ -24,11 +24,15 @@
 #' @param x A [pollin_data()] object.
 #' @param arms Named character vector mapping arm roles to treatment levels, for
 #'   example `c(excluded = "Cage", open = "Open")`. Roles are `"excluded"`,
-#'   `"open"` and `"supplemented"`; every treatment level must be mapped.
+#'   `"open"`, `"supplemented"` and `"sham"`; every treatment level must be
+#'   mapped. A sham arm carries a device identical to the exclusion device that
+#'   admits pollinators (an open cage, a cage with its mesh removed); it needs
+#'   an open arm beside it.
 #' @param layout One of `"crd"`, `"rcbd"`, `"split_plot"`, `"matched_pairs"`
 #'   or `"multi_site"`. There is no default.
 #' @param reference The arm that dependence is measured against: `"open"` (the
-#'   default) or `"supplemented"`. It must be one of the declared arms.
+#'   default), `"supplemented"` or `"sham"`. It must be one of the declared
+#'   arms. Against `"sham"` the dependence is net of the cage effect.
 #' @param slope The unit level carrying a random treatment slope. `NULL` (the
 #'   default) uses the layout's default from the table above; `FALSE` fits no
 #'   slope; a column name from the unit nesting puts the slope there.
@@ -145,7 +149,7 @@ print.pollin_design <- function(x, ...) {
   paste(n, if (n == 1L) noun else paste0(noun, "s"))
 }
 
-.arm_roles <- c("excluded", "open", "supplemented")
+.arm_roles <- c("excluded", "open", "supplemented", "sham")
 .layouts <- c("crd", "rcbd", "split_plot", "matched_pairs", "multi_site")
 
 #' Stop unless `x` inherits from `class`
@@ -205,6 +209,12 @@ print.pollin_design <- function(x, ...) {
   if (length(arms) < 2L) {
     stop("A design needs at least two arms.", call. = FALSE)
   }
+  if ("sham" %in% names(arms) && !"open" %in% names(arms)) {
+    stop(
+      "A sham arm needs an open arm: the cage effect is sham versus open.",
+      call. = FALSE
+    )
+  }
   lev <- .treatment_levels(x$data[[x$roles$treatment]])
   absent <- setdiff(arms, lev)
   if (length(absent)) {
@@ -227,15 +237,18 @@ print.pollin_design <- function(x, ...) {
   invisible(TRUE)
 }
 
-#' Stop unless `reference` is open or supplemented and is a declared arm
+#' Stop unless `reference` is open, supplemented or sham and is a declared arm
 #' @noRd
 #' @keywords internal
 .check_reference <- function(reference, arms) {
-  ok <- c("open", "supplemented")
+  ok <- c("open", "supplemented", "sham")
   if (
     !is.character(reference) || length(reference) != 1L || !reference %in% ok
   ) {
-    stop("`reference` must be \"open\" or \"supplemented\".", call. = FALSE)
+    stop(
+      "`reference` must be \"open\", \"supplemented\" or \"sham\".",
+      call. = FALSE
+    )
   }
   if (!reference %in% names(arms)) {
     stop("The reference arm '", reference, "' is not in `arms`.", call. = FALSE)
