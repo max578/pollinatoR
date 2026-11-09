@@ -1,4 +1,4 @@
-# pollinatoR 0.2.0 (development)
+# pollinatoR 0.2.0
 
 This release adds economic valuation. A fitted estimand can be scaled to a
 population of fields and turned into a value with an interval, computed draw
@@ -60,15 +60,27 @@ source.
   scale, with delta and bootstrap intervals, overall and by level, and the
   contribution, moderation, validation and index results
   (`validation/golden/make_golden_v0.1.0.R`).
-* Planted-truth calibration of value intervals: see
-  `validation/planted_truth_S2_report.md`.
-* Reproduction of a published valuation: see `validation/value_oracle/`.
+* Planted-truth calibration of value intervals over 1,000 simulated trials
+  per cell (three-arm, split-plot and matched-pair designs, both channels,
+  market inputs fixed or drawn, one two-stratum population): 95% interval
+  coverage between 0.937 and 0.962 in all 11 cells. The bias criterion
+  (below 0.1 standard errors) holds in 9 of 11; see Known limitations
+  (`validation/planted_truth_S2_report.md`).
+* The published valuation of Yocgo et al. (2023, *Scientific Reports*
+  13:20108) is reproduced from its supplementary data: totals to the dollar
+  and all 20 published figures within their rounding
+  (`validation/value_oracle/`).
 
 ## Known limitations
 
 * `pollin_contribution(by = )` stops with "jacobian does not match the
   variance-covariance matrix" on nested multi-site data where the `by`
   variable is constant within the slope unit.
+* The value summary is the median of the value draws. On the dependence
+  channel with market draws it sits slightly low, by 0.13 to 0.14 standard
+  errors in two planted-truth cells, because the loss share is concave in
+  the log ratio and the median of a product falls below the product of
+  medians. Interval coverage is unaffected.
 * Simulation draws cover fixed-effect uncertainty only. Use
   `method = "bootstrap"` when the random effects should vary as well.
 * A value assumes no price response, a total-loss counterfactual for the
