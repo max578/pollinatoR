@@ -237,12 +237,12 @@ test_that("a direct effect is refused; the total effect is valued", {
     pollin_value(va_draws(e), va_market(), channel = "dependence"),
     "pollin_value"
   )
-  # A direct estimand cannot be fitted yet, so its label is set by hand
-  e$effect <- "direct"
-  e$mediators <- "veg_weight"
+  skip_on_cran()
+  dr <- pollin_draws(pollin_fit(fd_estimand("direct")), n = 200L, seed = 1L)
+  expect_identical(summary(dr)$effect, "direct")
   expect_error(
-    pollin_value(va_draws(e), va_market(), channel = "dependence"),
-    "holds `veg_weight` fixed.*value the total effect"
+    pollin_value(dr, va_market(), channel = "dependence"),
+    "holds `veg` fixed.*value the total effect"
   )
 })
 

@@ -11,8 +11,17 @@
 #' data is kept in the fit; the contrast is read from the fitted model by
 #' [pollin_effects()].
 #'
+#' For an estimand with `effect = "direct"`, the fixed part adds the
+#' estimand's adjustment columns (its mediators, and with a graph the rest of
+#' its direct-effect set) as main effects, `response ~ treatment + <adjustment>
+#' + <random terms>`. The arm means then keep each row's observed adjustment
+#' values, so the contrast is the controlled direct effect averaged over the
+#' observed mediator values. With no treatment-by-mediator interaction in the
+#' model, that is the effect of the treatment at any fixed mediator value.
+#'
 #' Rows with a missing value in the response, the treatment, a unit column,
-#' the denominator or the `by` column are dropped for that response's model.
+#' the denominator, the `by` column or a direct effect's adjustment column are
+#' dropped for that response's model.
 #'
 #' When the data declare a denominator (`pollin_data(denominator = )`), each
 #' response is a count of successes out of that many trials and is fitted as
@@ -107,12 +116,6 @@ pollin_fit <- function(
 ) {
   .check_class(estimand, "pollin_estimand", arg = "estimand")
   .check_engine(engine)
-  if (identical(estimand$effect, "direct")) {
-    stop(
-      "A direct effect cannot be fitted by this version; fit the total effect.",
-      call. = FALSE
-    )
-  }
   if (inherits(estimand$population, "pollin_population")) {
     .population_check_fit_by(estimand$population, by)
   }
@@ -261,11 +264,16 @@ print.pollin_fit <- function(x, ...) {
 }
 
 #' Fit inputs from a `pollin_estimand`: the design's inputs with the estimand's
-#' `low` arm as the reference level
+#' `low` arm as the reference level and, for a direct effect, the adjustment
+#' columns as `covariates`
 #' @noRd
 #' @keywords internal
 .estimand_inputs <- function(estimand) {
-  .design_inputs(estimand$design, estimand$contrast[["low"]])
+  inputs <- .design_inputs(estimand$design, estimand$contrast[["low"]])
+  if (identical(estimand$effect, "direct")) {
+    inputs$covariates <- estimand$adjustment
+  }
+  inputs
 }
 
 # Fitting ---------------------------------------------------------------------
@@ -291,7 +299,7 @@ print.pollin_fit <- function(x, ...) {
   } else {
     paste(inputs$treatment, "*", by)
   }
-  rhs <- c(fixed, inputs$random)
+  rhs <- c(fixed, inputs$covariates, inputs$random)
   fits <- list()
   data <- list()
   families <- list()
@@ -350,13 +358,21 @@ print.pollin_fit <- function(x, ...) {
 
 #' The rows of the inputs' data fitted for one response: complete in the
 #' response, the treatment, the units, the denominator and `by`, with `by` a
-#' factor; with a denominator, the counts are checked against it
+#' factor, and in a direct effect's covariates; with a denominator, the counts
+#' are checked against it
 #' @noRd
 #' @keywords internal
 .response_rows <- function(inputs, response, by) {
   d <- inputs$data
   den <- inputs$denominator
-  cols <- c(response, inputs$treatment, inputs$unit, den, by)
+  cols <- c(
+    response,
+    inputs$treatment,
+    inputs$unit,
+    den,
+    by,
+    inputs$covariates
+  )
   keep <- stats::complete.cases(d[cols])
   if (!all(keep)) {
     d <- d[keep, , drop = FALSE]

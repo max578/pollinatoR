@@ -102,16 +102,34 @@ golden_grid_v010 <- function() {
   )
 }
 
+# The `effect` column added in 0.5.0 is the only column the older oracles
+# lack: every table it appears in must read "total", and it is then dropped so
+# the remaining columns are compared to the oracle unchanged.
+golden_total_only <- function(x) {
+  if (is.data.frame(x)) {
+    if ("effect" %in% names(x)) {
+      testthat::expect_true(all(x$effect == "total"))
+      x$effect <- NULL
+    }
+    return(x)
+  }
+  if (is.list(x) && !is.object(x)) {
+    x[] <- lapply(x, golden_total_only)
+  }
+  x
+}
+
 # The numbers an analyst reads from a pollin_effects object.
 golden_effects <- function(x) {
   x <- unclass(x)
-  x[c("table", "interval", "n_boot", "seed", "conf_level", "by")]
+  golden_total_only(x[c("table", "interval", "n_boot", "seed", "conf_level", "by")])
 }
 
 # The delta route of 0.1.0 to 0.3.1 is `interval = "delta_fixed"` since 0.4.0;
 # its outputs are compared to the 0.1.0 oracle under the old label.
 golden_fixed_as_delta <- function(x) {
   relabel <- function(v) replace(v, v == "delta_fixed", "delta")
+  x <- golden_total_only(x)
   if (is.data.frame(x)) {
     x$interval <- relabel(x$interval)
     return(x)

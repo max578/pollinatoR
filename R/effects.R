@@ -75,7 +75,8 @@
 #'   one row per response (and per `by` level) and the columns `response`,
 #'   `contrast`, any `by` column, `estimate`, `std.error`, `conf.low`,
 #'   `conf.high`, `p.value`, `family` (the estimand family), `scale`, `basis`,
-#'   `distribution` (the model family) and `interval`; and `interval`, `n_boot`,
+#'   `effect` (`"total"` or `"direct"`), `distribution` (the model family) and
+#'   `interval`; and `interval`, `n_boot`,
 #'   `seed`, `conf_level`, `by`, the `estimand` and `n_draws` (posterior
 #'   intervals only).
 #' @seealso [pollin_estimand()] for the scales and the basis.
@@ -156,6 +157,7 @@ pollin_effects <- function(
         family = est$family,
         scale = est$scale,
         basis = est$basis,
+        effect = est$effect,
         distribution = fit$families[[r]]$family,
         interval = interval,
         stringsAsFactors = FALSE
@@ -189,6 +191,7 @@ print.pollin_effects <- function(x, ...) {
   cat("  family   :", .family_label(e$family), "\n")
   cat("  scale    :", e$scale, "\n")
   cat("  basis    :", .basis_label(e$basis), "\n")
+  cat("  effect   :", .effect_label(e$effect, e$mediators), "\n")
   cat("  estimate :", .scale_definition(e$scale, e$basis, high, low), "\n")
   cat(
     "  interval :",

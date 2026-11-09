@@ -197,5 +197,4 @@ test_that("a direct effect is never the default and says what it assumes", {
   )
   expect_match(a$statement[a$assumption == "adjustment"], "analyst's declaration")
   expect_true(any(grepl("direct, holding veg fixed", capture.output(print(dir)))))
-  expect_error(pollin_fit(dir), "direct effect cannot be fitted")
 })

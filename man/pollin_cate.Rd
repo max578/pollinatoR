@@ -24,7 +24,7 @@ An object of class \code{pollin_cate}: a list holding \code{table}, with one
 row per response and level and the columns \code{response}, \code{contrast},
 \code{level}, \code{estimate}, \code{std.error}, \code{conf.low}, \code{conf.high}, \code{pooled}
 (\code{TRUE}), \code{n} (rows of the model data at the level), \code{family}, \code{scale},
-\code{basis}, \code{distribution} and \code{interval} (\code{"conditional"} on glmmTMB,
+\code{basis}, \code{effect}, \code{distribution} and \code{interval} (\code{"conditional"} on glmmTMB,
 \code{"posterior"} on flexyBayes); and \code{by}, \code{engine}, \code{conf_level}, \code{n},
 \code{seed} and the \code{estimand}.
 }

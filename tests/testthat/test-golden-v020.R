@@ -7,7 +7,7 @@
 test_that("bootstrap draws match 0.2.0", {
   skip_on_cran()
   gold <- readRDS(golden_path_v020())
-  now <- suppressWarnings(golden_capture_v020())
+  now <- golden_total_only(suppressWarnings(golden_capture_v020()))
   expect_identical(names(now), names(gold))
   expect_equal(
     now$draws_bootstrap,

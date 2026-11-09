@@ -166,3 +166,31 @@ test_that("moderation splits on the full key of an inner slope unit", {
   expect_identical(nlevels(inputs$wb_group), 16L)
   expect_identical(inputs$slope_key, "Site:Plot")
 })
+
+test_that("a direct effect adds its adjustment as main effects", {
+  skip_on_cran()
+  tot <- pollin_fit(fd_estimand())
+  dir <- pollin_fit(fd_estimand("direct"))
+  expect_identical(tot$rhs, c("trt", "(1 | Site)"))
+  expect_identical(dir$rhs, c("trt", "veg", "(1 | Site)"))
+  # On the log link with main effects only, the ratio of the averaged arm
+  # predictions is exp(b_trt) exactly, so the loss share is 1 - exp(-b_trt)
+  b <- glmmTMB::fixef(dir$fits$pods)$cond[["trtOpen"]]
+  e_dir <- pollin_effects(dir)
+  expect_equal(e_dir$table$estimate, 1 - exp(-b), tolerance = 1e-8)
+  expect_identical(e_dir$table$effect, "direct")
+  expect_identical(pollin_effects(tot)$table$effect, "total")
+  # The cage lowers veg, which lowers pods, so the total exceeds the direct
+  expect_gt(pollin_effects(tot)$table$estimate, e_dir$table$estimate)
+  expect_output(print(e_dir), "effect   : direct, holding veg fixed")
+})
+
+test_that("a direct effect drops rows missing an adjustment column", {
+  skip_on_cran()
+  est <- fd_estimand("direct")
+  est$design$data$data$veg[1:3] <- NA
+  expect_identical(nrow(pollin_fit(est)$data$pods), 157L)
+  est_t <- fd_estimand()
+  est_t$design$data$data$veg[1:3] <- NA
+  expect_identical(nrow(pollin_fit(est_t)$data$pods), 160L)
+})
