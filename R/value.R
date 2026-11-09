@@ -167,15 +167,13 @@ print.pollin_value <- function(x, ...) {
   )
   cat(
     "  basis      : ",
-    s$basis,
-    " (",
     .scale_definition(
       e$scale,
       e$basis,
       e$contrast[["high"]],
       e$contrast[["low"]]
     ),
-    ")\n",
+    "\n",
     sep = ""
   )
   cat("  level      :", s$level, "\n")
