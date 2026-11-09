@@ -99,17 +99,16 @@ area-weighted arm means, and the loss share formed from them.
 `#>   basis    : loss `\
 `#>   estimate : 1 - Bagged/Open (loss share) `\
 `#>   response : yield `\
-`#>   method   : simulation of the fixed effects `\
+`#>   method   : simulation of the fixed and random effects `\
 `#>   engine   : glmmTMB `\
 `#>   draws    : 1000 `\
-`#>   columns  : 0-100 m, 100-300 m, over 300 m, population `\
-`#>   note     : simulation draws cover fixed-effect uncertainty only`\
+`#>   columns  : 0-100 m, 100-300 m, over 300 m, population`\
 [`summary`](https://rdrr.io/r/base/summary.html)`(``dr_dep``)``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"level"``, ``"median"``, ``"conf.low"``, ``"conf.high"``)``]`\
 `#>        level    median   conf.low conf.high`\
 `#> 1    0-100 m 0.4066923 0.33474198 0.4681777`\
 `#> 2  100-300 m 0.3338761 0.24476716 0.4011106`\
 `#> 3 over 300 m 0.1691020 0.07298917 0.2519253`\
-`#> 4 population 0.2613885 0.20722735 0.3106252`
+`#> 4 population 0.2614497 0.20835286 0.3115552`
 
 The planted loss shares are 0.42, 0.33 and 0.22 in the three bands. The
 population loss share is a ratio of population means,
@@ -152,7 +151,7 @@ the production that would be lost if pollinators were wholly excluded.
 `val_dep`\
 `#> <pollin_value>`\
 `#>   channel    : dependence - value lost under total exclusion of pollinators `\
-`#>   value      : 658,700 AUD (95% interval 522,200 to 782,800) `\
+`#>   value      : 658,900 AUD (95% interval 525,000 to 785,100) `\
 `#>   basis      : 1 - Bagged/Open (loss share)`\
 `#>   level      : population `\
 `#>   population : district canola, by distance to vegetation: 3 strata of band, weighted by area `\
@@ -161,7 +160,7 @@ the production that would be lost if pollinators were wholly excluded.
 `#>   market     : 3,600 t at 700 AUD per t `\
 `#>   source     : Illustrative inputs `\
 `#>   attribution: agent all, product yield, crop canola `\
-`#>   method     : simulation of the fixed effects (1000 draws) `\
+`#>   method     : simulation of the fixed and random effects (1000 draws) `\
 `#>   assumptions:`\
 `#>     - No price response: the price is held fixed whatever the change in production.`\
 `#>     - Total-loss counterfactual: the value is the production lost if pollinators were wholly excluded, with no substitution by other pollinators or inputs.`\
@@ -193,7 +192,7 @@ draws, one per estimand draw, matched by position.
 `  , `[`c`](https://rdrr.io/r/base/c.html)`(``"median"``, ``"conf.low"``, ``"conf.high"``, ``"currency"``)`\
 `]`\
 `#>     median conf.low conf.high currency`\
-`#> 1 657525.5 433818.4  989986.2      AUD`
+`#> 1 657314.2 433421.1  992872.4      AUD`
 
 The median barely moves. The interval is wider because price and
 production are now uncertain too.
@@ -211,7 +210,7 @@ deficit estimand with `basis = "gain"`.
 [`pollin_value`](https://max578.github.io/pollinatoR/reference/pollin_value.md)`(``dr_def``, ``canola``, channel ``=`` ``"deficit"``)`\
 `#> <pollin_value>`\
 `#>   channel    : deficit - value of closing the gap to hand pollination `\
-`#>   value      : 835,500 AUD (95% interval 610,700 to 1,081,000) `\
+`#>   value      : 837,600 AUD (95% interval 607,800 to 1,074,000) `\
 `#>   basis      : Hand/Open - 1 (gain)`\
 `#>   level      : population `\
 `#>   population : district canola, by distance to vegetation: 3 strata of band, weighted by area `\
@@ -220,7 +219,7 @@ deficit estimand with `basis = "gain"`.
 `#>   market     : 3,600 t at 700 AUD per t `\
 `#>   source     : Illustrative inputs `\
 `#>   attribution: agent all, product yield, crop canola `\
-`#>   method     : simulation of the fixed effects (1000 draws) `\
+`#>   method     : simulation of the fixed and random effects (1000 draws) `\
 `#>   assumptions:`\
 `#>     - No price response: the price is held fixed whatever the change in production.`\
 `#>     - Gap counterfactual: the value is the production gained if the whole crop received hand-supplemented pollination, at no change in costs.`\
@@ -273,8 +272,8 @@ vegetation.
 `  `[`summary`](https://rdrr.io/r/base/summary.html)`(`[`pollin_value`](https://max578.github.io/pollinatoR/reference/pollin_value.md)`(``dr_near``, ``canola``, channel ``=`` ``"dependence"``)``)`\
 `)``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"median"``, ``"conf.low"``, ``"conf.high"``, ``"currency"``)``]`\
 `#>     median conf.low conf.high currency`\
-`#> 1 658699.0 522212.9  782775.6      AUD`\
-`#> 2 883006.5 763773.7 1003818.6      AUD`
+`#> 1 658853.1 525049.2  785119.1      AUD`\
+`#> 2 882757.4 762560.2 1004226.4      AUD`
 
 The first row is the district map, the second the map with most canola
 near vegetation. With production held at 3,600 t, the second value is
@@ -347,11 +346,11 @@ two.
 `  faba ``=`` `[`pollin_value`](https://max578.github.io/pollinatoR/reference/pollin_value.md)`(``faba_dr``, ``faba``, channel ``=`` ``"dependence"``, product ``=`` ``"seed"``)`\
 `)`\
 `#> <pollin_value_total>  sum of 2 values `\
-`#>   total      : 729,800 AUD (95% interval 596,000 to 854,000) `\
+`#>   total      : 730,400 AUD (95% interval 593,900 to 856,900) `\
 `#>   price year : 2025 `\
 `#>   draws      : 1000 (added draw by draw, paired by index)`\
 `#>   components :`\
-`#>     - canola: 658,700 AUD; dependence; agent all, product seed, crop canola; source: Illustrative inputs`\
+`#>     - canola: 658,900 AUD; dependence; agent all, product seed, crop canola; source: Illustrative inputs`\
 `#>     - faba: 72,410 AUD; dependence; agent all, product seed, crop faba bean; source: Illustrative inputs`
 
 ## What the value assumes
@@ -372,10 +371,11 @@ taken to hold across the stratum’s area, and the areas are taken as
 exact.
 
 The value is gross: the revenue from the production at stake, before any
-costs. With the default simulation draws the interval covers the
-uncertainty in the fixed effects only, not the variation between blocks;
+costs. The default simulation draws take the fixed effects and the
+trial’s own block effects jointly, so the interval covers the
+uncertainty in both. It does not cover new blocks drawn afresh;
 [`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md)
-with `method = "bootstrap"` includes it, at the cost of refitting the
+with `method = "bootstrap"` includes those, at the cost of refitting the
 model.
 
 ## References

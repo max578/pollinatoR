@@ -23,7 +23,7 @@ outcome from its values unless supplied."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,7 +78,14 @@ outcome from its values unless supplied.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pollin_contribution</span><span class="op">(</span><span class="va">x</span>, outcomes <span class="op">=</span> <span class="cn">NULL</span>, by <span class="op">=</span> <span class="cn">NULL</span>, families <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pollin_contribution</span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  outcomes <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  families <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"delta"</span>, <span class="st">"delta_fixed"</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -103,6 +110,12 @@ level (for example a region).</p></dd>
 <dt id="arg-families">families<a class="anchor" aria-label="anchor" href="#arg-families"></a></dt>
 <dd><p>Optional named list of <code>glmmTMB</code> family objects, one per
 outcome; outcomes it does not name are chosen from their values.</p></dd>
+
+
+<dt id="arg-interval">interval<a class="anchor" aria-label="anchor" href="#arg-interval"></a></dt>
+<dd><p><code>"delta"</code> (the default) or <code>"delta_fixed"</code>, the interval of
+<code><a href="pollin_effects.html">pollin_effects()</a></code>; <code>"delta_fixed"</code> reproduces the intervals of
+pollinatoR 0.3.1 and earlier.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -139,9 +152,9 @@ experimental manipulation – so no covariate adjustment is applied; see
 <span class="r-in"><span><span class="fu">pollin_contribution</span><span class="op">(</span><span class="va">est</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pollin_contribution&gt;  (open - exclusion, model-based ATE)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  response     contrast estimate std.error conf.low conf.high      p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      pods Open vs Cage   7.3875  1.436307  4.57239  10.20261 2.698127e-07</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      pods Open vs Cage   7.3875  1.436307  4.57239  10.20261 2.698125e-07</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      family      scale basis distribution interval slope_sd        p.fdr</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  dependence difference  loss      nbinom2    delta       NA 2.698127e-07</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  dependence difference  loss      nbinom2    delta       NA 2.698125e-07</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

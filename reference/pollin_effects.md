@@ -13,7 +13,7 @@ averaged predictions, never an average of unit ratios. With
 pollin_effects(
   fit,
   by = fit$by,
-  interval = c("delta", "bootstrap", "posterior"),
+  interval = c("delta", "delta_fixed", "bootstrap", "posterior"),
   n_boot = 999L,
   seed = NULL,
   conf_level = 0.95,
@@ -39,8 +39,8 @@ pollin_effects(
 
 - interval:
 
-  `"delta"` (the default for a glmmTMB fit), `"bootstrap"`, or
-  `"posterior"` (for a flexyBayes fit).
+  `"delta"` (the default for a glmmTMB fit), `"delta_fixed"`,
+  `"bootstrap"`, or `"posterior"` (for a flexyBayes fit).
 
 - n_boot:
 
@@ -85,12 +85,23 @@ row per response (and per `by` level) and the columns `response`,
 With `interval = "delta"`, the interval for a ratio-type scale is a
 delta interval for `log(rr)`, transformed to the scale, so the loss
 share stays below 1 and the RII inside (-1, 1); its p-value tests
-`rr = 1`. The delta interval carries the uncertainty in the fixed
-effects only. With `interval = "bootstrap"`, responses are simulated
-from the fitted model (new random effects included), the model is
-refitted to each simulated set, and the interval is the percentile
-interval of the refitted estimates; `std.error` is their standard
-deviation and `p.value` is `NA`.
+`rr = 1`. The delta interval is taken over the fixed effects and the
+random effects jointly, with their covariance from the inverse of the
+joint precision of the Laplace approximation: the estimand averages over
+the blocks and slopes of this trial, so the random effects enter at
+their realised values, with their uncertainty and their correlation with
+the fixed effects. A zero-inflated fit, or one whose joint precision is
+singular (a variance at zero), is an error that points to the bootstrap.
+`interval = "delta_fixed"` is the delta interval of pollinatoR 0.3.1 and
+earlier, from `marginaleffects`: it varies the fixed effects and holds
+the random effects at their modes, so it is wider than the joint
+interval wherever the estimand depends on both, as on a design with a
+random treatment slope or under a logit link. With
+`interval = "bootstrap"`, responses are simulated from the fitted model
+(new random effects included), the model is refitted to each simulated
+set, and the interval is the percentile interval of the refitted
+estimates; `std.error` is their standard deviation and `p.value` is
+`NA`.
 
 A fit with `engine = "flexyBayes"` has the `"posterior"` interval, its
 default and only one: the estimate is the median of the posterior draws
@@ -139,8 +150,7 @@ pollin_effects(fit)
 #>   scale    : ratio 
 #>   basis    : loss 
 #>   estimate : 1 - Cage/Open (loss share) 
-#>   interval : 95% delta 
-#>   note     : delta intervals cover fixed-effect uncertainty only
+#>   interval : 95% delta, fixed and random effects jointly 
 #>  response     contrast  estimate std.error  conf.low conf.high      p.value
 #>      pods Open vs Cage 0.2688808 0.0439437 0.1774744 0.3501293 1.882781e-07
 #>      family scale basis distribution interval

@@ -15,7 +15,7 @@ never an average of unit ratios. With rr = high / low:"></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@ never an average of unit ratios. With <code>rr = high / low</code>:</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pollin_effects</span><span class="op">(</span></span>
 <span>  <span class="va">fit</span>,</span>
 <span>  by <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">by</span>,</span>
-<span>  interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"delta"</span>, <span class="st">"bootstrap"</span>, <span class="st">"posterior"</span><span class="op">)</span>,</span>
+<span>  interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"delta"</span>, <span class="st">"delta_fixed"</span>, <span class="st">"bootstrap"</span>, <span class="st">"posterior"</span><span class="op">)</span>,</span>
 <span>  n_boot <span class="op">=</span> <span class="fl">999L</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
@@ -94,8 +94,8 @@ made with is an error: refit with <code>pollin_fit(..., by = )</code>.</p></dd>
 
 
 <dt id="arg-interval">interval<a class="anchor" aria-label="anchor" href="#arg-interval"></a></dt>
-<dd><p><code>"delta"</code> (the default for a glmmTMB fit), <code>"bootstrap"</code>,
-or <code>"posterior"</code> (for a flexyBayes fit).</p></dd>
+<dd><p><code>"delta"</code> (the default for a glmmTMB fit),
+<code>"delta_fixed"</code>, <code>"bootstrap"</code>, or <code>"posterior"</code> (for a flexyBayes fit).</p></dd>
 
 
 <dt id="arg-n-boot">n_boot<a class="anchor" aria-label="anchor" href="#arg-n-boot"></a></dt>
@@ -134,9 +134,20 @@ intervals only).</p>
 <table class="table table"><tr><td>Scale</td><td>Basis</td><td>Estimate</td></tr><tr><td><code>"difference"</code></td><td>either</td><td><code>high - low</code></td></tr><tr><td><code>"ratio"</code></td><td><code>"loss"</code></td><td><code>D = 1 - 1 / rr</code></td></tr><tr><td><code>"ratio"</code></td><td><code>"gain"</code></td><td><code>rr - 1</code></td></tr><tr><td><code>"rii"</code></td><td>either</td><td><code>(rr - 1) / (rr + 1)</code>, equal to <code>D / (2 - D)</code></td></tr><tr><td><code>"lnrr"</code></td><td>either</td><td><code>log(rr)</code></td></tr></table><p>With <code>interval = "delta"</code>, the interval for a ratio-type scale is a delta
 interval for <code>log(rr)</code>, transformed to the scale, so the loss share stays
 below 1 and the RII inside (-1, 1); its p-value tests <code>rr = 1</code>. The delta
-interval carries the uncertainty in the fixed effects only. With
-<code>interval = "bootstrap"</code>, responses are simulated from the fitted model
-(new random effects included), the model is refitted to each simulated set,
+interval is taken over the fixed effects and the random effects jointly,
+with their covariance from the inverse of the joint precision of the
+Laplace approximation: the estimand averages over the blocks and slopes of
+this trial, so the random effects enter at their realised values, with
+their uncertainty and their correlation with the fixed effects. A
+zero-inflated fit, or one whose joint precision is singular (a variance at
+zero), is an error that points to the bootstrap. <code>interval = "delta_fixed"</code>
+is the delta interval of pollinatoR 0.3.1 and earlier, from
+<code>marginaleffects</code>: it varies the fixed effects and holds the random effects
+at their modes, so it is wider than the joint interval wherever the
+estimand depends on both, as on a design with a random treatment slope or
+under a logit link. With <code>interval = "bootstrap"</code>, responses are simulated
+from the fitted model (new random effects included), the model is refitted
+to each simulated set,
 and the interval is the percentile interval of the refitted estimates;
 <code>std.error</code> is their standard deviation and <code>p.value</code> is <code>NA</code>.</p>
 <p>A fit with <code>engine = "flexyBayes"</code> has the <code>"posterior"</code> interval, its
@@ -178,8 +189,7 @@ population estimand is read with <code><a href="pollin_draws.html">pollin_draws(
 <span class="r-out co"><span class="r-pr">#&gt;</span>   scale    : ratio </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   basis    : loss </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate : 1 - Cage/Open (loss share) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   interval : 95% delta </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   note     : delta intervals cover fixed-effect uncertainty only</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   interval : 95% delta, fixed and random effects jointly </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  response     contrast  estimate std.error  conf.low conf.high      p.value</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      pods Open vs Cage 0.2688808 0.0439437 0.1774744 0.3501293 1.882781e-07</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      family scale basis distribution interval</span>

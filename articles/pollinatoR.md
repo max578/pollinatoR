@@ -185,14 +185,13 @@ an average of plant-level ratios.
 `#>   scale    : ratio `\
 `#>   basis    : loss `\
 `#>   estimate : 1 - Cage/Open (loss share) `\
-`#>   interval : 95% delta `\
-`#>   note     : delta intervals cover fixed-effect uncertainty only`\
+`#>   interval : 95% delta, fixed and random effects jointly `\
 `#>       response     contrast    estimate  std.error   conf.low conf.high`\
-`#>           pods Open vs Cage 0.360830947 0.05885434  0.2344141 0.4663733`\
-`#>  seeds_per_pod Open vs Cage 0.001935728 0.06804443 -0.1407497 0.1267740`\
+`#>           pods Open vs Cage 0.360842985 0.04175635  0.2735314 0.4376609`\
+`#>  seeds_per_pod Open vs Cage 0.001949038 0.05577679 -0.1135833 0.1054951`\
 `#>       p.value     family scale basis distribution interval`\
-`#>  1.168706e-06 dependence ratio  loss      nbinom2    delta`\
-`#>  9.773268e-01 dependence ratio  loss      nbinom2    delta`
+`#>  7.312430e-12 dependence ratio  loss      nbinom2    delta`\
+`#>  9.721519e-01 dependence ratio  loss      nbinom2    delta`
 
 A parametric bootstrap interval is available with
 `interval = "bootstrap"`; *A three-arm trial: deficit and dependence*
@@ -216,8 +215,8 @@ wraps the fit and the effects.
 `  `[`c`](https://rdrr.io/r/base/c.html)`(``"response"``, ``"estimate"``, ``"conf.low"``, ``"conf.high"``, ``"slope_sd"``, ``"p.fdr"``)`\
 `]`\
 `#>        response   estimate  conf.low conf.high  slope_sd        p.fdr`\
-`#> 1          pods 3.70932785  2.139484  5.279172 0.2170980 7.273592e-06`\
-`#> 2 seeds_per_pod 0.02967876 -2.015275  2.074632 0.1327942 9.773070e-01`
+`#> 1          pods 3.70949151  2.637200  4.781783 0.2170980 2.398355e-11`\
+`#> 2 seeds_per_pod 0.02988304 -1.647862  1.707628 0.1327942 9.721517e-01`
 
 ## Which insects drive the effect
 

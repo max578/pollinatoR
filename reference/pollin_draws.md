@@ -69,13 +69,14 @@ An object of class `pollin_draws`: a list holding
 Three methods are available:
 
 - `"simulation"` (the default for a glmmTMB fit) draws the fixed effects
-  from their estimated sampling distribution, a multivariate normal
-  centred on the estimates with their covariance matrix, and recomputes
-  the arm means for each draw. Every row keeps its estimated random
-  effects, the prediction rule of
-  [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md),
-  so the draws carry the uncertainty in the fixed effects only, like the
-  delta interval.
+  and the random effects jointly from a multivariate normal centred on
+  the estimates and the conditional modes, with the covariance of the
+  delta interval of
+  [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
+  (the inverse of the joint precision of the Laplace approximation), and
+  recomputes the arm means for each draw. The draws carry the
+  uncertainty in the realised block and slope effects of the trial and
+  their correlation with the fixed effects.
 
 - `"bootstrap"` keeps the arm means of the parametric bootstrap refits
   that
@@ -132,11 +133,10 @@ dr
 #>   basis    : loss 
 #>   estimate : 1 - Cage/Open (loss share) 
 #>   response : pods 
-#>   method   : simulation of the fixed effects 
+#>   method   : simulation of the fixed and random effects 
 #>   engine   : glmmTMB 
 #>   draws    : 2000 
 #>   columns  : overall 
-#>   note     : simulation draws cover fixed-effect uncertainty only
 summary(dr)
 #>   response   level    median  conf.low conf.high     family scale basis
 #> 1     pods overall 0.2691091 0.1741931 0.3524436 dependence ratio  loss

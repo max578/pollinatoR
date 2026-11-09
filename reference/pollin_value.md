@@ -152,7 +152,7 @@ pollin_value(dr, mk, channel = "dependence")
 #>   market     : 12,000 t at 650 AUD per t 
 #>   source     : Illustrative inputs 
 #>   attribution: agent all, product seed, crop not declared 
-#>   method     : simulation of the fixed effects (2000 draws) 
+#>   method     : simulation of the fixed and random effects (2000 draws) 
 #>   assumptions:
 #>     - No price response: the price is held fixed whatever the change in production.
 #>     - Total-loss counterfactual: the value is the production lost if pollinators were wholly excluded, with no substitution by other pollinators or inputs.

@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -325,14 +325,13 @@ ratio of averaged predictions, not an average of plant-level ratios.</p>
 <span><span class="co">#&gt;   scale    : ratio </span></span>
 <span><span class="co">#&gt;   basis    : loss </span></span>
 <span><span class="co">#&gt;   estimate : 1 - Cage/Open (loss share) </span></span>
-<span><span class="co">#&gt;   interval : 95% delta </span></span>
-<span><span class="co">#&gt;   note     : delta intervals cover fixed-effect uncertainty only</span></span>
+<span><span class="co">#&gt;   interval : 95% delta, fixed and random effects jointly </span></span>
 <span><span class="co">#&gt;       response     contrast    estimate  std.error   conf.low conf.high</span></span>
-<span><span class="co">#&gt;           pods Open vs Cage 0.360830947 0.05885434  0.2344141 0.4663733</span></span>
-<span><span class="co">#&gt;  seeds_per_pod Open vs Cage 0.001935728 0.06804443 -0.1407497 0.1267740</span></span>
+<span><span class="co">#&gt;           pods Open vs Cage 0.360842985 0.04175635  0.2735314 0.4376609</span></span>
+<span><span class="co">#&gt;  seeds_per_pod Open vs Cage 0.001949038 0.05577679 -0.1135833 0.1054951</span></span>
 <span><span class="co">#&gt;       p.value     family scale basis distribution interval</span></span>
-<span><span class="co">#&gt;  1.168706e-06 dependence ratio  loss      nbinom2    delta</span></span>
-<span><span class="co">#&gt;  9.773268e-01 dependence ratio  loss      nbinom2    delta</span></span></code></pre></div>
+<span><span class="co">#&gt;  7.312430e-12 dependence ratio  loss      nbinom2    delta</span></span>
+<span><span class="co">#&gt;  9.721519e-01 dependence ratio  loss      nbinom2    delta</span></span></code></pre></div>
 <p>A parametric bootstrap interval is available with
 <code>interval = "bootstrap"</code>; <em>A three-arm trial: deficit and
 dependence</em> shows it.</p>
@@ -352,8 +351,8 @@ fit and the effects.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"response"</span>, <span class="st">"estimate"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span>, <span class="st">"slope_sd"</span>, <span class="st">"p.fdr"</span><span class="op">)</span></span>
 <span><span class="op">]</span></span>
 <span><span class="co">#&gt;        response   estimate  conf.low conf.high  slope_sd        p.fdr</span></span>
-<span><span class="co">#&gt; 1          pods 3.70932785  2.139484  5.279172 0.2170980 7.273592e-06</span></span>
-<span><span class="co">#&gt; 2 seeds_per_pod 0.02967876 -2.015275  2.074632 0.1327942 9.773070e-01</span></span></code></pre></div>
+<span><span class="co">#&gt; 1          pods 3.70949151  2.637200  4.781783 0.2170980 2.398355e-11</span></span>
+<span><span class="co">#&gt; 2 seeds_per_pod 0.02988304 -1.647862  1.707628 0.1327942 9.721517e-01</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="which-insects-drive-the-effect">Which insects drive the effect<a class="anchor" aria-label="anchor" href="#which-insects-drive-the-effect"></a>

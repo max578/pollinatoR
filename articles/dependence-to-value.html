@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -173,17 +173,16 @@ the loss share formed from them.</p>
 <span><span class="co">#&gt;   basis    : loss </span></span>
 <span><span class="co">#&gt;   estimate : 1 - Bagged/Open (loss share) </span></span>
 <span><span class="co">#&gt;   response : yield </span></span>
-<span><span class="co">#&gt;   method   : simulation of the fixed effects </span></span>
+<span><span class="co">#&gt;   method   : simulation of the fixed and random effects </span></span>
 <span><span class="co">#&gt;   engine   : glmmTMB </span></span>
 <span><span class="co">#&gt;   draws    : 1000 </span></span>
-<span><span class="co">#&gt;   columns  : 0-100 m, 100-300 m, over 300 m, population </span></span>
-<span><span class="co">#&gt;   note     : simulation draws cover fixed-effect uncertainty only</span></span>
+<span><span class="co">#&gt;   columns  : 0-100 m, 100-300 m, over 300 m, population</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">dr_dep</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level"</span>, <span class="st">"median"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;        level    median   conf.low conf.high</span></span>
 <span><span class="co">#&gt; 1    0-100 m 0.4066923 0.33474198 0.4681777</span></span>
 <span><span class="co">#&gt; 2  100-300 m 0.3338761 0.24476716 0.4011106</span></span>
 <span><span class="co">#&gt; 3 over 300 m 0.1691020 0.07298917 0.2519253</span></span>
-<span><span class="co">#&gt; 4 population 0.2613885 0.20722735 0.3106252</span></span></code></pre></div>
+<span><span class="co">#&gt; 4 population 0.2614497 0.20835286 0.3115552</span></span></code></pre></div>
 <p>The planted loss shares are 0.42, 0.33 and 0.22 in the three bands.
 The population loss share is a ratio of population means,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><mo>∑</mo><mi>w</mi><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">l</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">w</mi></mrow><mi>/</mi><mo>∑</mo><mi>w</mi><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">h</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">g</mi><mi mathvariant="normal">h</mi></mrow></mrow><annotation encoding="application/x-tex">1 - \sum w\,\mathrm{low} / \sum w\,\mathrm{high}</annotation></semantics></math>,
@@ -224,7 +223,7 @@ if pollinators were wholly excluded.</p>
 <span><span class="va">val_dep</span></span>
 <span><span class="co">#&gt; &lt;pollin_value&gt;</span></span>
 <span><span class="co">#&gt;   channel    : dependence - value lost under total exclusion of pollinators </span></span>
-<span><span class="co">#&gt;   value      : 658,700 AUD (95% interval 522,200 to 782,800) </span></span>
+<span><span class="co">#&gt;   value      : 658,900 AUD (95% interval 525,000 to 785,100) </span></span>
 <span><span class="co">#&gt;   basis      : 1 - Bagged/Open (loss share)</span></span>
 <span><span class="co">#&gt;   level      : population </span></span>
 <span><span class="co">#&gt;   population : district canola, by distance to vegetation: 3 strata of band, weighted by area </span></span>
@@ -233,7 +232,7 @@ if pollinators were wholly excluded.</p>
 <span><span class="co">#&gt;   market     : 3,600 t at 700 AUD per t </span></span>
 <span><span class="co">#&gt;   source     : Illustrative inputs </span></span>
 <span><span class="co">#&gt;   attribution: agent all, product yield, crop canola </span></span>
-<span><span class="co">#&gt;   method     : simulation of the fixed effects (1000 draws) </span></span>
+<span><span class="co">#&gt;   method     : simulation of the fixed and random effects (1000 draws) </span></span>
 <span><span class="co">#&gt;   assumptions:</span></span>
 <span><span class="co">#&gt;     - No price response: the price is held fixed whatever the change in production.</span></span>
 <span><span class="co">#&gt;     - Total-loss counterfactual: the value is the production lost if pollinators were wholly excluded, with no substitution by other pollinators or inputs.</span></span>
@@ -266,7 +265,7 @@ draws, one per estimand draw, matched by position.</p>
 <span>  , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"median"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span>, <span class="st">"currency"</span><span class="op">)</span></span>
 <span><span class="op">]</span></span>
 <span><span class="co">#&gt;     median conf.low conf.high currency</span></span>
-<span><span class="co">#&gt; 1 657525.5 433818.4  989986.2      AUD</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 657314.2 433421.1  992872.4      AUD</span></span></code></pre></div>
 <p>The median barely moves. The interval is wider because price and
 production are now uncertain too.</p>
 </div>
@@ -283,7 +282,7 @@ and a deficit estimand with <code>basis = "gain"</code>.</p>
 <span><span class="fu"><a href="../reference/pollin_value.html">pollin_value</a></span><span class="op">(</span><span class="va">dr_def</span>, <span class="va">canola</span>, channel <span class="op">=</span> <span class="st">"deficit"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;pollin_value&gt;</span></span>
 <span><span class="co">#&gt;   channel    : deficit - value of closing the gap to hand pollination </span></span>
-<span><span class="co">#&gt;   value      : 835,500 AUD (95% interval 610,700 to 1,081,000) </span></span>
+<span><span class="co">#&gt;   value      : 837,600 AUD (95% interval 607,800 to 1,074,000) </span></span>
 <span><span class="co">#&gt;   basis      : Hand/Open - 1 (gain)</span></span>
 <span><span class="co">#&gt;   level      : population </span></span>
 <span><span class="co">#&gt;   population : district canola, by distance to vegetation: 3 strata of band, weighted by area </span></span>
@@ -292,7 +291,7 @@ and a deficit estimand with <code>basis = "gain"</code>.</p>
 <span><span class="co">#&gt;   market     : 3,600 t at 700 AUD per t </span></span>
 <span><span class="co">#&gt;   source     : Illustrative inputs </span></span>
 <span><span class="co">#&gt;   attribution: agent all, product yield, crop canola </span></span>
-<span><span class="co">#&gt;   method     : simulation of the fixed effects (1000 draws) </span></span>
+<span><span class="co">#&gt;   method     : simulation of the fixed and random effects (1000 draws) </span></span>
 <span><span class="co">#&gt;   assumptions:</span></span>
 <span><span class="co">#&gt;     - No price response: the price is held fixed whatever the change in production.</span></span>
 <span><span class="co">#&gt;     - Gap counterfactual: the value is the production gained if the whole crop received hand-supplemented pollination, at no change in costs.</span></span>
@@ -349,8 +348,8 @@ vegetation.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="../reference/pollin_value.html">pollin_value</a></span><span class="op">(</span><span class="va">dr_near</span>, <span class="va">canola</span>, channel <span class="op">=</span> <span class="st">"dependence"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"median"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span>, <span class="st">"currency"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;     median conf.low conf.high currency</span></span>
-<span><span class="co">#&gt; 1 658699.0 522212.9  782775.6      AUD</span></span>
-<span><span class="co">#&gt; 2 883006.5 763773.7 1003818.6      AUD</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 658853.1 525049.2  785119.1      AUD</span></span>
+<span><span class="co">#&gt; 2 882757.4 762560.2 1004226.4      AUD</span></span></code></pre></div>
 <p>The first row is the district map, the second the map with most
 canola near vegetation. With production held at 3,600 t, the second
 value is higher, because the crop near vegetation loses a larger share
@@ -419,11 +418,11 @@ the two.</p>
 <span>  faba <span class="op">=</span> <span class="fu"><a href="../reference/pollin_value.html">pollin_value</a></span><span class="op">(</span><span class="va">faba_dr</span>, <span class="va">faba</span>, channel <span class="op">=</span> <span class="st">"dependence"</span>, product <span class="op">=</span> <span class="st">"seed"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;pollin_value_total&gt;  sum of 2 values </span></span>
-<span><span class="co">#&gt;   total      : 729,800 AUD (95% interval 596,000 to 854,000) </span></span>
+<span><span class="co">#&gt;   total      : 730,400 AUD (95% interval 593,900 to 856,900) </span></span>
 <span><span class="co">#&gt;   price year : 2025 </span></span>
 <span><span class="co">#&gt;   draws      : 1000 (added draw by draw, paired by index)</span></span>
 <span><span class="co">#&gt;   components :</span></span>
-<span><span class="co">#&gt;     - canola: 658,700 AUD; dependence; agent all, product seed, crop canola; source: Illustrative inputs</span></span>
+<span><span class="co">#&gt;     - canola: 658,900 AUD; dependence; agent all, product seed, crop canola; source: Illustrative inputs</span></span>
 <span><span class="co">#&gt;     - faba: 72,410 AUD; dependence; agent all, product seed, crop faba bean; source: Illustrative inputs</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -444,10 +443,11 @@ paired as if the two were unrelated.</li>
 taken to hold across the stratum’s area, and the areas are taken as
 exact.</p>
 <p>The value is gross: the revenue from the production at stake, before
-any costs. With the default simulation draws the interval covers the
-uncertainty in the fixed effects only, not the variation between blocks;
+any costs. The default simulation draws take the fixed effects and the
+trial’s own block effects jointly, so the interval covers the
+uncertainty in both. It does not cover new blocks drawn afresh;
 <code><a href="../reference/pollin_draws.html">pollin_draws()</a></code> with <code>method = "bootstrap"</code>
-includes it, at the cost of refitting the model.</p>
+includes those, at the cost of refitting the model.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

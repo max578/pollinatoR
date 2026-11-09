@@ -1,5 +1,51 @@
 # Changelog
 
+## pollinatoR 0.4.0
+
+### Breaking changes
+
+- The default delta interval of
+  [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
+  on a glmmTMB fit is now taken over the fixed and random effects
+  jointly, with their covariance from the inverse of the joint precision
+  of the Laplace approximation. The estimand averages over the trial’s
+  own blocks and slopes, and the previous interval held those at their
+  modes, so it was too wide wherever the estimand depends on them: on
+  designs with a random treatment slope and under a logit link. On a log
+  link without a slope the interval is unchanged.
+  [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md)
+  and the simulation draws of
+  [`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md)
+  (and so
+  [`pollin_value()`](https://max578.github.io/pollinatoR/reference/pollin_value.md))
+  use the same covariance, and the glmmTMB intervals of
+  [`pollin_cate()`](https://max578.github.io/pollinatoR/reference/pollin_cate.md)
+  draw the fixed effects and the slopes jointly.
+- `interval = "delta_fixed"` gives the interval of 0.3.1 and earlier, on
+  [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
+  and
+  [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md).
+- Delta estimates now equal the G-computation used everywhere else in
+  the package. The 0.3.1 estimate came from `marginaleffects` and
+  differed from it by up to about 1e-5 relative; `"delta_fixed"` keeps
+  the old numbers.
+
+### New behaviour
+
+- When the joint precision is singular, as with a variance estimated at
+  zero, the interval holds the variance parameters at their estimates
+  and a warning says so. A zero-inflated fit is refused, with a pointer
+  to the bootstrap.
+- `TMB` and `Matrix`, both already required by glmmTMB, join Imports.
+
+### Validation
+
+- On 800 simulated trials over six designs, the joint interval covers
+  the planted effect 0.930 to 0.970 of the time and is as wide as the
+  flexyBayes posterior (median width ratio 0.98 to 1.00). On the same
+  data the 0.3.1 interval was 1.3 to 1.9 times wider on the binomial and
+  random-slope designs and covered 0.98 to 1.00.
+
 ## pollinatoR 0.3.1
 
 The flexyBayes engine is no longer labelled experimental. Its posterior

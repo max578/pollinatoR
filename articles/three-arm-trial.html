@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -279,14 +279,14 @@ changes how that pair of expected values is reported.</p>
 <span><span class="va">effects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">rows</span><span class="op">)</span></span>
 <span><span class="va">effects</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"family"</span>, <span class="st">"contrast"</span>, <span class="st">"scale"</span>, <span class="st">"estimate"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;       family       contrast      scale    estimate    conf.low  conf.high</span></span>
-<span><span class="co">#&gt; 1    deficit   Hand vs Open difference  8.81219559  2.83154691 14.7928443</span></span>
-<span><span class="co">#&gt; 2 dependence Open vs Bagged difference 19.94446792 14.75439295 25.1345429</span></span>
+<span><span class="co">#&gt; 1    deficit   Hand vs Open difference  8.81221396  2.87135321 14.7530747</span></span>
+<span><span class="co">#&gt; 2 dependence Open vs Bagged difference 19.94450950 14.99715421 24.8918648</span></span>
 <span><span class="co">#&gt; 3    deficit   Hand vs Open      ratio  0.11909515  0.04065030  0.1911257</span></span>
 <span><span class="co">#&gt; 4 dependence Open vs Bagged      ratio  0.30598730  0.24118799  0.3652530</span></span>
 <span><span class="co">#&gt; 5    deficit   Hand vs Open        rii  0.06331801  0.02074683  0.1056600</span></span>
 <span><span class="co">#&gt; 6 dependence Open vs Bagged        rii  0.18062869  0.13713119  0.2234309</span></span>
 <span><span class="co">#&gt; 7    deficit   Hand vs Open       lnrr  0.12680566  0.04149962  0.2121117</span></span>
-<span><span class="co">#&gt; 8 dependence Open vs Bagged       lnrr  0.36526501  0.27600121  0.4545288</span></span></code></pre></div>
+<span><span class="co">#&gt; 8 dependence Open vs Bagged       lnrr  0.36526501  0.27600122  0.4545288</span></span></code></pre></div>
 <p>The RII and the loss share are linked by
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">R</mi><mi mathvariant="normal">I</mi><mi mathvariant="normal">I</mi></mrow><mo>=</mo><mi>D</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mn>2</mn><mo>−</mo><mi>D</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathrm{RII} = D/(2 - D)</annotation></semantics></math>,
 and the log response ratio is
@@ -318,10 +318,9 @@ the field.</p>
 <span><span class="co">#&gt;   scale    : ratio </span></span>
 <span><span class="co">#&gt;   basis    : loss </span></span>
 <span><span class="co">#&gt;   estimate : 1 - Bagged/Hand (loss share) </span></span>
-<span><span class="co">#&gt;   interval : 95% delta </span></span>
-<span><span class="co">#&gt;   note     : delta intervals cover fixed-effect uncertainty only</span></span>
+<span><span class="co">#&gt;   interval : 95% delta, fixed and random effects jointly </span></span>
 <span><span class="co">#&gt;  response       contrast  estimate  std.error  conf.low conf.high      p.value</span></span>
-<span><span class="co">#&gt;      pods Hand vs Bagged 0.3886408 0.02758782 0.3321065 0.4403898 1.096722e-27</span></span>
+<span><span class="co">#&gt;      pods Hand vs Bagged 0.3886408 0.02758782 0.3321065 0.4403898 1.096724e-27</span></span>
 <span><span class="co">#&gt;      family scale basis distribution interval</span></span>
 <span><span class="co">#&gt;  dependence ratio  loss      nbinom2    delta</span></span></code></pre></div>
 </div>

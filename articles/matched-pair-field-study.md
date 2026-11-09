@@ -131,11 +131,10 @@ loss share $`D`$, the gain is $`D/(1 - D)`$.
 `#>   scale    : ratio `\
 `#>   basis    : loss `\
 `#>   estimate : 1 - Caged/Open (loss share) `\
-`#>   interval : 95% delta `\
-`#>   note     : delta intervals cover fixed-effect uncertainty only`\
+`#>   interval : 95% delta, fixed and random effects jointly `\
 `#>  response      contrast  estimate  std.error  conf.low conf.high      p.value`\
-`#>      pods Open vs Caged 0.2020465 0.02339658 0.1548468 0.2466103 1.384345e-14`\
-`#>    seed_g Open vs Caged 0.1585004 0.02456385 0.1089523 0.2052934 3.383183e-09`\
+`#>      pods Open vs Caged 0.2020465 0.02339659 0.1548468 0.2466103 1.384360e-14`\
+`#>    seed_g Open vs Caged 0.1585004 0.02456385 0.1089523 0.2052934 3.383188e-09`\
 `#>      family scale basis distribution interval`\
 `#>  dependence ratio  loss      nbinom2    delta`\
 `#>  dependence ratio  loss        Gamma    delta`\
@@ -163,11 +162,11 @@ response ratio are the scales most often used to compare studies.
 `}``)`\
 [`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, ``scale_rows``)``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"response"``, ``"scale"``, ``"estimate"``, ``"conf.low"``, ``"conf.high"``)``]`\
 `#>   response      scale   estimate    conf.low  conf.high`\
-`#> 1     pods difference 24.3988155 17.79598211 31.0016488`\
-`#> 2   seed_g difference  0.9644760  0.63345191  1.2955001`\
+`#> 1     pods difference 24.3989573 18.13663887 30.6612757`\
+`#> 2   seed_g difference  0.9644826  0.64259091  1.2863743`\
 `#> 3     pods        rii  0.1123758  0.08392086  0.1406477`\
 `#> 4   seed_g        rii  0.0860714  0.05761479  0.1143883`\
-`#> 5     pods       lnrr  0.2257050  0.16823742  0.2831726`\
+`#> 5     pods       lnrr  0.2257050  0.16823741  0.2831726`\
 `#> 6   seed_g       lnrr  0.1725698  0.11535733  0.2297822`
 
 For comparison with earlier work,
@@ -215,7 +214,7 @@ returns the loss share per region and for the population.
 `#> 1    Central 0.25858044  0.180760050 0.3318839`\
 `#> 2      North 0.09242441 -0.003609891 0.1755858`\
 `#> 3      South 0.11473639  0.022422333 0.1999879`\
-`#> 4 population 0.13594660  0.075141990 0.1946263`
+`#> 4 population 0.13570117  0.074451384 0.1944754`
 
 The population loss share is
 $`1 - \sum w\,\mathrm{caged} / \sum w\,\mathrm{open}`$, a ratio of the

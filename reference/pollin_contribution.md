@@ -16,7 +16,14 @@ unless supplied.
 ## Usage
 
 ``` r
-pollin_contribution(x, outcomes = NULL, by = NULL, families = list(), ...)
+pollin_contribution(
+  x,
+  outcomes = NULL,
+  by = NULL,
+  families = list(),
+  interval = c("delta", "delta_fixed"),
+  ...
+)
 ```
 
 ## Arguments
@@ -40,6 +47,13 @@ pollin_contribution(x, outcomes = NULL, by = NULL, families = list(), ...)
 
   Optional named list of `glmmTMB` family objects, one per outcome;
   outcomes it does not name are chosen from their values.
+
+- interval:
+
+  `"delta"` (the default) or `"delta_fixed"`, the interval of
+  [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md);
+  `"delta_fixed"` reproduces the intervals of pollinatoR 0.3.1 and
+  earlier.
 
 - ...:
 
@@ -79,8 +93,8 @@ est <- pollin_estimand(ds, "dependence", "difference", "loss")
 pollin_contribution(est)
 #> <pollin_contribution>  (open - exclusion, model-based ATE)
 #>  response     contrast estimate std.error conf.low conf.high      p.value
-#>      pods Open vs Cage   7.3875  1.436307  4.57239  10.20261 2.698127e-07
+#>      pods Open vs Cage   7.3875  1.436307  4.57239  10.20261 2.698125e-07
 #>      family      scale basis distribution interval slope_sd        p.fdr
-#>  dependence difference  loss      nbinom2    delta       NA 2.698127e-07
+#>  dependence difference  loss      nbinom2    delta       NA 2.698125e-07
 # }
 ```

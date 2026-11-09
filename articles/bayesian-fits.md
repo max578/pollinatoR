@@ -106,9 +106,10 @@ binomial family is set explicitly, so both engines use it.
 
 [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
 reads the loss share from each fit. On glmmTMB the interval is the delta
-interval. On flexyBayes it is the posterior interval: the estimate is
-the median of the posterior draws of the loss share, the interval their
-equal-tailed 95% interval, and `p.value` is `NA`.
+interval, taken over the fixed and random effects jointly. On flexyBayes
+it is the posterior interval: the estimate is the median of the
+posterior draws of the loss share, the interval their equal-tailed 95%
+interval, and `p.value` is `NA`.
 
 \
 `eff_tmb`` ``<-`` `[`pollin_effects`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)`(``fit_tmb``)`\
@@ -123,12 +124,13 @@ equal-tailed 95% interval, and `p.value` is `NA`.
 `]`\
 `#>    estimate  std.error  conf.low conf.high  interval`\
 `#> 1 0.3289669 0.03075109 0.2659063 0.3866105     delta`\
-`#> 2 0.3272635 0.03177409 0.2624175 0.3864073 posterior`
+`#> 2 0.3272635 0.03177408 0.2624175 0.3864073 posterior`
 
 With a few hundred plants and a block intercept as the only random term,
-the two engines agree closely. The posterior interval also covers the
-uncertainty in the block variance, which the delta interval does not;
-with few blocks this can widen it.
+the two engines agree closely. Both intervals carry the uncertainty in
+the block variance: the posterior integrates over it, and the delta
+interval approximates it through the joint precision of the Laplace
+approximation.
 
 ## From posterior draws to a value
 
@@ -176,7 +178,7 @@ illustrative.
 `)``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"median"``, ``"conf.low"``, ``"conf.high"``, ``"currency"``, ``"method"``)``]`\
 `#>     median conf.low conf.high currency     method`\
 `#> 1 824536.6 662938.5  977626.5      AUD simulation`\
-`#> 2 824704.1 661292.1  973746.5      AUD  posterior`
+`#> 2 824704.1 661292.0  973746.4      AUD  posterior`
 
 The vignette *From dependence to value* covers the channels, populations
 and the double-count guard. Each of them takes posterior draws.
@@ -226,14 +228,14 @@ multi-site study, is declared in the design with
 `#>   interval : 95% posterior, equal-tailed (1000 draws) `\
 `#> Pooled: partial pooling through the random treatment slope on variety `\
 `#>  response       contrast level    estimate  std.error    conf.low conf.high`\
-`#>      pods Open vs Bagged    V1 -0.03764906 0.12817868 -0.32706420 0.1824306`\
-`#>      pods Open vs Bagged    V2  0.52106736 0.04963085  0.42457569 0.6117435`\
-`#>      pods Open vs Bagged    V3  0.41298404 0.05809910  0.28692986 0.5161863`\
-`#>      pods Open vs Bagged    V4  0.30969132 0.06842307  0.17060543 0.4301072`\
-`#>      pods Open vs Bagged    V5  0.15062597 0.09294575 -0.05051148 0.3107033`\
-`#>      pods Open vs Bagged    V6  0.28531157 0.06768514  0.13552347 0.3989920`\
-`#>      pods Open vs Bagged    V7  0.41258609 0.06275980  0.27923350 0.5295922`\
-`#>      pods Open vs Bagged    V8  0.26678752 0.07837492  0.09901901 0.4024847`\
+`#>      pods Open vs Bagged    V1 -0.03765513 0.12818008 -0.32705765 0.1824290`\
+`#>      pods Open vs Bagged    V2  0.52106684 0.04963124  0.42457435 0.6117453`\
+`#>      pods Open vs Bagged    V3  0.41298387 0.05809948  0.28693099 0.5161875`\
+`#>      pods Open vs Bagged    V4  0.30969114 0.06842357  0.17060470 0.4301068`\
+`#>      pods Open vs Bagged    V5  0.15062658 0.09294636 -0.05052131 0.3107053`\
+`#>      pods Open vs Bagged    V6  0.28531109 0.06768565  0.13552124 0.3989924`\
+`#>      pods Open vs Bagged    V7  0.41258595 0.06276025  0.27923342 0.5295937`\
+`#>      pods Open vs Bagged    V8  0.26678756 0.07837561  0.09901543 0.4024860`\
 `#>  pooled  n     family scale basis distribution  interval`\
 `#>    TRUE 36 dependence ratio  loss      nbinom2 posterior`\
 `#>    TRUE 36 dependence ratio  loss      nbinom2 posterior`\
@@ -288,27 +290,24 @@ over the varieties as a whole, not for each one.
 
 The two engines differ in how they get the interval. On flexyBayes it
 comes from the posterior draws, as for the overall effect. On glmmTMB it
-is approximate: the fixed effects are drawn from their sampling
-distribution and, independently of them, each variety’s slope from its
-conditional variance. glmmTMB gives the conditional variance of each
-coefficient on its own, not their joint covariance, so the approximation
-cannot carry the correlation between them.
+is approximate: the fixed effects and the varieties’ slopes are drawn
+jointly from a normal distribution with the covariance of the delta
+interval, so the draws carry the correlation between them.
 
 \
 `cate_tmb``$``table``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"level"``, ``"estimate"``, ``"conf.low"``, ``"conf.high"``)``]`\
-`#>   level   estimate     conf.low conf.high`\
-`#> 1    V1 -0.0997176 -0.531228745 0.2059457`\
-`#> 2    V2  0.4878510  0.288503895 0.6231699`\
-`#> 3    V3  0.4502143  0.266566464 0.5886328`\
-`#> 4    V4  0.3255154  0.102652785 0.4975262`\
-`#> 5    V5  0.1719329 -0.136818373 0.3901447`\
-`#> 6    V6  0.3327006  0.085463620 0.5134375`\
-`#> 7    V7  0.3687068  0.155724480 0.5415963`\
-`#> 8    V8  0.2630115  0.002286701 0.4538072`
+`#>   level   estimate    conf.low conf.high`\
+`#> 1    V1 -0.0997176 -0.36423304 0.1181613`\
+`#> 2    V2  0.4878510  0.37137752 0.5770984`\
+`#> 3    V3  0.4502143  0.33706411 0.5386251`\
+`#> 4    V4  0.3255154  0.20910660 0.4358281`\
+`#> 5    V5  0.1719329 -0.01475916 0.3131227`\
+`#> 6    V6  0.3327006  0.20124754 0.4425291`\
+`#> 7    V7  0.3687068  0.23003453 0.4841452`\
+`#> 8    V8  0.2630115  0.11233377 0.3785739`
 
-In this trial they come out wider than the unpooled delta intervals,
-although pooling should narrow them. The flexyBayes intervals are as
-narrow as the unpooled ones or narrower.
+In this trial pooling narrows the intervals of most varieties on both
+engines, though not all of them.
 
 When glmmTMB estimates the slope variance at zero, every variety’s
 pooled effect equals the overall one, and the conditional variances
@@ -373,8 +372,8 @@ with standard deviation 1:
 [`pollin_effects`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)`(``fit_prior``, n_draws ``=`` ``1000L``, seed ``=`` ``1L``)``$``table``[`\
 `  , `[`c`](https://rdrr.io/r/base/c.html)`(``"estimate"``, ``"conf.low"``, ``"conf.high"``)`\
 `]`\
-`#>    estimate conf.low conf.high`\
-`#> 1 0.3267644 0.261867  0.385872`
+`#>    estimate  conf.low conf.high`\
+`#> 1 0.3267644 0.2618674 0.3858719`
 
 [`flexyBayes::prior_summary()`](https://aagi-aus.github.io/flexyBayes/reference/prior_summary.html)
 on a fitted model, `fit_prior$fits$pods`, lists each prior and the INLA

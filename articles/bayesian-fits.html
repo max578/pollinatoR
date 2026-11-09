@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -175,10 +175,11 @@ binomial family is set explicitly, so both engines use it.</p>
 <span><span class="co">#&gt;   model     : &lt;response&gt; ~ trt + block </span></span>
 <span><span class="co">#&gt;   pods      : nbinom2, 288 rows</span></span></code></pre></div>
 <p><code><a href="../reference/pollin_effects.html">pollin_effects()</a></code> reads the loss share from each fit. On
-glmmTMB the interval is the delta interval. On flexyBayes it is the
-posterior interval: the estimate is the median of the posterior draws of
-the loss share, the interval their equal-tailed 95% interval, and
-<code>p.value</code> is <code>NA</code>.</p>
+glmmTMB the interval is the delta interval, taken over the fixed and
+random effects jointly. On flexyBayes it is the posterior interval: the
+estimate is the median of the posterior draws of the loss share, the
+interval their equal-tailed 95% interval, and <code>p.value</code> is
+<code>NA</code>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">eff_tmb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pollin_effects.html">pollin_effects</a></span><span class="op">(</span><span class="va">fit_tmb</span><span class="op">)</span></span>
 <span><span class="va">eff_tmb</span><span class="op">$</span><span class="va">table</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"std.error"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span>, <span class="st">"interval"</span><span class="op">)</span><span class="op">]</span></span>
@@ -191,11 +192,12 @@ the loss share, the interval their equal-tailed 95% interval, and
 <span><span class="op">]</span></span>
 <span><span class="co">#&gt;    estimate  std.error  conf.low conf.high  interval</span></span>
 <span><span class="co">#&gt; 1 0.3289669 0.03075109 0.2659063 0.3866105     delta</span></span>
-<span><span class="co">#&gt; 2 0.3272635 0.03177409 0.2624175 0.3864073 posterior</span></span></code></pre></div>
+<span><span class="co">#&gt; 2 0.3272635 0.03177408 0.2624175 0.3864073 posterior</span></span></code></pre></div>
 <p>With a few hundred plants and a block intercept as the only random
-term, the two engines agree closely. The posterior interval also covers
-the uncertainty in the block variance, which the delta interval does
-not; with few blocks this can widen it.</p>
+term, the two engines agree closely. Both intervals carry the
+uncertainty in the block variance: the posterior integrates over it, and
+the delta interval approximates it through the joint precision of the
+Laplace approximation.</p>
 </div>
 <div class="section level2">
 <h2 id="from-posterior-draws-to-a-value">From posterior draws to a value<a class="anchor" aria-label="anchor" href="#from-posterior-draws-to-a-value"></a>
@@ -238,7 +240,7 @@ draws do. The market inputs below are illustrative.</p>
 <span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"median"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span>, <span class="st">"currency"</span>, <span class="st">"method"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;     median conf.low conf.high currency     method</span></span>
 <span><span class="co">#&gt; 1 824536.6 662938.5  977626.5      AUD simulation</span></span>
-<span><span class="co">#&gt; 2 824704.1 661292.1  973746.5      AUD  posterior</span></span></code></pre></div>
+<span><span class="co">#&gt; 2 824704.1 661292.0  973746.4      AUD  posterior</span></span></code></pre></div>
 <p>The vignette <em>From dependence to value</em> covers the channels,
 populations and the double-count guard. Each of them takes posterior
 draws.</p>
@@ -282,14 +284,14 @@ multi-site study, is declared in the design with
 <span><span class="co">#&gt;   interval : 95% posterior, equal-tailed (1000 draws) </span></span>
 <span><span class="co">#&gt; Pooled: partial pooling through the random treatment slope on variety </span></span>
 <span><span class="co">#&gt;  response       contrast level    estimate  std.error    conf.low conf.high</span></span>
-<span><span class="co">#&gt;      pods Open vs Bagged    V1 -0.03764906 0.12817868 -0.32706420 0.1824306</span></span>
-<span><span class="co">#&gt;      pods Open vs Bagged    V2  0.52106736 0.04963085  0.42457569 0.6117435</span></span>
-<span><span class="co">#&gt;      pods Open vs Bagged    V3  0.41298404 0.05809910  0.28692986 0.5161863</span></span>
-<span><span class="co">#&gt;      pods Open vs Bagged    V4  0.30969132 0.06842307  0.17060543 0.4301072</span></span>
-<span><span class="co">#&gt;      pods Open vs Bagged    V5  0.15062597 0.09294575 -0.05051148 0.3107033</span></span>
-<span><span class="co">#&gt;      pods Open vs Bagged    V6  0.28531157 0.06768514  0.13552347 0.3989920</span></span>
-<span><span class="co">#&gt;      pods Open vs Bagged    V7  0.41258609 0.06275980  0.27923350 0.5295922</span></span>
-<span><span class="co">#&gt;      pods Open vs Bagged    V8  0.26678752 0.07837492  0.09901901 0.4024847</span></span>
+<span><span class="co">#&gt;      pods Open vs Bagged    V1 -0.03765513 0.12818008 -0.32705765 0.1824290</span></span>
+<span><span class="co">#&gt;      pods Open vs Bagged    V2  0.52106684 0.04963124  0.42457435 0.6117453</span></span>
+<span><span class="co">#&gt;      pods Open vs Bagged    V3  0.41298387 0.05809948  0.28693099 0.5161875</span></span>
+<span><span class="co">#&gt;      pods Open vs Bagged    V4  0.30969114 0.06842357  0.17060470 0.4301068</span></span>
+<span><span class="co">#&gt;      pods Open vs Bagged    V5  0.15062658 0.09294636 -0.05052131 0.3107053</span></span>
+<span><span class="co">#&gt;      pods Open vs Bagged    V6  0.28531109 0.06768565  0.13552124 0.3989924</span></span>
+<span><span class="co">#&gt;      pods Open vs Bagged    V7  0.41258595 0.06276025  0.27923342 0.5295937</span></span>
+<span><span class="co">#&gt;      pods Open vs Bagged    V8  0.26678756 0.07837561  0.09901543 0.4024860</span></span>
 <span><span class="co">#&gt;  pooled  n     family scale basis distribution  interval</span></span>
 <span><span class="co">#&gt;    TRUE 36 dependence ratio  loss      nbinom2 posterior</span></span>
 <span><span class="co">#&gt;    TRUE 36 dependence ratio  loss      nbinom2 posterior</span></span>
@@ -339,25 +341,22 @@ away from it, while V7 moves towards it. Partial pooling lowers the
 error over the varieties as a whole, not for each one.</p>
 <p>The two engines differ in how they get the interval. On flexyBayes it
 comes from the posterior draws, as for the overall effect. On glmmTMB it
-is approximate: the fixed effects are drawn from their sampling
-distribution and, independently of them, each variety’s slope from its
-conditional variance. glmmTMB gives the conditional variance of each
-coefficient on its own, not their joint covariance, so the approximation
-cannot carry the correlation between them.</p>
+is approximate: the fixed effects and the varieties’ slopes are drawn
+jointly from a normal distribution with the covariance of the delta
+interval, so the draws carry the correlation between them.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cate_tmb</span><span class="op">$</span><span class="va">table</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level"</span>, <span class="st">"estimate"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;   level   estimate     conf.low conf.high</span></span>
-<span><span class="co">#&gt; 1    V1 -0.0997176 -0.531228745 0.2059457</span></span>
-<span><span class="co">#&gt; 2    V2  0.4878510  0.288503895 0.6231699</span></span>
-<span><span class="co">#&gt; 3    V3  0.4502143  0.266566464 0.5886328</span></span>
-<span><span class="co">#&gt; 4    V4  0.3255154  0.102652785 0.4975262</span></span>
-<span><span class="co">#&gt; 5    V5  0.1719329 -0.136818373 0.3901447</span></span>
-<span><span class="co">#&gt; 6    V6  0.3327006  0.085463620 0.5134375</span></span>
-<span><span class="co">#&gt; 7    V7  0.3687068  0.155724480 0.5415963</span></span>
-<span><span class="co">#&gt; 8    V8  0.2630115  0.002286701 0.4538072</span></span></code></pre></div>
-<p>In this trial they come out wider than the unpooled delta intervals,
-although pooling should narrow them. The flexyBayes intervals are as
-narrow as the unpooled ones or narrower.</p>
+<span><span class="co">#&gt;   level   estimate    conf.low conf.high</span></span>
+<span><span class="co">#&gt; 1    V1 -0.0997176 -0.36423304 0.1181613</span></span>
+<span><span class="co">#&gt; 2    V2  0.4878510  0.37137752 0.5770984</span></span>
+<span><span class="co">#&gt; 3    V3  0.4502143  0.33706411 0.5386251</span></span>
+<span><span class="co">#&gt; 4    V4  0.3255154  0.20910660 0.4358281</span></span>
+<span><span class="co">#&gt; 5    V5  0.1719329 -0.01475916 0.3131227</span></span>
+<span><span class="co">#&gt; 6    V6  0.3327006  0.20124754 0.4425291</span></span>
+<span><span class="co">#&gt; 7    V7  0.3687068  0.23003453 0.4841452</span></span>
+<span><span class="co">#&gt; 8    V8  0.2630115  0.11233377 0.3785739</span></span></code></pre></div>
+<p>In this trial pooling narrows the intervals of most varieties on both
+engines, though not all of them.</p>
 <p>When glmmTMB estimates the slope variance at zero, every variety’s
 pooled effect equals the overall one, and the conditional variances
 carry no information. <code><a href="../reference/pollin_cate.html">pollin_cate()</a></code> stops on such a fit
@@ -415,8 +414,8 @@ of the open-to-bagged ratio, gets a normal prior with standard deviation
 <span><span class="fu"><a href="../reference/pollin_effects.html">pollin_effects</a></span><span class="op">(</span><span class="va">fit_prior</span>, n_draws <span class="op">=</span> <span class="fl">1000L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">$</span><span class="va">table</span><span class="op">[</span></span>
 <span>  , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span><span class="op">)</span></span>
 <span><span class="op">]</span></span>
-<span><span class="co">#&gt;    estimate conf.low conf.high</span></span>
-<span><span class="co">#&gt; 1 0.3267644 0.261867  0.385872</span></span></code></pre></div>
+<span><span class="co">#&gt;    estimate  conf.low conf.high</span></span>
+<span><span class="co">#&gt; 1 0.3267644 0.2618674 0.3858719</span></span></code></pre></div>
 <p><code><a href="https://aagi-aus.github.io/flexyBayes/reference/prior_summary.html" class="external-link">flexyBayes::prior_summary()</a></code> on a fitted model,
 <code>fit_prior$fits$pods</code>, lists each prior and the INLA
 parameter it reached.</p>

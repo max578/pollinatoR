@@ -84,7 +84,7 @@ and needs a loss share.
 |  | [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md) | Dependence on the difference scale, with FDR-adjusted p-values and the treatment-slope SD |
 |  | [`pollin_moderation()`](https://max578.github.io/pollinatoR/reference/pollin_moderation.md) | Treatment-by-exposure terms, split within and between units |
 | Population | [`pollin_population()`](https://max578.github.io/pollinatoR/reference/pollin_population.md) | Strata of one column (distance bands, regions) weighted by area, passed to [`pollin_estimand()`](https://max578.github.io/pollinatoR/reference/pollin_estimand.md) |
-| Draws | [`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md) | Draws of the arm means and the estimand, by simulation of the fixed effects, parametric bootstrap, or from the posterior of a flexyBayes fit |
+| Draws | [`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md) | Draws of the arm means and the estimand, by joint simulation of the fixed and random effects, parametric bootstrap, or from the posterior of a flexyBayes fit |
 | Value | [`pollin_market()`](https://max578.github.io/pollinatoR/reference/pollin_market.md) | Current production and price, as values or draws, with unit, currency, price year and source |
 |  | [`pollin_value()`](https://max578.github.io/pollinatoR/reference/pollin_value.md) | Value per draw through the `dependence` or `deficit` channel, with the assumptions it rests on |
 | Guards | [`pollin_guard_spurious()`](https://max578.github.io/pollinatoR/reference/pollin_guard_spurious.md) | Index-versus-yield slope against a permutation null |

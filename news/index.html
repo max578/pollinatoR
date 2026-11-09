@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,6 +47,26 @@
       <small>Source: <a href="https://github.com/max578/pollinatoR/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.0" id="pollinator-040">pollinatoR 0.4.0<a class="anchor" aria-label="anchor" href="#pollinator-040"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-4-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-4-0"></a></h3>
+<ul><li>The default delta interval of <code><a href="../reference/pollin_effects.html">pollin_effects()</a></code> on a glmmTMB fit is now taken over the fixed and random effects jointly, with their covariance from the inverse of the joint precision of the Laplace approximation. The estimand averages over the trial’s own blocks and slopes, and the previous interval held those at their modes, so it was too wide wherever the estimand depends on them: on designs with a random treatment slope and under a logit link. On a log link without a slope the interval is unchanged. <code><a href="../reference/pollin_contribution.html">pollin_contribution()</a></code> and the simulation draws of <code><a href="../reference/pollin_draws.html">pollin_draws()</a></code> (and so <code><a href="../reference/pollin_value.html">pollin_value()</a></code>) use the same covariance, and the glmmTMB intervals of <code><a href="../reference/pollin_cate.html">pollin_cate()</a></code> draw the fixed effects and the slopes jointly.</li>
+<li>
+<code>interval = "delta_fixed"</code> gives the interval of 0.3.1 and earlier, on <code><a href="../reference/pollin_effects.html">pollin_effects()</a></code> and <code><a href="../reference/pollin_contribution.html">pollin_contribution()</a></code>.</li>
+<li>Delta estimates now equal the G-computation used everywhere else in the package. The 0.3.1 estimate came from <code>marginaleffects</code> and differed from it by up to about 1e-5 relative; <code>"delta_fixed"</code> keeps the old numbers.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-behaviour-0-4-0">New behaviour<a class="anchor" aria-label="anchor" href="#new-behaviour-0-4-0"></a></h3>
+<ul><li>When the joint precision is singular, as with a variance estimated at zero, the interval holds the variance parameters at their estimates and a warning says so. A zero-inflated fit is refused, with a pointer to the bootstrap.</li>
+<li>
+<code>TMB</code> and <code>Matrix</code>, both already required by glmmTMB, join Imports.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="validation-0-4-0">Validation<a class="anchor" aria-label="anchor" href="#validation-0-4-0"></a></h3>
+<ul><li>On 800 simulated trials over six designs, the joint interval covers the planted effect 0.930 to 0.970 of the time and is as wide as the flexyBayes posterior (median width ratio 0.98 to 1.00). On the same data the 0.3.1 interval was 1.3 to 1.9 times wider on the binomial and random-slope designs and covered 0.98 to 1.00.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.1" id="pollinator-031">pollinatoR 0.3.1<a class="anchor" aria-label="anchor" href="#pollinator-031"></a></h2>
 <p>The flexyBayes engine is no longer labelled experimental. Its posterior on designs with a random treatment slope matches an exact posterior, and the remaining coverage shortfall on those designs is a property of the interval with few sites (see Validation).</p>

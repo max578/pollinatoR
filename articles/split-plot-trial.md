@@ -113,10 +113,9 @@ larger of the two.
 `#>   scale    : ratio `\
 `#>   basis    : loss `\
 `#>   estimate : 1 - Cage/Open (loss share) `\
-`#>   interval : 95% delta `\
-`#>   note     : delta intervals cover fixed-effect uncertainty only`\
+`#>   interval : 95% delta, fixed and random effects jointly `\
 `#>  response     contrast  estimate  std.error  conf.low conf.high      p.value`\
-`#>      pods Open vs Cage 0.2234674 0.02784709 0.1669243 0.2761728 1.754401e-12`\
+`#>      pods Open vs Cage 0.2234674 0.02784709 0.1669243 0.2761728 1.754404e-12`\
 `#>      family scale basis distribution interval`\
 `#>  dependence ratio  loss      nbinom2    delta`\
 `est_gain`` ``<-`` `[`pollin_estimand`](https://max578.github.io/pollinatoR/reference/pollin_estimand.md)`(``ds``, family ``=`` ``"dependence"``, scale ``=`` ``"ratio"``, basis ``=`` ``"gain"``)`\
@@ -147,15 +146,15 @@ then reports one contrast per variety.
 `by_variety`` ``<-`` `[`pollin_effects`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)`(``fit_v``)``$``table`\
 `by_variety``$``planted`` ``<-`` ``dependence``[``by_variety``$``variety``]`\
 `by_variety``[`[`c`](https://rdrr.io/r/base/c.html)`(``"variety"``, ``"estimate"``, ``"conf.low"``, ``"conf.high"``, ``"planted"``)``]`\
-`#>   variety    estimate    conf.low  conf.high planted`\
-`#> 1      V1  0.09209871 -0.08495258 0.24025734    0.10`\
-`#> 2      V2  0.19019322  0.03605114 0.31968691    0.30`\
-`#> 3      V3  0.24345723  0.09822532 0.36529937    0.20`\
-`#> 4      V4  0.06684707 -0.10409827 0.21132529    0.15`\
-`#> 5      V5  0.41342001  0.29394563 0.51267764    0.35`\
-`#> 6      V6  0.37635114  0.25716216 0.47641615    0.25`\
-`#> 7      V7 -0.07374589 -0.27114251 0.09299687    0.05`\
-`#> 8      V8  0.41243944  0.29586199 0.50971626    0.30`
+`#>   variety    estimate    conf.low conf.high planted`\
+`#> 1      V1  0.09209871 -0.08495259 0.2402573    0.10`\
+`#> 2      V2  0.19019322  0.03605108 0.3196870    0.30`\
+`#> 3      V3  0.24345723  0.09822541 0.3652993    0.20`\
+`#> 4      V4  0.06684707 -0.10409850 0.2113255    0.15`\
+`#> 5      V5  0.41342001  0.29394562 0.5126776    0.35`\
+`#> 6      V6  0.37635114  0.25716212 0.4764162    0.25`\
+`#> 7      V7 -0.07374589 -0.27114254 0.0929969    0.05`\
+`#> 8      V8  0.41243944  0.29586198 0.5097163    0.30`
 
 Each variety’s estimate rests on its own 24 plants, so the intervals are
 wide. Seven of the eight intervals cover the planted value, about what
@@ -176,14 +175,14 @@ cage, which mixes a variety’s dependence with its yield.
 `  `[`c`](https://rdrr.io/r/base/c.html)`(``"variety"``, ``"estimate"``, ``"conf.low"``, ``"conf.high"``)`\
 `]`\
 `#>   variety  estimate   conf.low conf.high`\
-`#> 1      V1  6.304846  -5.366142 17.975833`\
-`#> 2      V2 16.148730   2.550347 29.747114`\
-`#> 3      V3 20.279707   7.091321 33.468093`\
-`#> 4      V4  6.859823  -9.857398 23.577044`\
-`#> 5      V5 28.659101  17.663295 39.654907`\
-`#> 6      V6 36.238474  21.561680 50.915267`\
-`#> 7      V7 -6.848110 -23.129306  9.433086`\
-`#> 8      V8 32.717201  20.366582 45.067819`
+`#> 1      V1  6.304823  -5.335228 17.944875`\
+`#> 2      V2 16.148705   2.721135 29.576276`\
+`#> 3      V3 20.279689   7.379940 33.179437`\
+`#> 4      V4  6.859832  -9.832243 23.551906`\
+`#> 5      V5 28.659100  18.374842 38.943358`\
+`#> 6      V6 36.238445  22.400706 50.076183`\
+`#> 7      V7 -6.848094 -23.102466  9.406277`\
+`#> 8      V8 32.717316  21.196377 44.238254`
 
 ## Guard: dependence against yield across varieties
 

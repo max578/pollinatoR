@@ -172,14 +172,14 @@ pair of expected values is reported.
 `effects`` ``<-`` `[`do.call`](https://rdrr.io/r/base/do.call.html)`(``rbind``, ``rows``)`\
 `effects``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"family"``, ``"contrast"``, ``"scale"``, ``"estimate"``, ``"conf.low"``, ``"conf.high"``)``]`\
 `#>       family       contrast      scale    estimate    conf.low  conf.high`\
-`#> 1    deficit   Hand vs Open difference  8.81219559  2.83154691 14.7928443`\
-`#> 2 dependence Open vs Bagged difference 19.94446792 14.75439295 25.1345429`\
+`#> 1    deficit   Hand vs Open difference  8.81221396  2.87135321 14.7530747`\
+`#> 2 dependence Open vs Bagged difference 19.94450950 14.99715421 24.8918648`\
 `#> 3    deficit   Hand vs Open      ratio  0.11909515  0.04065030  0.1911257`\
 `#> 4 dependence Open vs Bagged      ratio  0.30598730  0.24118799  0.3652530`\
 `#> 5    deficit   Hand vs Open        rii  0.06331801  0.02074683  0.1056600`\
 `#> 6 dependence Open vs Bagged        rii  0.18062869  0.13713119  0.2234309`\
 `#> 7    deficit   Hand vs Open       lnrr  0.12680566  0.04149962  0.2121117`\
-`#> 8 dependence Open vs Bagged       lnrr  0.36526501  0.27600121  0.4545288`
+`#> 8 dependence Open vs Bagged       lnrr  0.36526501  0.27600122  0.4545288`
 
 The RII and the loss share are linked by $`\mathrm{RII} = D/(2 - D)`$,
 and the log response ratio is $`\log(\mathrm{high}/\mathrm{low})`$, so
@@ -209,10 +209,9 @@ while the open reference gives the dependence realised in the field.
 `#>   scale    : ratio `\
 `#>   basis    : loss `\
 `#>   estimate : 1 - Bagged/Hand (loss share) `\
-`#>   interval : 95% delta `\
-`#>   note     : delta intervals cover fixed-effect uncertainty only`\
+`#>   interval : 95% delta, fixed and random effects jointly `\
 `#>  response       contrast  estimate  std.error  conf.low conf.high      p.value`\
-`#>      pods Hand vs Bagged 0.3886408 0.02758782 0.3321065 0.4403898 1.096722e-27`\
+`#>      pods Hand vs Bagged 0.3886408 0.02758782 0.3321065 0.4403898 1.096724e-27`\
 `#>      family scale basis distribution interval`\
 `#>  dependence ratio  loss      nbinom2    delta`
 
