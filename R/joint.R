@@ -1,10 +1,4 @@
 # Joint uncertainty of the fixed and random effects (glmmTMB engine) ----------
-#
-# The trial estimand averages predictions at the realised block and slope
-# effects of the trial. Its uncertainty is read from the joint covariance of
-# the fixed effects `beta` and the random effects `b`: the inverse of the joint
-# precision that TMB reports for the Laplace approximation. Varying `beta`
-# alone with `b` held at its modes ignores their correlation.
 
 #' Estimates and joint covariance of the conditional-model fixed effects and
 #' random effects of one glmmTMB fit. When the full joint precision cannot be
@@ -102,8 +96,8 @@
 #' Fixed and random design matrices of the model data with every row set to
 #' the `high` arm and to the `low` arm, from glmmTMB's own model structure,
 #' and the offset of each row. The model data and the two arms are stacked in
-#' one structure, so that every factor keeps the levels of the fit and the
-#' columns of `x` and `z` follow its fixed and random effects.
+#' one structure; `x` and `z` have the columns of the fit's fixed and random
+#' effects.
 #' @noRd
 #' @keywords internal
 .joint_arm_designs <- function(fit, response) {
