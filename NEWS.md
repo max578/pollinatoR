@@ -24,6 +24,20 @@
   means, and the estimand is formed from them, a ratio of population means
   rather than a weighted mean of the stratum estimands. `pollin_effects()`
   reports the trial contrasts and does not use the population.
+* `pollin_market()` declares the market inputs of a value: current
+  production and price as scalars, each optionally with draws, with the unit,
+  currency, price year and a source that prints with every value.
+* `pollin_value()` values draws of an estimand, per draw, through one of two
+  channels named by the user (there is no default): `"dependence"`, the
+  loss share times price times production, the value lost under total
+  exclusion; or `"deficit"`, the gain of hand pollination over open times
+  price times production. Each channel accepts only its matching ratio
+  estimand. A gain basis offered to the dependence channel is refused, since
+  a gain `g = D / (1 - D)` overstates the loss by `1 / (1 - D)`; a
+  descriptive index or a plain number is refused because it has no estimand.
+  Market draws are paired with the estimand draws by index. Every print names
+  the basis, population, price year, currency, source, method and the
+  assumptions of the value.
 
 # pollinatoR 0.1.0
 

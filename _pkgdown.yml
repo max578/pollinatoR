@@ -33,6 +33,12 @@ reference:
     contents:
       - pollin_draws
       - summary.pollin_draws
+  - title: Value
+    desc: Economic value of an estimand, computed per draw.
+    contents:
+      - pollin_market
+      - pollin_value
+      - summary.pollin_value
   - title: Guards
     contents:
       - pollin_guard_spurious
