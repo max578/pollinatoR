@@ -280,3 +280,30 @@ test_that("pollin_effects refuses bad arguments", {
     "seed"
   )
 })
+
+test_that("the cage family estimates the cage factor sham / open", {
+  set.seed(11)
+  d <- expand.grid(
+    plant = 1:6,
+    trt = c("Cage", "Open", "Sham"),
+    Block = sprintf("b%02d", 1:12),
+    stringsAsFactors = FALSE
+  )
+  blk <- stats::rnorm(12, 0, 0.2)[as.integer(factor(d$Block))]
+  mu <- exp(log(40) + log(c(Cage = 0.8, Open = 1, Sham = 1.2))[d$trt] + blk)
+  d$pods <- stats::rpois(nrow(d), mu)
+  pd <- pollin_data(d, "pods", "trt", unit = "Block")
+  ds <- pollin_design(
+    pd,
+    c(excluded = "Cage", open = "Open", sham = "Sham"),
+    "rcbd"
+  )
+  fit <- pollin_fit(pollin_estimand(ds, "cage", "ratio"))
+  e <- pollin_effects(fit)
+  expect_equal(e$table$estimate, 1.2, tolerance = 0.05)
+  expect_true(e$table$conf.low < 1.2 && 1.2 < e$table$conf.high)
+  arms <- e$table$estimate
+  lnrr <- pollin_effects(pollin_fit(pollin_estimand(ds, "cage", "lnrr")))
+  expect_equal(lnrr$table$estimate, log(arms), tolerance = 1e-8)
+  expect_true(any(grepl("Sham/Open \\(cage factor\\)", capture.output(print(e)))))
+})

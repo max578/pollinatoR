@@ -126,11 +126,10 @@ pollin_draws <- function(
 #' @export
 print.pollin_draws <- function(x, ...) {
   e <- x$estimand
-  label <- if (e$family == "deficit") "deficit (E1)" else "dependence (E2)"
   cat("<pollin_draws>\n")
-  cat("  family   :", label, "\n")
+  cat("  family   :", .family_label(e$family), "\n")
   cat("  scale    :", e$scale, "\n")
-  cat("  basis    :", e$basis, "\n")
+  cat("  basis    :", .basis_label(e$basis), "\n")
   cat(
     "  estimate :",
     .scale_definition(

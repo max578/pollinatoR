@@ -107,6 +107,12 @@ pollin_fit <- function(
 ) {
   .check_class(estimand, "pollin_estimand", arg = "estimand")
   .check_engine(engine)
+  if (identical(estimand$effect, "direct")) {
+    stop(
+      "A direct effect cannot be fitted by this version; fit the total effect.",
+      call. = FALSE
+    )
+  }
   if (inherits(estimand$population, "pollin_population")) {
     .population_check_fit_by(estimand$population, by)
   }

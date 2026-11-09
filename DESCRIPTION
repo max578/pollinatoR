@@ -33,6 +33,7 @@ Imports:
     stats,
     TMB
 Suggests:
+    dagitty,
     flexyBayes,
     INLA,
     knitr,

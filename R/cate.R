@@ -135,7 +135,7 @@ print.pollin_cate <- function(x, ...) {
   cat("<pollin_cate>\n")
   cat("  by       :", x$by, "\n")
   cat("  scale    :", e$scale, "\n")
-  cat("  basis    :", e$basis, "\n")
+  cat("  basis    :", .basis_label(e$basis), "\n")
   cat(
     "  estimate :",
     .scale_definition(

@@ -62,6 +62,7 @@ never an average of unit ratios. With \code{rr = high / low}:
    \code{"ratio"} \tab \code{"gain"} \tab \code{rr - 1} \cr
    \code{"rii"} \tab either \tab \code{(rr - 1) / (rr + 1)}, equal to \code{D / (2 - D)} \cr
    \code{"lnrr"} \tab either \tab \code{log(rr)} \cr
+   \code{"ratio"} \tab none (cage family) \tab \code{rr}, the cage factor \code{sham / open} \cr
 }
 
 

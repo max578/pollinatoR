@@ -3,13 +3,24 @@
 #' Declare the estimand of a pollination experiment
 #'
 #' Names the contrast, the scale it is reported on and the basis of any share,
-#' for a declared [pollin_design()]. Two estimand families are available:
+#' for a declared [pollin_design()]. Three estimand families are available:
 #'
 #' * `"deficit"` (E1): supplemented versus open, the yield gap left by the
 #'   pollination the crop received.
 #' * `"dependence"` (E2): excluded versus the design's reference arm (open,
 #'   supplemented or sham), the yield owed to pollinators. Against a sham arm
 #'   it is net of the cage effect.
+#' * `"cage"`: sham versus open, the effect of the exclusion device itself on
+#'   plants that pollinators still reach. It has no basis, and its ratio scale
+#'   is the cage factor `sham / open`; scales `"difference"`, `"ratio"` and
+#'   `"lnrr"`.
+#'
+#' Every estimand is a total effect unless `effect = "direct"` is asked for.
+#' A direct effect holds the named `mediators` fixed (for example vegetative
+#' weight measured at harvest, which pollination itself can change); it is
+#' never the default, and with a `dag` it is refused when the graph leaves a
+#' path from the mediators to the outcome open, as an unmeasured common cause
+#' of the mediator and the yield does.
 #'
 #' Writing `high` for the expected response in the higher arm (open or
 #' supplemented or sham) and `low` for the lower one, the scales are:
@@ -28,18 +39,30 @@
 #' scale and is recorded on every scale.
 #'
 #' @param design A [pollin_design()] object.
-#' @param family `"deficit"` or `"dependence"`. There is no default.
+#' @param family `"deficit"`, `"dependence"` or `"cage"`. There is no
+#'   default.
 #' @param scale One of `"difference"`, `"ratio"`, `"rii"` or `"lnrr"`. There
 #'   is no default.
-#' @param basis `"loss"` or `"gain"`. There is no default.
+#' @param basis `"loss"` or `"gain"`. There is no default, except for the
+#'   `"cage"` family, which takes none (leave it out or pass `NULL`).
 #' @param population The population the estimand refers to: `"trial"` (the
 #'   default, the units in the experiment) or a [pollin_population()] object,
 #'   strata of one column weighted by area. A population estimand is fitted
 #'   with the strata as `by` and read with [pollin_draws()].
+#' @param effect `"total"` (the default) or `"direct"`.
+#' @param mediators For `effect = "direct"`, the declared `adjust` columns held
+#'   fixed. Required for a direct effect, refused for a total one.
+#' @param dag Optional [pollin_dag()] object built from `design`. With a graph,
+#'   a total effect requires the unadjusted contrast to be valid, and a direct
+#'   effect requires each mediator to lie on a path from the treatment to the
+#'   outcome and the declared `adjust` columns to contain a direct-effect
+#'   adjustment set of the graph.
 #'
 #' @return An object of class `pollin_estimand`: a list holding `design`,
-#'   `family`, `scale`, `basis`, `population`, the `contrast` (the treatment
-#'   levels of the `high` and `low` arms) and the `assumptions` table.
+#'   `family`, `scale`, `basis` (`NA` for the cage family), `population`,
+#'   `effect`, `mediators`, `adjustment` (the columns a direct effect is
+#'   adjusted for), `dag`, the `contrast` (the treatment levels of the `high`
+#'   and `low` arms) and the `assumptions` table.
 #' @seealso [pollin_assumptions()] for the assumptions the estimand rests on.
 #' @export
 #' @examples
@@ -56,20 +79,38 @@ pollin_estimand <- function(
   family,
   scale,
   basis,
-  population = "trial"
+  population = "trial",
+  effect = "total",
+  mediators = NULL,
+  dag = NULL
 ) {
   .check_class(design, "pollin_design", arg = "design")
-  .check_choice(family, "family", c("deficit", "dependence"))
-  .check_choice(scale, "scale", c("difference", "ratio", "rii", "lnrr"))
-  .check_choice(basis, "basis", c("loss", "gain"))
+  .check_choice(family, "family", c("deficit", "dependence", "cage"))
+  if (family == "cage") {
+    .check_choice(scale, "scale", c("difference", "ratio", "lnrr"))
+    if (!missing(basis) && !is.null(basis)) {
+      stop(
+        "The `cage` family has no basis: its ratio is the cage factor ",
+        "sham / open. Leave `basis` out.",
+        call. = FALSE
+      )
+    }
+    basis <- NA_character_
+  } else {
+    .check_choice(scale, "scale", c("difference", "ratio", "rii", "lnrr"))
+    .check_choice(basis, "basis", c("loss", "gain"))
+  }
   .check_population(population, design$data$data)
+  .check_choice(effect, "effect", c("total", "direct"))
+  adjustment <- .check_effect(design, family, effect, mediators, dag)
 
   arms <- design$arms
-  roles <- if (family == "deficit") {
-    c(high = "supplemented", low = "open")
-  } else {
-    c(high = design$reference, low = "excluded")
-  }
+  roles <- switch(
+    family,
+    deficit = c(high = "supplemented", low = "open"),
+    dependence = c(high = design$reference, low = "excluded"),
+    cage = c(high = "sham", low = "open")
+  )
   absent <- setdiff(roles, names(arms))
   if (length(absent)) {
     stop(
@@ -91,6 +132,10 @@ pollin_estimand <- function(
       scale = scale,
       basis = basis,
       population = population,
+      effect = effect,
+      mediators = mediators,
+      adjustment = adjustment,
+      dag = dag,
       contrast = c(
         high = unname(arms[roles["high"]]),
         low = unname(arms[roles["low"]])
@@ -102,7 +147,11 @@ pollin_estimand <- function(
         basis,
         population,
         reference = design$reference,
-        sham = "sham" %in% names(arms)
+        sham = "sham" %in% names(arms),
+        effect = effect,
+        mediators = mediators,
+        adjustment = adjustment,
+        dag = dag
       )
     ),
     class = "pollin_estimand"
@@ -136,12 +185,12 @@ pollin_assumptions <- function(x) {
 
 #' @export
 print.pollin_estimand <- function(x, ...) {
-  label <- if (x$family == "deficit") "deficit (E1)" else "dependence (E2)"
   cat("<pollin_estimand>\n")
-  cat("  family     :", label, "\n")
+  cat("  family     :", .family_label(x$family), "\n")
   cat("  contrast   :", x$contrast[["high"]], "vs", x$contrast[["low"]], "\n")
+  cat("  effect     :", .effect_label(x$effect, x$mediators), "\n")
   cat("  scale      :", x$scale, "\n")
-  cat("  basis      :", x$basis, "\n")
+  cat("  basis      :", .basis_label(x$basis), "\n")
   cat("  population :", .population_label(x$population), "\n")
   cat("  layout     :", x$design$layout, "\n")
   cat(
@@ -153,6 +202,150 @@ print.pollin_estimand <- function(x, ...) {
 }
 
 # Internal ---------------------------------------------------------------------
+
+#' The family in words, for printing
+#' @noRd
+#' @keywords internal
+.family_label <- function(family) {
+  switch(
+    family,
+    deficit = "deficit (E1)",
+    dependence = "dependence (E2)",
+    cage = "cage effect (sham versus open)"
+  )
+}
+
+#' The basis in words, for printing; the cage family has none
+#' @noRd
+#' @keywords internal
+.basis_label <- function(basis) {
+  if (is.na(basis)) "none (cage factor)" else basis
+}
+
+#' The effect type in words, for printing
+#' @noRd
+#' @keywords internal
+.effect_label <- function(effect, mediators = NULL) {
+  if (identical(effect, "direct")) {
+    return(paste0(
+      "direct, holding ",
+      paste(mediators, collapse = ", "),
+      " fixed"
+    ))
+  }
+  "total"
+}
+
+#' Check the effect type against the mediators and the graph; returns the
+#' columns a direct effect is adjusted for (`NULL` for a total effect)
+#' @noRd
+#' @keywords internal
+.check_effect <- function(design, family, effect, mediators, dag) {
+  roles <- design$data$roles
+  if (!is.null(dag)) {
+    .check_class(dag, "pollin_dag", arg = "dag")
+    if (!identical(dag$roles, roles)) {
+      stop(
+        "`dag` was built from a different design; rebuild it with ",
+        "`pollin_dag(design, ...)`.",
+        call. = FALSE
+      )
+    }
+  }
+  if (effect == "total") {
+    if (!is.null(mediators)) {
+      stop(
+        "`mediators` are named only for a direct effect; adjusting for a ",
+        "mediator under the total effect would report neither. Use ",
+        "`effect = \"direct\"`.",
+        call. = FALSE
+      )
+    }
+    if (
+      !is.null(dag) &&
+        !dagitty::isAdjustmentSet(
+          dag$graph,
+          character(0),
+          exposure = dag$treatment,
+          outcome = dag$outcome
+        )
+    ) {
+      stop(
+        "The graph gives the treatment a common cause with the outcome, so ",
+        "the unadjusted contrast is biased. Arms are randomised; check the ",
+        "edges into `",
+        dag$treatment,
+        "`.",
+        call. = FALSE
+      )
+    }
+    return(NULL)
+  }
+  if (family == "cage") {
+    stop("The cage effect is reported as a total effect.", call. = FALSE)
+  }
+  if (!is.character(mediators) || length(mediators) == 0L) {
+    stop(
+      "A direct effect needs `mediators`: the declared `adjust` columns held ",
+      "fixed.",
+      call. = FALSE
+    )
+  }
+  absent <- setdiff(mediators, roles$adjust)
+  if (length(absent)) {
+    stop(
+      "Mediators must be declared `adjust` columns in `pollin_data()`: ",
+      paste(absent, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  if (is.null(dag)) {
+    return(roles$adjust)
+  }
+  cls <- dag$classes[dag$classes$target == dag$treatment, , drop = FALSE]
+  not_med <- setdiff(mediators, cls$node[cls$class == "mediator"])
+  if (length(not_med)) {
+    stop(
+      "Not on a path from the treatment to the outcome in the graph: ",
+      paste(not_med, collapse = ", "),
+      ". A direct effect holds mediators fixed.",
+      call. = FALSE
+    )
+  }
+  sets <- dag$sets$direct
+  if (length(sets) == 0L) {
+    g <- dag$graph
+    culprit <- intersect(
+      dagitty::latents(g),
+      intersect(
+        unlist(lapply(mediators, function(m) dagitty::ancestors(g, m))),
+        dagitty::ancestors(g, dag$outcome)
+      )
+    )
+    stop(
+      "The graph identifies no direct effect: holding ",
+      paste(mediators, collapse = ", "),
+      " fixed opens a path to the outcome that no measured column closes",
+      if (length(culprit)) {
+        paste0(" (through the latent ", paste(culprit, collapse = ", "), ")")
+      },
+      ". Report the total effect.",
+      call. = FALSE
+    )
+  }
+  fits <- Filter(function(z) all(z %in% roles$adjust), sets)
+  if (length(fits) == 0L) {
+    stop(
+      "The declared `adjust` columns contain no direct-effect set of the ",
+      "graph; declare one of: ",
+      paste(vapply(sets, .dag_set_label, character(1)), collapse = " or "),
+      ".",
+      call. = FALSE
+    )
+  }
+  fits[[which.min(lengths(fits))]]
+}
 
 #' Stop unless `value` is one string from `choices`
 #' @noRd
@@ -215,11 +408,17 @@ print.pollin_estimand <- function(x, ...) {
   basis,
   population = "trial",
   reference = "open",
-  sham = FALSE
+  sham = FALSE,
+  effect = "total",
+  mediators = NULL,
+  adjustment = NULL,
+  dag = NULL
 ) {
   a <- c(
     consistency = "Each arm is one well-defined treatment, applied the same way on every unit.",
-    excludability = if (family == "dependence" && reference == "sham") {
+    excludability = if (family == "cage") {
+      "The sham device matches the exclusion device in every effect but excluding pollinators."
+    } else if (family == "dependence" && reference == "sham") {
       "The sham device matches the exclusion device in every effect but excluding pollinators, and the cage changes the response by the same factor with and without pollinators; the contrast is then net of the cage effect."
     } else if (family == "dependence" && sham) {
       "The exclusion device changes the response only by excluding pollinators. The design has a sham arm, so this can be checked: the cage effect is sham versus open, and this contrast includes it."
@@ -248,9 +447,70 @@ print.pollin_estimand <- function(x, ...) {
   } else {
     "The estimand refers to the units in the trial; carrying it to other fields or seasons is a further assumption."
   }
+  a["effect"] <- .effect_statement(effect, mediators, dag)
+  if (!is.null(dag) || effect == "direct") {
+    a["adjustment"] <- .adjustment_statement(effect, adjustment, dag)
+  }
   data.frame(
     assumption = names(a),
     statement = unname(a),
     stringsAsFactors = FALSE
+  )
+}
+
+#' The effect-type assumption
+#' @noRd
+#' @keywords internal
+.effect_statement <- function(effect, mediators, dag) {
+  if (effect == "total") {
+    return(paste0(
+      "Total effect: the contrast carries every path from the arm to the ",
+      "response, including any through vegetative growth or other ",
+      "intermediates."
+    ))
+  }
+  m <- paste(mediators, collapse = ", ")
+  paste0(
+    "Direct effect holding ",
+    m,
+    " fixed: the arm does not change how ",
+    m,
+    " acts on the response (no arm-by-mediator interaction)",
+    if (is.null(dag)) {
+      paste0(
+        ", and no unmeasured variable causes both ",
+        m,
+        " and the response. No graph was given, so neither is checked."
+      )
+    } else {
+      "; the graph closes every other path through the mediators."
+    }
+  )
+}
+
+#' The adjustment assumption: the set used and what it closes
+#' @noRd
+#' @keywords internal
+.adjustment_statement <- function(effect, adjustment, dag) {
+  if (effect == "total") {
+    return(paste0(
+      "The graph implies the unadjusted contrast is unbiased: no common cause ",
+      "of the arm and the outcome, as randomisation provides."
+    ))
+  }
+  set <- .dag_set_label(adjustment)
+  if (is.null(dag)) {
+    return(paste0(
+      "Adjusted for ",
+      set,
+      ", the declared adjust columns; without a graph the set is the ",
+      "analyst's declaration."
+    ))
+  }
+  paste0(
+    "Adjusted for ",
+    set,
+    ", a direct-effect set of the graph: it blocks every path from the arm ",
+    "to the outcome except the direct one."
   )
 }
