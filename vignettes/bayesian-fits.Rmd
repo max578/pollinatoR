@@ -246,9 +246,8 @@ draws carry the correlation between them.
 cate_tmb$table[, c("level", "estimate", "conf.low", "conf.high")]
 ```
 
-In this trial they come out wider than the unpooled delta intervals,
-although pooling should narrow them. The flexyBayes intervals are as narrow
-as the unpooled ones or narrower.
+In this trial pooling narrows the intervals of most varieties on both
+engines, though not all of them.
 
 When glmmTMB estimates the slope variance at zero, every variety's pooled
 effect equals the overall one, and the conditional variances carry no
