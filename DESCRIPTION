@@ -1,7 +1,7 @@
 Package: pollinatoR
 Title: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion
     Experiments
-Version: 0.3.0
+Version: 0.3.1
 Authors@R:
     person("Max", "Moldovan", email = "max.moldovan@gmail.com",
            role = c("aut", "cre"),
@@ -35,6 +35,7 @@ Suggests:
     INLA,
     knitr,
     rmarkdown,
+    sn,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Additional_repositories: https://inla.r-inla-download.org/R/stable

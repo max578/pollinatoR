@@ -166,6 +166,41 @@
   list(data = d, terms = terms, cells = cells)
 }
 
+# Trials ------------------------------------------------------------------------
+
+#' Expand each row to one 0/1 row per trial: as many rows as its denominator,
+#' the first `response` of them coded 1. Returns the expanded data and, per
+#' expanded row, its original row. Stops when the expansion exceeds the
+#' internal option `pollinatoR.flexy_max_trial_rows` (default 2e6), which
+#' exists so tests can lower the limit.
+#' @noRd
+#' @keywords internal
+.flexy_expand_trials <- function(d, response, denominator) {
+  n <- as.integer(round(d[[denominator]]))
+  total <- sum(as.numeric(n))
+  cap <- getOption("pollinatoR.flexy_max_trial_rows", 2e6)
+  if (total > cap) {
+    stop(
+      "The flexyBayes engine fits '",
+      response,
+      "' as one row per trial, and the denominator '",
+      denominator,
+      "' gives ",
+      format(total, big.mark = ",", scientific = FALSE),
+      " rows, above the limit of ",
+      format(cap, big.mark = ",", scientific = FALSE),
+      ". Use `engine = \"glmmTMB\"`, which fits the counts directly.",
+      call. = FALSE
+    )
+  }
+  rows <- rep.int(seq_len(nrow(d)), n)
+  y <- as.integer(round(d[[response]]))
+  out <- d[rows, , drop = FALSE]
+  out[[response]] <- as.integer(sequence(n) <= y[rows])
+  rownames(out) <- NULL
+  list(data = out, rows = rows)
+}
+
 # Fitting ---------------------------------------------------------------------
 
 #' Fit one response with flexyBayes on INLA
@@ -236,17 +271,12 @@
   fits <- list()
   data <- list()
   families <- list()
+  trial_rows <- list()
   random <- NULL
+  den <- inputs$denominator
   for (r in inputs$responses) {
-    d <- inputs$data
-    keep <- stats::complete.cases(d[c(r, inputs$treatment, inputs$unit, by)])
-    if (!all(keep)) {
-      d <- d[keep, , drop = FALSE]
-    }
-    if (!is.null(by)) {
-      d[[by]] <- factor(d[[by]])
-    }
-    fam <- .family_for(family, r, d[[r]])
+    d <- .response_rows(inputs, r, by)
+    fam <- .family_for(family, r, d[[r]], den)
     .flexy_family(fam, r)
     random <- .flexy_random(
       d,
@@ -255,8 +285,14 @@
       estimand$design$slope,
       inputs$pooled
     )
+    fit_data <- random$data
+    if (!is.null(den)) {
+      ex <- .flexy_expand_trials(fit_data, r, den)
+      fit_data <- ex$data
+      trial_rows[[r]] <- ex$rows
+    }
     fit <- tryCatch(
-      .flexy_fit_one(r, fixed, random$terms, random$data, fam, dots),
+      .flexy_fit_one(r, fixed, random$terms, fit_data, fam, dots),
       error = function(e) e
     )
     if (inherits(fit, "error")) {
@@ -289,8 +325,14 @@
       by = by,
       slope_key = inputs$slope_key,
       pooled = inputs$pooled,
+      denominator = den,
       args = dots,
-      flexy = list(fixed = fixed, random = random$terms, cells = random$cells)
+      flexy = list(
+        fixed = fixed,
+        random = random$terms,
+        cells = random$cells,
+        trial_rows = trial_rows
+      )
     ),
     class = "pollin_fit"
   )
@@ -366,7 +408,9 @@
 #' is predicted under each arm with its own random effects, as
 #' `predict(re.form = NULL)` does on the glmmTMB engine, on the response
 #' scale, and averaged. The linear predictor rebuilt for the rows as fitted
-#' must equal the fit's own, draw by draw.
+#' must equal the fit's own, draw by draw; a fit expanded to one row per
+#' trial is checked on its expanded rows, each taking its original row's
+#' predictor, and averaged over the original rows.
 #' @noRd
 #' @keywords internal
 .flexy_arm_draws <- function(fit, response, n, seed, by) {
@@ -397,7 +441,11 @@
 
   # The fitted rows: rebuilt linear predictor against the fit's own ----------
   eta <- design(d) + .flexy_random_part(fit, d, latent, levels, trt, NULL)
-  pred <- latent[paste0("Predictor:", seq_len(nrow(d))), , drop = FALSE]
+  rows <- fit$flexy$trial_rows[[response]]
+  if (!is.null(rows)) {
+    eta <- eta[rows, , drop = FALSE]
+  }
+  pred <- latent[paste0("Predictor:", seq_len(nrow(eta))), , drop = FALSE]
   if (max(abs(eta - pred)) > 1e-8 * max(1, abs(pred))) {
     stop(
       "The posterior draws of '",
