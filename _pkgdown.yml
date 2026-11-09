@@ -27,6 +27,11 @@ reference:
       - pollin_effects
       - pollin_contribution
       - pollin_moderation
+  - title: Draws
+    desc: Draws of the estimand, for quantities computed per draw.
+    contents:
+      - pollin_draws
+      - summary.pollin_draws
   - title: Guards
     contents:
       - pollin_guard_spurious

@@ -8,6 +8,13 @@
   and the paths that accepted it in `pollin_contribution()`,
   `pollin_moderation()` and `pollin_validate()`; these now take only the
   layered objects. The getting-started vignette shows the equivalent calls.
+* `pollin_draws()` returns draws of the two arm means of a fitted estimand
+  and of the estimand formed from them, per draw, on its scale and basis. The
+  default `method = "simulation"` draws the fixed effects from their sampling
+  distribution (fixed-effect uncertainty, as in the delta interval);
+  `method = "bootstrap"` keeps the parametric bootstrap refits, whose
+  percentile interval is the bootstrap interval of `pollin_effects()`.
+  `summary()` gives the median and percentile interval per column.
 
 # pollinatoR 0.1.0
 

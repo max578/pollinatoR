@@ -296,21 +296,22 @@ print.pollin_effects <- function(x, ...) {
   .from_ratio(m$high / m$low, scale, basis)
 }
 
-#' Parametric-bootstrap effects for one response of a `pollin_fit`
+#' Parametric-bootstrap arm means for one response of a `pollin_fit`: the
+#' point arm means, and the arm means of each refit as matrices with one row
+#' per refit and one column per `by` level (failed refits are rows of `NA`).
+#' Warns when refits failed or warned, and stops when fewer than two
+#' succeeded.
 #' @noRd
 #' @keywords internal
-.effects_boot <- function(fit, response, by, n_boot, seed, conf_level) {
+.boot_arm_means <- function(fit, response, by, n_boot, seed) {
   e <- fit$estimand
   high <- e$contrast[["high"]]
   low <- e$contrast[["low"]]
   model <- fit$fits[[response]]
   d <- fit$data[[response]]
   trt <- fit$treatment
-  point <- .effect_from_means(
-    .arm_means(model, d, trt, high, low, by),
-    e$scale,
-    e$basis
-  )
+  point <- .arm_means(model, d, trt, high, low, by)
+  k <- length(point$high)
 
   # Simulate, refit and recompute --------------------------------------------
   sims <- stats::simulate(model, nsim = n_boot, seed = seed)
@@ -345,17 +346,14 @@ print.pollin_effects <- function(x, ...) {
         n_warned <<- n_warned + 1L
       }
       if (is.null(m_b)) {
-        return(rep(NA_real_, length(point)))
+        return(rep(NA_real_, 2L * k))
       }
-      .effect_from_means(
-        .arm_means(m_b, d_b, trt, high, low, by),
-        e$scale,
-        e$basis
-      )
+      m <- .arm_means(m_b, d_b, trt, high, low, by)
+      c(m$high, m$low)
     },
-    numeric(length(point))
+    numeric(2L * k)
   )
-  reps <- matrix(reps, nrow = length(point))
+  reps <- matrix(reps, nrow = 2L * k)
 
   # Report refits that failed or warned ----------------------------------------
   n_failed <- sum(is.na(reps[1L, ]))
@@ -382,6 +380,27 @@ print.pollin_effects <- function(x, ...) {
       call. = FALSE
     )
   }
+
+  draws <- function(rows) {
+    out <- t(reps[rows, , drop = FALSE])
+    colnames(out) <- names(point$high)
+    out
+  }
+  list(
+    point = point,
+    high = draws(seq_len(k)),
+    low = draws(k + seq_len(k))
+  )
+}
+
+#' Parametric-bootstrap effects for one response of a `pollin_fit`
+#' @noRd
+#' @keywords internal
+.effects_boot <- function(fit, response, by, n_boot, seed, conf_level) {
+  e <- fit$estimand
+  bt <- .boot_arm_means(fit, response, by, n_boot, seed)
+  point <- .effect_from_means(bt$point, e$scale, e$basis)
+  reps <- t(.effect_from_means(bt, e$scale, e$basis))
 
   a <- (1 - conf_level) / 2
   ci <- apply(reps, 1L, stats::quantile, probs = c(a, 1 - a), na.rm = TRUE)
