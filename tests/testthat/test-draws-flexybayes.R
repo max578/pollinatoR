@@ -242,3 +242,22 @@ test_that("the posterior estimate sits near the glmmTMB estimate", {
   expect_gt(b$std.error / g$std.error, 0.7)
   expect_lt(b$std.error / g$std.error, 1.5)
 })
+
+test_that("a Poisson fit keeps one linear predictor per data row", {
+  skip_flexy()
+  op <- flexy_options()
+  on.exit(options(op), add = TRUE)
+  set.seed(31)
+  d <- data.frame(
+    trt = rep(rep(c("Cage", "Open"), each = 6L), 8L),
+    Block = rep(paste0("b", seq_len(8L)), each = 12L)
+  )
+  d$visits <- rpois(nrow(d), exp(2 + 0.4 * (d$trt == "Open")))
+  pd <- pollin_data(d, "visits", "trt", unit = "Block")
+  ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "rcbd")
+  est <- pollin_estimand(ds, "dependence", "ratio", "loss")
+  fit <- pollin_fit(est, engine = "flexyBayes", family = stats::poisson())
+  eff <- pollin_effects(fit, n_draws = 200L, seed = 2L)
+  expect_identical(nrow(eff$table), 1L)
+  expect_true(is.finite(eff$table$estimate))
+})

@@ -181,9 +181,10 @@
       data = d,
       family = fam$family,
       link = fam$link,
-      backend = "inla"
+      backend = "inla",
+      aggregate = FALSE
     ),
-    args[setdiff(names(args), "backend")]
+    args[setdiff(names(args), c("backend", "aggregate"))]
   )
   do.call(flexyBayes::flexybayes, args)
 }
