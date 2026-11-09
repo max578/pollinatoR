@@ -25,7 +25,9 @@
 #' @param by Optional name of a column of the data (for example variety or
 #'   region). The treatment effect is fitted separately at each of its levels,
 #'   as an interaction, and [pollin_effects()] then reports one contrast per
-#'   level. The column is treated as a factor.
+#'   level. The column is treated as a factor. An estimand whose population
+#'   is a [pollin_population()] must be fitted with `by` set to the
+#'   population's `by` column.
 #' @param ... Passed to [glmmTMB::glmmTMB()].
 #'
 #' @return An object of class `pollin_fit`: a list holding the `estimand`, the
@@ -57,6 +59,9 @@ pollin_fit <- function(
 ) {
   .check_class(estimand, "pollin_estimand", arg = "estimand")
   .check_engine(engine)
+  if (inherits(estimand$population, "pollin_population")) {
+    .population_check_fit_by(estimand$population, by)
+  }
   inputs <- .estimand_inputs(estimand)
   .check_family_arg(family, inputs$responses)
   .new_fit(estimand, inputs, inputs$responses, family, by = by, ...)

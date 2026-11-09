@@ -16,8 +16,10 @@ is no default.}
 
 \item{basis}{\code{"loss"} or \code{"gain"}. There is no default.}
 
-\item{population}{The population the estimand refers to. Only \code{"trial"}
-(the units in the experiment) is available.}
+\item{population}{The population the estimand refers to: \code{"trial"} (the
+default, the units in the experiment) or a \code{\link[=pollin_population]{pollin_population()}} object,
+strata of one column weighted by area. A population estimand is fitted
+with the strata as \code{by} and read with \code{\link[=pollin_draws]{pollin_draws()}}.}
 }
 \value{
 An object of class \code{pollin_estimand}: a list holding \code{design},

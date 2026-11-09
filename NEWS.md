@@ -15,6 +15,15 @@
   `method = "bootstrap"` keeps the parametric bootstrap refits, whose
   percentile interval is the bootstrap interval of `pollin_effects()`.
   `summary()` gives the median and percentile interval per column.
+* `pollin_population()` declares a population of strata (the levels of one
+  column, such as distance bands or regions) weighted by area, and
+  `pollin_estimand(population = )` accepts it besides `"trial"`. The estimand
+  then states the strata and weights among its assumptions, the fit is made
+  with the strata as `by`, and `pollin_draws()` adds a `"population"` column:
+  the population arm means are the area-weighted sums of the stratum arm
+  means, and the estimand is formed from them, a ratio of population means
+  rather than a weighted mean of the stratum estimands. `pollin_effects()`
+  reports the trial contrasts and does not use the population.
 
 # pollinatoR 0.1.0
 

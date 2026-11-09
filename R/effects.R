@@ -25,6 +25,10 @@
 #' and the interval is the percentile interval of the refitted estimates;
 #' `std.error` is their standard deviation and `p.value` is `NA`.
 #'
+#' The table reports the trial contrast, overall or per level of `by`. A
+#' population declared with [pollin_population()] is not used here; the
+#' population estimand is read with [pollin_draws()].
+#'
 #' @param fit A [pollin_fit()] object.
 #' @param by The column the fit was made with, `pollin_fit(..., by = )`.
 #'   Defaults to the fit's `by`, giving one contrast per level from the fixed

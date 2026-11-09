@@ -5,9 +5,8 @@
 #' Returns draws of the two G-computation arm means of a fitted estimand (the
 #' predictions under the `high` and the `low` arm, averaged over the rows of
 #' the model data, as in [pollin_effects()]) and the estimand formed from each
-#' pair of draws on the estimand's scale and basis. Anything computed from the
-#' estimand, such as an economic value, is then computed per draw and
-#' summarised last.
+#' pair of draws on the estimand's scale and basis. A quantity computed from
+#' the estimand is then computed per draw and summarised last.
 #'
 #' Two methods are available:
 #'
@@ -25,6 +24,12 @@
 #'   interval of [pollin_effects()]. Refits that fail are dropped, with a
 #'   warning, so the number of draws can be smaller than `n`.
 #'
+#' When the estimand refers to a population declared with
+#' [pollin_population()], a further column `"population"` holds the
+#' population arm means, the area-weighted sums of the stratum arm means, and
+#' the estimand formed from them: a ratio of population means, not a weighted
+#' mean of the stratum estimands.
+#'
 #' @param x A [pollin_fit()] object.
 #' @param n Number of draws.
 #' @param method `"simulation"` (the default) or `"bootstrap"`.
@@ -40,8 +45,10 @@
 #'   * `estimate`: the matrix of the estimand on its scale and basis, formed
 #'     from `high` and `low` draw by draw;
 #'   * `estimand`, `response`, `by`, `method`, `engine`, `n` (the number of
-#'     draws), `seed`, and `population` (`NULL` for the trial population).
-#' @seealso [pollin_effects()] for estimates and intervals.
+#'     draws), `seed`, and `population` (the [pollin_population()] object,
+#'     or `NULL` for the trial population).
+#' @seealso [pollin_effects()] for estimates and intervals;
+#'   [pollin_population()] for a population of strata.
 #' @export
 #' @examples
 #' \donttest{
@@ -74,7 +81,7 @@ pollin_draws <- function(
   .check_seed(seed)
   response <- .draws_response(response, names(x$fits))
   est <- x$estimand
-  population <- NULL
+  population <- .draws_population(est, x$by)
 
   m <- if (method == "simulation") {
     .draws_simulation(x, response, n, seed)
@@ -186,7 +193,8 @@ as.matrix.pollin_draws <- function(x, ...) {
 #' (simulation, bootstrap, or a Bayesian posterior) returns its draws through
 #' this constructor: `high` and `low` are numeric matrices with one row per
 #' draw and named columns (the `by` levels, or `"overall"`). The estimand is
-#' formed per draw on its scale and basis,.
+#' formed per draw on its scale and basis, and a `"population"` column is
+#' added when `population` is a `pollin_population`.
 #' @noRd
 #' @keywords internal
 .new_pollin_draws <- function(
@@ -223,6 +231,11 @@ as.matrix.pollin_draws <- function(x, ...) {
   }
   if (!is.character(engine) || length(engine) != 1L) {
     stop("`engine` must be one string.", call. = FALSE)
+  }
+  if (!is.null(population)) {
+    m <- .population_means(high, low, population)
+    high <- m$high
+    low <- m$low
   }
   structure(
     list(
@@ -335,6 +348,19 @@ as.matrix.pollin_draws <- function(x, ...) {
     bootstrap = "parametric bootstrap refits",
     method
   )
+}
+
+#' The population of the estimand, or NULL for the trial; stops when the fit
+#' was not made with the population's `by` column
+#' @noRd
+#' @keywords internal
+.draws_population <- function(estimand, fit_by) {
+  pop <- estimand$population
+  if (!inherits(pop, "pollin_population")) {
+    return(NULL)
+  }
+  .population_check_fit_by(pop, fit_by)
+  pop
 }
 
 #' Stop unless `n` is one whole number of at least 2

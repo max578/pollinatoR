@@ -34,16 +34,16 @@ column \code{"overall"} when the fit has no \code{by};
 \item \code{estimate}: the matrix of the estimand on its scale and basis, formed
 from \code{high} and \code{low} draw by draw;
 \item \code{estimand}, \code{response}, \code{by}, \code{method}, \code{engine}, \code{n} (the number of
-draws), \code{seed}, and \code{population} (\code{NULL} for the trial population).
+draws), \code{seed}, and \code{population} (the \code{\link[=pollin_population]{pollin_population()}} object,
+or \code{NULL} for the trial population).
 }
 }
 \description{
 Returns draws of the two G-computation arm means of a fitted estimand (the
 predictions under the \code{high} and the \code{low} arm, averaged over the rows of
 the model data, as in \code{\link[=pollin_effects]{pollin_effects()}}) and the estimand formed from each
-pair of draws on the estimand's scale and basis. Anything computed from the
-estimand, such as an economic value, is then computed per draw and
-summarised last.
+pair of draws on the estimand's scale and basis. A quantity computed from
+the estimand is then computed per draw and summarised last.
 }
 \details{
 Two methods are available:
@@ -62,6 +62,12 @@ model is refitted to each simulated set. With the same \code{seed} and
 interval of \code{\link[=pollin_effects]{pollin_effects()}}. Refits that fail are dropped, with a
 warning, so the number of draws can be smaller than \code{n}.
 }
+
+When the estimand refers to a population declared with
+\code{\link[=pollin_population]{pollin_population()}}, a further column \code{"population"} holds the
+population arm means, the area-weighted sums of the stratum arm means, and
+the estimand formed from them: a ratio of population means, not a weighted
+mean of the stratum estimands.
 }
 \examples{
 \donttest{
@@ -80,5 +86,6 @@ summary(dr)
 }
 }
 \seealso{
-\code{\link[=pollin_effects]{pollin_effects()}} for estimates and intervals.
+\code{\link[=pollin_effects]{pollin_effects()}} for estimates and intervals;
+\code{\link[=pollin_population]{pollin_population()}} for a population of strata.
 }

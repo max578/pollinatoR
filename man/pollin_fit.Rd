@@ -21,7 +21,9 @@ chosen from their values.}
 \item{by}{Optional name of a column of the data (for example variety or
 region). The treatment effect is fitted separately at each of its levels,
 as an interaction, and \code{\link[=pollin_effects]{pollin_effects()}} then reports one contrast per
-level. The column is treated as a factor.}
+level. The column is treated as a factor. An estimand whose population
+is a \code{\link[=pollin_population]{pollin_population()}} must be fitted with \code{by} set to the
+population's \code{by} column.}
 
 \item{...}{Passed to \code{\link[glmmTMB:glmmTMB]{glmmTMB::glmmTMB()}}.}
 }
