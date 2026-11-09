@@ -49,11 +49,12 @@
 #' the design is a random intercept per unit plus an independent effect per
 #' unit-by-arm cell (column `pollin_<unit>_<treatment>`): equal variances
 #' across arms and a non-negative correlation between them, the exchangeable
-#' form of the slope. A `pooled` column enters the same way. The families are `nbinom2()`, `poisson()`,
-#' `binomial()`, `Gamma(link = "log")` and `beta_family()`, mapped to the
-#' flexyBayes families of the same name; any other family is refused. Priors
-#' and the seed are passed through `...` as `flexybayes()` takes them; the
-#' backend is INLA only, since the posterior draws of a brms fit are not in
+#' form of the slope. A `pooled` column enters the same way. The families
+#' map as `nbinom2()` to `"negative_binomial"`, `poisson()` to `"poisson"`,
+#' `binomial()` to `"binomial"`, `Gamma(link = "log")` to `"gamma"` and
+#' `beta_family()` to `"beta"`; any other family is refused. Priors are
+#' passed through `...` as `flexybayes()` takes them; the seed of the
+#' posterior draws is set in [pollin_draws()]. The backend is INLA only, since the posterior draws of a brms fit are not in
 #' the flexyBayes extension API version 1. A fit whose convergence verdict
 #' (`flexyBayes::fb_convergence()`) is `FALSE` is an error, and one with no
 #' verdict a warning. Estimates and intervals of a flexyBayes fit come from

@@ -74,11 +74,12 @@ correlated random slope on brms only, so on INLA the treatment slope of
 the design is a random intercept per unit plus an independent effect per
 unit-by-arm cell (column \verb{pollin_<unit>_<treatment>}): equal variances
 across arms and a non-negative correlation between them, the exchangeable
-form of the slope. A \code{pooled} column enters the same way. The families are \code{nbinom2()}, \code{poisson()},
-\code{binomial()}, \code{Gamma(link = "log")} and \code{beta_family()}, mapped to the
-flexyBayes families of the same name; any other family is refused. Priors
-and the seed are passed through \code{...} as \code{flexybayes()} takes them; the
-backend is INLA only, since the posterior draws of a brms fit are not in
+form of the slope. A \code{pooled} column enters the same way. The families
+map as \code{nbinom2()} to \code{"negative_binomial"}, \code{poisson()} to \code{"poisson"},
+\code{binomial()} to \code{"binomial"}, \code{Gamma(link = "log")} to \code{"gamma"} and
+\code{beta_family()} to \code{"beta"}; any other family is refused. Priors are
+passed through \code{...} as \code{flexybayes()} takes them; the seed of the
+posterior draws is set in \code{\link[=pollin_draws]{pollin_draws()}}. The backend is INLA only, since the posterior draws of a brms fit are not in
 the flexyBayes extension API version 1. A fit whose convergence verdict
 (\code{flexyBayes::fb_convergence()}) is \code{FALSE} is an error, and one with no
 verdict a warning. Estimates and intervals of a flexyBayes fit come from
