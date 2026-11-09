@@ -258,3 +258,61 @@ golden_capture_v040 <- function() {
     golden_capture_v020()
   )
 }
+
+# Outputs at 0.4.0: moderation ------------------------------------------------
+
+golden_path_v040_moderation <- function() {
+  testthat::test_path("_golden", "golden_v0.4.0_moderation.rds")
+}
+
+# The numbers an analyst reads from a pollin_moderation object. A fit without a
+# positive-definite Hessian or without convergence is never an oracle.
+golden_moderation <- function(x) {
+  if (!isTRUE(x$fit$sdr$pdHess) || x$fit$fit$convergence != 0L) {
+    stop("Moderation fit for `", x$outcome, "` did not converge cleanly.",
+      call. = FALSE)
+  }
+  list(table = x$table, outcome = x$outcome)
+}
+
+# Moderation on two designs that Stage 4 must leave unchanged: the shipped
+# example (exposure varying within site) and the three-arm block trial of
+# 0.1.0. Not captured: the nested design of 0.0.0.9000 (its fits lack a
+# positive-definite Hessian; `pods` stays frozen by the older oracles) and a
+# site-level-only exposure (its 0.4.0 output is the defect Stage 4 fixes).
+golden_capture_v040_moderation <- function() {
+  set.seed(1)
+  site <- rep(paste0("s", seq_len(14L)), each = 20L)
+  trt <- rep(rep(c("Cage", "Open"), each = 10L), 14L)
+  bees <- rep(stats::rpois(14L, 8), each = 20L) + stats::rpois(280L, 1)
+  y <- stats::rpois(
+    length(trt),
+    exp(1.6 + 0.3 * (trt == "Open") + 0.02 * bees * (trt == "Open"))
+  )
+  d_ex <- data.frame(y = y, trt = trt, Site = site, bees = bees)
+  pd_ex <- pollin_data(d_ex, "y", "trt", unit = "Site", exposures = "bees")
+  ds_ex <- pollin_design(
+    pd_ex,
+    c(excluded = "Cage", open = "Open"),
+    "multi_site"
+  )
+
+  d3 <- golden_inputs_v010()
+  pd3 <- pollin_data(
+    d3,
+    c("pods", "seed_wt"),
+    "trt",
+    unit = "Block",
+    groups = "Region",
+    exposures = "bees"
+  )
+  ds3 <- pollin_design(pd3, golden_arms_v010, "rcbd")
+
+  list(
+    example = golden_moderation(pollin_moderation(ds_ex, outcome = "y")),
+    rcbd_pods = golden_moderation(pollin_moderation(ds3, outcome = "pods")),
+    rcbd_seed_wt = golden_moderation(
+      pollin_moderation(ds3, outcome = "seed_wt")
+    )
+  )
+}
