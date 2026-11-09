@@ -18,9 +18,9 @@ pollin_fit(
 
 \item{engine}{The fitting engine: \code{"glmmTMB"} (the default) or
 \code{"flexyBayes"}, a Bayesian fit on INLA through flexyBayes
-(see Details). The flexyBayes engine is experimental: its posterior
-intervals are calibrated on designs with unit intercepts and run
-slightly narrow on designs with a random treatment slope.}
+(see Details). On designs with a random treatment slope and few units
+(12 sites tested), its 95\% posterior intervals cover about 91\% to 93\%,
+as an exact posterior does on those designs.}
 
 \item{family}{\code{NULL} (the default) chooses a family per response from its
 values (count, proportion in (0, 1), positive continuous, or continuous

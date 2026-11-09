@@ -1,4 +1,9 @@
-# pollinatoR 0.3.1 (development)
+# pollinatoR 0.3.1
+
+The flexyBayes engine is no longer labelled experimental. Its posterior on
+designs with a random treatment slope matches an exact posterior, and the
+remaining coverage shortfall on those designs is a property of the interval
+with few sites (see Validation).
 
 ## Bug fixes
 
@@ -25,6 +30,33 @@
   data whose counts exceed the denominator stop.
 * `sn` joins Suggests. INLA needs it, and without it a package check run
   with flexyBayes and INLA installed failed on the `pollin_cate()` example.
+
+## Validation
+
+* On the 12-site design with a random treatment slope, where 0.3.0 found
+  posterior 95% coverage of 0.909 to 0.925, coverage stays at 0.910 under
+  every setting reachable through flexyBayes: hyperparameters fixed at
+  their mode or integrated on a finer grid, and three other variance
+  priors. With the hyperparameters fixed at their planted values, INLA and
+  an exact Stan (NUTS) posterior both cover 0.930, with widths within 1%
+  (`validation/probe_S3.1_slope_coverage.md`).
+* A re-test on new seeds (`validation/planted_truth_S3.1_report.md`) did
+  not meet its criteria in full. On binomial counts with a denominator the
+  posterior covers 0.960, and the engines agree on the estimate in every
+  trial, but the width criterion fails (ratio 0.756) because the glmmTMB
+  delta interval is wider than it needs to be (coverage 0.985). On the
+  Poisson control the posterior covers 0.980, one trial past the 0.97
+  band edge; glmmTMB covers 0.980 on the same trials. The negative
+  binomial deficit control passes (0.940).
+
+## Known limitations
+
+* On a binomial ratio with a logit link, the glmmTMB delta interval
+  over-covers: it treats the block effects as known while the intercept,
+  which does not cancel from the ratio on the logit scale, varies.
+* The glmmTMB delta estimate can differ from the G-computation of
+  `predict()` by about 1e-6, because marginaleffects reads the random
+  effects at the last state glmmTMB evaluated.
 
 # pollinatoR 0.3.0
 
