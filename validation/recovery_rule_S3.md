@@ -310,3 +310,45 @@ and the verdicts), `validation/planted_truth_S3_seeds.csv.gz` (per seed, and per
 level for C4), `validation/planted_truth_S3_session.txt` (session, versions, wall
 time, error and warning tables) and `validation/planted_truth_S3_report.md` (a
 table per criterion, each cell's verdict, misses explained with the evidence).
+
+## Amendment 1, 2026-11-09 (before the full run)
+
+Written after the smoke run of Section 7 and before the full run starts. Sections 1
+to 10 above are unchanged; this amendment replaces only the determinism condition
+of Section 7.
+
+**What the smoke run showed.** Four smoke runs of 3 seeds per cell (on 1, 2 and 4
+cores, the 4-core run twice) did not give bit-identical per-seed outcomes, so under
+Section 7 the full run could not start. The comparison of the four runs (only
+differences and event changes between runs were computed; no agreement share,
+coverage, width ratio or RMSE was read):
+
+* the simulated data and planted truths, every glmmTMB result and every error
+  column are identical across the four runs;
+* the flexyBayes results differ between runs, and as much between the two 4-core
+  runs as between 1 and 4 cores. Measured across the four runs, the spread of the
+  posterior median is at most 0.011 posterior SD (median 7e-6 SD) on the C2/C3
+  cells and at most 0.029 interval-SD on the pooled C4 levels; the spread of an
+  interval end is at most 0.13 SD (median below 1e-4 SD);
+* no coverage event, agreement event or C4 win changed between runs (0 of 24
+  C2/C3 seed-cells, 0 of 60 C4 seed-levels, 0 of 6 C4 seeds).
+
+**Cause.** The INLA fit is not bit-reproducible across fresh R processes on these
+models. Fitting one A1-type data set (NB2, site slope) three times, each in its own
+process, single-threaded (`num.threads = "1:1"`, which flexyBayes also passes by
+default) and with BLAS and OpenMP pinned to one thread, gives log marginal
+likelihoods that differ in the fifth decimal place and hyperparameter modes that
+differ in the fourth; the Poisson and binomial intercept-only fits were
+reproducible. Within one process, a repeated fit and repeated draws with the same
+seed are bit-identical. The variation is therefore in INLA's optimiser and not in
+the scheduling of tasks: each task's data, seeds and calls are fixed by its own
+seed, and its result does not depend on which worker runs it or when.
+
+**What replaces the condition.** The full run starts. The determinism the suite
+claims is: data, truths and glmmTMB results reproducible bit for bit; flexyBayes
+results reproducible to the run-to-run variation of the INLA fit measured above. The
+report states this, and any seed whose coverage or agreement event lies within that
+variation of the boundary (the truth or the glmmTMB estimate within 0.15 posterior
+SD of the deciding interval end or tolerance) is counted and reported, so a reader
+can see how many events a rerun could flip. The seed counts of Section 7 are
+unchanged: the smoke timings put the full run at about 75 minutes on 8 cores.
