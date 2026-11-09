@@ -1,3 +1,5 @@
+# pollinatoR 0.3.0 (development)
+
 # pollinatoR 0.2.0
 
 This release adds economic valuation. A fitted estimand can be scaled to a
