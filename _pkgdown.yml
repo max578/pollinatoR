@@ -73,3 +73,7 @@ articles:
     navbar: Value
     contents:
       - dependence-to-value
+  - title: Bayesian fits
+    navbar: Bayesian fits
+    contents:
+      - bayesian-fits

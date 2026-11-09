@@ -1,0 +1,304 @@
+---
+title: "Bayesian fits with flexyBayes"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Bayesian fits with flexyBayes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_engine <- requireNamespace("flexyBayes", quietly = TRUE) &&
+  requireNamespace("INLA", quietly = TRUE)
+```
+
+```{r setup}
+library(pollinatoR)
+```
+
+## A second engine
+
+`pollin_fit()` fits with glmmTMB by default. With `engine = "flexyBayes"` it
+fits the same model as a Bayesian mixed model, through the flexyBayes package
+on INLA. Estimates and intervals then come from posterior draws, which carry
+the uncertainty in the variance components as well as in the fixed effects.
+The rest of the package takes those draws as it takes the glmmTMB ones:
+effects, populations, values and guards work unchanged.
+
+This vignette fits one simulated trial on both engines and compares the
+results: the overall effect, its value, and the effect in each variety.
+
+`r if (!has_engine) "flexyBayes and INLA are not installed where this page was built, so the code that needs them is shown without its results. Install both packages to run it."`
+
+## Installing the engine
+
+Neither package is on CRAN. flexyBayes installs from GitHub, and INLA from its
+own repository.
+
+```{r install, eval = FALSE}
+# install.packages("remotes")
+remotes::install_github("AAGI-AUS/flexyBayes")
+install.packages(
+  "INLA",
+  repos = c(getOption("repos"), INLA = "https://inla.r-inla-download.org/R/stable"),
+  dependencies = TRUE
+)
+```
+
+The engine is checked when a fit is made. Without both packages,
+`engine = "flexyBayes"` stops with a message naming the one that is missing.
+
+## A simulated trial
+
+Eight canola varieties are grown in six blocks. In every block each variety
+has bagged plants, closed to insects, and open plants. The response is the
+number of pods per plant. Varieties differ in how much they gain from insect
+visits: each has its own treatment effect on the log scale, drawn around a
+mean of 0.4.
+
+```{r data}
+set.seed(2026)
+varieties <- sprintf("V%d", 1:8)
+blocks <- sprintf("B%d", 1:6)
+trial <- expand.grid(
+  plant = 1:3,
+  trt = c("Bagged", "Open"),
+  block = blocks,
+  variety = varieties,
+  stringsAsFactors = FALSE
+)
+block_effect <- setNames(rnorm(6, 0, 0.2), blocks)
+variety_effect <- setNames(rnorm(8, 0, 0.2), varieties)
+variety_slope <- setNames(rnorm(8, 0.4, 0.25), varieties)
+log_mu <- 3 + block_effect[trial$block] + variety_effect[trial$variety] +
+  variety_slope[trial$variety] * (trial$trt == "Open")
+trial$pods <- rnbinom(nrow(trial), mu = exp(log_mu), size = 15)
+nrow(trial)
+
+pd <- pollin_data(trial, response = "pods", treatment = "trt", unit = "block")
+ds <- pollin_design(pd, arms = c(excluded = "Bagged", open = "Open"), layout = "rcbd")
+est <- pollin_estimand(ds, "dependence", "ratio", "loss")
+```
+
+The planted loss share of each variety is `1 - exp(-slope)`:
+
+```{r planted}
+planted <- 1 - exp(-variety_slope)
+round(planted, 2)
+```
+
+## The same model on both engines
+
+The fixed part and the random terms are the same on both engines: the
+treatment as a fixed effect and a random intercept per block. A negative
+binomial family is set explicitly, so both engines use it.
+
+```{r options, eval = has_engine}
+# One INLA fit per model instead of the best of three.
+options(flexyBayes.inla_best_of = 1L, flexyBayes.silence_default_prior_note = TRUE)
+```
+
+```{r fit-tmb}
+fit_tmb <- pollin_fit(est, family = glmmTMB::nbinom2())
+```
+
+```{r fit-fb, eval = has_engine}
+fit_fb <- pollin_fit(est, engine = "flexyBayes", family = glmmTMB::nbinom2())
+fit_fb
+```
+
+`pollin_effects()` reads the loss share from each fit. On glmmTMB the interval
+is the delta interval. On flexyBayes it is the posterior interval: the
+estimate is the median of the posterior draws of the loss share, the interval
+their equal-tailed 95% interval, and `p.value` is `NA`.
+
+```{r effects-tmb}
+eff_tmb <- pollin_effects(fit_tmb)
+eff_tmb$table[, c("estimate", "std.error", "conf.low", "conf.high", "interval")]
+```
+
+```{r effects-fb, eval = has_engine}
+eff_fb <- pollin_effects(fit_fb, n_draws = 1000L, seed = 1L)
+rbind(eff_tmb$table, eff_fb$table)[
+  , c("estimate", "std.error", "conf.low", "conf.high", "interval")
+]
+```
+
+With a few hundred plants and a block intercept as the only random term, the
+two engines agree closely. The posterior interval also covers the
+uncertainty in the block variance, which the delta interval does not; with
+few blocks this can widen it.
+
+## From posterior draws to a value
+
+On a flexyBayes fit, `pollin_draws()` uses `method = "posterior"`, its only
+method there. Each draw takes the fixed effects, the block effects and the
+variance parameters jointly from the posterior, and the two arm means are
+recomputed from them. A seed sets both R's random number generator and INLA's,
+so the draws repeat exactly.
+
+```{r draws, eval = has_engine}
+dr_fb <- pollin_draws(fit_fb, n = 1000L, method = "posterior", seed = 1L)
+dr_fb
+```
+
+The draws go into `pollin_value()` exactly as simulation draws do. The market
+inputs below are illustrative.
+
+```{r value, eval = has_engine}
+canola <- pollin_market(
+  quantity = 3600,
+  price = 700,
+  unit = "t",
+  currency = "AUD",
+  year = 2025,
+  source = "Illustrative inputs",
+  crop = "canola"
+)
+dr_tmb <- pollin_draws(fit_tmb, n = 1000L, seed = 1L)
+rbind(
+  summary(pollin_value(dr_tmb, canola, channel = "dependence")),
+  summary(pollin_value(dr_fb, canola, channel = "dependence"))
+)[, c("median", "conf.low", "conf.high", "currency", "method")]
+```
+
+The vignette *From dependence to value* covers the channels, populations and
+the double-count guard. Each of them takes posterior draws.
+
+## The effect in each variety
+
+The varieties were planted with different loss shares. There are two ways to
+estimate them.
+
+The unpooled way fits a separate treatment effect for each variety, as a
+fixed interaction, with `pollin_fit(by = "variety")`, and reads them with
+`pollin_effects()`. Each variety's estimate uses only that variety's plants.
+
+```{r unpooled}
+fit_by <- pollin_fit(est, family = glmmTMB::nbinom2(), by = "variety")
+unpooled <- pollin_effects(fit_by)$table
+```
+
+The pooled way gives the varieties a random intercept and a random treatment
+slope, with `pollin_fit(pooled = "variety")`, and reads the effect at each
+level with `pollin_cate()`. A variety whose estimate is uncertain, or far from
+the rest, is pulled towards the overall effect. A slope on a unit column, such
+as site in a multi-site study, is declared in the design with
+`pollin_design(slope = )` instead.
+
+```{r pooled-tmb}
+fit_pool_tmb <- pollin_fit(est, family = glmmTMB::nbinom2(), pooled = "variety")
+cate_tmb <- pollin_cate(fit_pool_tmb, n = 1000L, seed = 1L)
+```
+
+```{r pooled-fb, eval = has_engine}
+fit_pool_fb <- pollin_fit(
+  est,
+  engine = "flexyBayes",
+  family = glmmTMB::nbinom2(),
+  pooled = "variety"
+)
+cate_fb <- pollin_cate(fit_pool_fb, n = 1000L, seed = 1L)
+cate_fb
+```
+
+The print keeps the two kinds apart: the table holds the pooled contrasts,
+and a line points to the unpooled ones. Set side by side with the planted
+values:
+
+```{r compare-tmb}
+compare <- data.frame(
+  variety = varieties,
+  planted = round(planted, 2),
+  unpooled = round(unpooled$estimate, 2),
+  pooled_glmmTMB = round(cate_tmb$table$estimate, 2)
+)
+compare
+```
+
+```{r compare-fb, eval = has_engine}
+compare$pooled_flexyBayes <- round(cate_fb$table$estimate, 2)
+compare
+```
+
+Pooling pulls the extreme varieties inwards: V1 rises on both engines, and
+V2 and V7 fall. This does not bring every variety closer to its planted
+value. V1 was planted with a negative loss share and moves away from it,
+while V7 moves towards it. Partial pooling lowers the error over the
+varieties as a whole, not for each one.
+
+The two engines differ in how they get the interval. On flexyBayes it comes
+from the posterior draws, as for the overall effect. On glmmTMB it is
+approximate: the fixed effects are drawn from their sampling distribution
+and, independently of them, each variety's slope from its conditional
+variance. glmmTMB gives the conditional variance of each coefficient on its
+own, not their joint covariance, so the approximation cannot carry the
+correlation between them.
+
+```{r intervals-tmb}
+cate_tmb$table[, c("level", "estimate", "conf.low", "conf.high")]
+```
+
+In this trial they come out wider than the unpooled delta intervals,
+although pooling should narrow them. The flexyBayes intervals are as narrow
+as the unpooled ones or narrower.
+
+When glmmTMB estimates the slope variance at zero, every variety's pooled
+effect equals the overall one, and the conditional variances carry no
+information. `pollin_cate()` stops on such a fit rather than report
+intervals; the unpooled contrasts or the flexyBayes engine remain.
+
+## What the engine refuses
+
+The flexyBayes engine refuses, by name, what it cannot fit faithfully.
+
+flexyBayes can also fit with brms, but the posterior draws of a brms fit are
+not part of version 1 of the flexyBayes extension API, which is what
+`pollinatoR` reads. The brms backend is refused:
+
+```{r refuse-brms, eval = has_engine, error = TRUE}
+try(pollin_fit(est, engine = "flexyBayes", backend = "brms"))
+```
+
+Five families are mapped to their flexyBayes counterparts on INLA:
+`nbinom2()` (as `negative_binomial`), `poisson()`, `binomial()`,
+`Gamma(link = "log")` (as `gamma`) and `beta_family()` (as `beta`), each with
+its log or logit link. Any other family, such as Tweedie, is refused:
+
+```{r refuse-tweedie, eval = has_engine, error = TRUE}
+try(pollin_fit(est, engine = "flexyBayes", family = glmmTMB::tweedie()))
+```
+
+flexyBayes on INLA does not fit a correlated random treatment slope, the
+unstructured slope that glmmTMB fits as `(trt | variety)`. The flexyBayes
+route fits a variety intercept plus an independent effect for each
+variety-by-arm cell instead. That is a restricted form of the unstructured
+slope: the variance is the same in both arms and the correlation between
+arms cannot be negative. The pooled effects on the two engines therefore come
+from slightly different models, and where the true arms vary unequally
+between varieties they can disagree for that reason alone.
+
+## Priors
+
+Priors are passed to `flexyBayes::flexybayes()` through `...` as written,
+in the flexyBayes prior language of `flexyBayes::fb_prior()`. `pollinatoR`
+adds no priors of its own. Without one, flexyBayes uses its default, a
+half-normal prior on each random-effect standard deviation and a nearly flat
+prior on the fixed effects. Here the treatment coefficient, the log of the
+open-to-bagged ratio, gets a normal prior with standard deviation 1:
+
+```{r prior, eval = has_engine}
+fit_prior <- pollin_fit(
+  est,
+  engine = "flexyBayes",
+  family = glmmTMB::nbinom2(),
+  prior = flexyBayes::fb_prior(b("trtOpen") ~ normal(mean = 0, sd = 1))
+)
+pollin_effects(fit_prior, n_draws = 1000L, seed = 1L)$table[
+  , c("estimate", "conf.low", "conf.high")
+]
+```
+
+`flexyBayes::prior_summary()` on a fitted model, `fit_prior$fits$pods`, lists
+each prior and the INLA parameter it reached.
