@@ -23,6 +23,8 @@
 * Data that declared a denominator were fitted as the count itself up to
   0.3.0. They are now fitted as binomial, so their estimates change, and
   data whose counts exceed the denominator stop.
+* `sn` joins Suggests. INLA needs it, and without it a package check run
+  with flexyBayes and INLA installed failed on the `pollin_cate()` example.
 
 # pollinatoR 0.3.0
 
