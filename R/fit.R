@@ -15,8 +15,9 @@
 #' the `by` column are dropped for that response's model.
 #'
 #' @param estimand A [pollin_estimand()] object.
-#' @param engine The fitting engine. Only `"glmmTMB"` is available;
-#'   `"flexyBayes"` arrives in version 0.2.0.
+#' @param engine The fitting engine: `"glmmTMB"` (the default) or
+#'   `"flexyBayes"`, a Bayesian fit on INLA through the flexyBayes package
+#'   (see Details).
 #' @param family `NULL` (the default) chooses a family per response from its
 #'   values (count, proportion in (0, 1), positive continuous, or continuous
 #'   with zeros). A single `glmmTMB` family object applies to every response; a
@@ -28,12 +29,34 @@
 #'   level. The column is treated as a factor. An estimand whose population
 #'   is a [pollin_population()] must be fitted with `by` set to the
 #'   population's `by` column.
-#' @param ... Passed to [glmmTMB::glmmTMB()].
+#' @param ... Passed to [glmmTMB::glmmTMB()], or to `flexyBayes::flexybayes()`
+#'   on the flexyBayes engine (for example `prior` or `seed`).
+#'
+#' @details
+#' With `engine = "flexyBayes"` each response is fitted by
+#' `flexyBayes::flexybayes(backend = "inla")`, which needs the flexyBayes and
+#' INLA packages. The fixed part is that of the glmmTMB engine. Each unit
+#' level is a random intercept; a nested level enters as one grouping column
+#' `pollin_<outer>_<inner>` added to the model data. flexyBayes fits a
+#' correlated random slope on brms only, so on INLA the treatment slope of
+#' the design is a random intercept per unit plus an independent effect per
+#' unit-by-arm cell (column `pollin_<unit>_<treatment>`): equal variances
+#' across arms and a non-negative correlation between them, the exchangeable
+#' form of the slope. The families are `nbinom2()`, `poisson()`,
+#' `binomial()`, `Gamma(link = "log")` and `beta_family()`, mapped to the
+#' flexyBayes families of the same name; any other family is refused. Priors
+#' and the seed are passed through `...` as `flexybayes()` takes them; the
+#' backend is INLA only, since the posterior draws of a brms fit are not in
+#' the flexyBayes extension API version 1. A fit whose convergence verdict
+#' (`flexyBayes::fb_convergence()`) is `FALSE` is an error, and one with no
+#' verdict a warning. Estimates and intervals of a flexyBayes fit come from
+#' its posterior draws; see [pollin_draws()].
 #'
 #' @return An object of class `pollin_fit`: a list holding the `estimand`, the
 #'   `engine`, the fitted models `fits` (named by response), the model `data`
-#'   for each response, the right-hand-side terms `rhs`, the `families`, the
-#'   `by` column (or `NULL`), and the further fitting arguments `args`.
+#'   for each response, the right-hand-side terms `rhs`, the `families` (as
+#'   glmmTMB family objects on both engines), the `by` column (or `NULL`),
+#'   and the further fitting arguments `args`.
 #' @seealso [pollin_effects()] for estimates and intervals on the estimand's
 #'   scale.
 #' @export
@@ -64,6 +87,9 @@ pollin_fit <- function(
   }
   inputs <- .estimand_inputs(estimand)
   .check_family_arg(family, inputs$responses)
+  if (engine == "flexyBayes") {
+    return(.flexy_new_fit(estimand, inputs, family, ..., by = by))
+  }
   .new_fit(estimand, inputs, inputs$responses, family, by = by, ...)
 }
 
@@ -292,21 +318,11 @@ print.pollin_fit <- function(x, ...) {
   invisible(TRUE)
 }
 
-#' Stop unless `engine` is "glmmTMB"; "flexyBayes" points to 0.2.0
+#' Stop unless `engine` is "glmmTMB" or "flexyBayes"
 #' @noRd
 #' @keywords internal
 .check_engine <- function(engine) {
-  if (identical(engine, "flexyBayes")) {
-    stop(
-      "The `flexyBayes` engine arrives in pollinatoR 0.2.0; ",
-      "use `engine = \"glmmTMB\"`.",
-      call. = FALSE
-    )
-  }
-  if (!identical(engine, "glmmTMB")) {
-    stop("`engine` must be \"glmmTMB\".", call. = FALSE)
-  }
-  invisible(TRUE)
+  .check_choice(engine, "engine", c("glmmTMB", "flexyBayes"))
 }
 
 #' Check `family`: NULL, one family object, or a list of family objects named

@@ -1,5 +1,19 @@
 # pollinatoR 0.3.0 (development)
 
+## New features
+
+* `pollin_fit(engine = "flexyBayes")` fits each response with
+  `flexyBayes::flexybayes()` on INLA, with the fixed part of the glmmTMB
+  engine and the design's random terms. The treatment slope enters as a
+  random intercept per unit plus an independent effect per unit-by-arm
+  cell, because flexyBayes fits correlated random slopes on brms only.
+  Families `nbinom2()`, `poisson()`, `binomial()`, `Gamma(link = "log")` and
+  `beta_family()` are mapped to their flexyBayes names; others are refused
+  by name. Priors and the seed pass through `...`. The brms backend is
+  refused: its posterior draws are not in the flexyBayes extension API
+  version 1, which is checked when the fit is made. flexyBayes and INLA are
+  suggested packages.
+
 # pollinatoR 0.2.0
 
 This release adds economic valuation. A fitted estimand can be scaled to a
