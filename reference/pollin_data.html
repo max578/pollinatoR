@@ -17,7 +17,7 @@ from one validated description of the table."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,8 +112,15 @@ not part of the unit nesting (for example region, variety or year).</p></dd>
 
 
 <dt id="arg-denominator">denominator<a class="anchor" aria-label="anchor" href="#arg-denominator"></a></dt>
-<dd><p>Optional name of a numeric column giving what the response
-is counted out of (ovules, flowers, plants). Values must be non-negative.</p></dd>
+<dd><p>Optional name of a numeric column giving the number of
+trials each response is counted out of (seeds out of ovules, pods out of
+flowers). Values must be non-negative. With a denominator, every response
+is a count of successes out of that many trials and is fitted as
+binomial by <code><a href="pollin_fit.html">pollin_fit()</a></code>; each response must then be a whole number
+between 0 and the denominator, and the denominator positive, on the rows
+fitted. The arm means of <code><a href="pollin_effects.html">pollin_effects()</a></code> are then expected
+proportions (successes / trials), averaged over the rows with equal
+weight, whatever each row's number of trials.</p></dd>
 
 
 <dt id="arg-exposures">exposures<a class="anchor" aria-label="anchor" href="#arg-exposures"></a></dt>

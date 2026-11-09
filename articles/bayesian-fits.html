@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,10 +88,12 @@ intervals then come from posterior draws, which carry the uncertainty in
 the variance components as well as in the fixed effects. The rest of the
 package takes those draws as it takes the glmmTMB ones: effects,
 populations, values and guards work unchanged.</p>
-<p>The engine is experimental in this release. In planted-truth
-simulations its 95% intervals cover close to 95% on designs with unit
-intercepts, and between 91% and 93% on designs with a random treatment
-slope. The package NEWS gives the full results.</p>
+<p>In planted-truth simulations the posterior 95% intervals cover close
+to 95% on designs with unit intercepts and on binomial counts. On
+designs with a random treatment slope and 12 sites they cover about 91%
+to 93%. An exact posterior computed by Stan gives the same coverage
+there, so the shortfall comes from the interval itself with few sites.
+The package NEWS gives the full results.</p>
 <p>This vignette fits one simulated trial on both engines and compares
 the results: the overall effect, its value, and the effect in each
 variety.</p>
@@ -167,7 +169,7 @@ binomial family is set explicitly, so both engines use it.</p>
 <code class="sourceCode R"><span><span class="va">fit_fb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pollin_fit.html">pollin_fit</a></span><span class="op">(</span><span class="va">est</span>, engine <span class="op">=</span> <span class="st">"flexyBayes"</span>, family <span class="op">=</span> <span class="fu">glmmTMB</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/glmmTMB/man/nbinom2.html" class="external-link">nbinom2</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">fit_fb</span></span>
 <span><span class="co">#&gt; &lt;pollin_fit&gt;</span></span>
-<span><span class="co">#&gt;   engine    : flexyBayes (experimental) </span></span>
+<span><span class="co">#&gt;   engine    : flexyBayes </span></span>
 <span><span class="co">#&gt;   family    : dependence </span></span>
 <span><span class="co">#&gt;   contrast  : Open vs Bagged </span></span>
 <span><span class="co">#&gt;   model     : &lt;response&gt; ~ trt + block </span></span>
@@ -189,7 +191,7 @@ the loss share, the interval their equal-tailed 95% interval, and
 <span><span class="op">]</span></span>
 <span><span class="co">#&gt;    estimate  std.error  conf.low conf.high  interval</span></span>
 <span><span class="co">#&gt; 1 0.3289669 0.03075109 0.2659063 0.3866105     delta</span></span>
-<span><span class="co">#&gt; 2 0.3272636 0.03177412 0.2624174 0.3864074 posterior</span></span></code></pre></div>
+<span><span class="co">#&gt; 2 0.3272635 0.03177409 0.2624175 0.3864073 posterior</span></span></code></pre></div>
 <p>With a few hundred plants and a block intercept as the only random
 term, the two engines agree closely. The posterior interval also covers
 the uncertainty in the block variance, which the delta interval does
@@ -236,7 +238,7 @@ draws do. The market inputs below are illustrative.</p>
 <span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"median"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span>, <span class="st">"currency"</span>, <span class="st">"method"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;     median conf.low conf.high currency     method</span></span>
 <span><span class="co">#&gt; 1 824536.6 662938.5  977626.5      AUD simulation</span></span>
-<span><span class="co">#&gt; 2 824704.2 661291.9  973746.5      AUD  posterior</span></span></code></pre></div>
+<span><span class="co">#&gt; 2 824704.1 661292.1  973746.5      AUD  posterior</span></span></code></pre></div>
 <p>The vignette <em>From dependence to value</em> covers the channels,
 populations and the double-count guard. Each of them takes posterior
 draws.</p>
@@ -413,8 +415,8 @@ of the open-to-bagged ratio, gets a normal prior with standard deviation
 <span><span class="fu"><a href="../reference/pollin_effects.html">pollin_effects</a></span><span class="op">(</span><span class="va">fit_prior</span>, n_draws <span class="op">=</span> <span class="fl">1000L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span><span class="op">$</span><span class="va">table</span><span class="op">[</span></span>
 <span>  , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span><span class="op">)</span></span>
 <span><span class="op">]</span></span>
-<span><span class="co">#&gt;    estimate  conf.low conf.high</span></span>
-<span><span class="co">#&gt; 1 0.3267644 0.2618682 0.3858718</span></span></code></pre></div>
+<span><span class="co">#&gt;    estimate conf.low conf.high</span></span>
+<span><span class="co">#&gt; 1 0.3267644 0.261867  0.385872</span></span></code></pre></div>
 <p><code><a href="https://aagi-aus.github.io/flexyBayes/reference/prior_summary.html" class="external-link">flexyBayes::prior_summary()</a></code> on a fitted model,
 <code>fit_prior$fits$pods</code>, lists each prior and the INLA
 parameter it reached.</p>

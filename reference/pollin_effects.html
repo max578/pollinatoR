@@ -15,7 +15,7 @@ never an average of unit ratios. With rr = high / low:"></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -145,6 +145,11 @@ the estimand from <code><a href="pollin_draws.html">pollin_draws()</a></code>, t
 interval, <code>std.error</code> their standard deviation, and <code>p.value</code> is <code>NA</code>.
 With the same <code>seed</code> and <code>n_draws</code>, the row equals the summary of
 <code>pollin_draws(fit, n = n_draws, seed = seed)</code>.</p>
+<p>When the data declare a denominator (<code><a href="pollin_data.html">pollin_data()</a></code>), each response is a
+count of successes out of that many trials, fitted as binomial, and the
+arm means are expected proportions (successes / trials), averaged over the
+rows with equal weight whatever their number of trials; the contrast is
+between those averaged proportions.</p>
 <p>The table reports the trial contrast, overall or per level of <code>by</code>. A
 population declared with <code><a href="pollin_population.html">pollin_population()</a></code> is not used here; the
 population estimand is read with <code><a href="pollin_draws.html">pollin_draws()</a></code>.</p>

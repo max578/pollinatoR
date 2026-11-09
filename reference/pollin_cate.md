@@ -144,18 +144,18 @@ if (requireNamespace("flexyBayes", quietly = TRUE) &&
 #>   interval : 95% posterior, equal-tailed (1000 draws) 
 #> Pooled: partial pooling through the random treatment slope on Site 
 #>  response     contrast level    estimate  std.error    conf.low conf.high
-#>      pods Open vs Cage   s01  0.16674205 0.10434664 -0.05612837 0.3459803
-#>      pods Open vs Cage   s02  0.28683263 0.08799862  0.09308378 0.4386693
-#>      pods Open vs Cage   s03  0.33744486 0.07941389  0.15906581 0.4702735
-#>      pods Open vs Cage   s04  0.10475197 0.11239033 -0.12921525 0.2943817
-#>      pods Open vs Cage   s05  0.30099507 0.08193949  0.13078905 0.4419926
-#>      pods Open vs Cage   s06  0.34364320 0.08211179  0.16630927 0.4997855
-#>      pods Open vs Cage   s07  0.32363315 0.07942348  0.13784874 0.4615435
-#>      pods Open vs Cage   s08  0.28340290 0.08173639  0.10509057 0.4255755
-#>      pods Open vs Cage   s09 -0.06606694 0.13840626 -0.37845935 0.1603209
-#>      pods Open vs Cage   s10  0.59125819 0.05446968  0.47019209 0.6832304
-#>      pods Open vs Cage   s11  0.01719295 0.12336070 -0.24395705 0.2221631
-#>      pods Open vs Cage   s12  0.12871292 0.10900005 -0.09798838 0.3039110
+#>      pods Open vs Cage   s01  0.16674266 0.10434647 -0.05612691 0.3459809
+#>      pods Open vs Cage   s02  0.28683263 0.08799850  0.09308358 0.4386692
+#>      pods Open vs Cage   s03  0.33744459 0.07941382  0.15906553 0.4702729
+#>      pods Open vs Cage   s04  0.10475349 0.11239011 -0.12921308 0.2943823
+#>      pods Open vs Cage   s05  0.30099481 0.08193942  0.13078973 0.4419928
+#>      pods Open vs Cage   s06  0.34364239 0.08211176  0.16630914 0.4997855
+#>      pods Open vs Cage   s07  0.32363274 0.07942342  0.13784837 0.4615433
+#>      pods Open vs Cage   s08  0.28340272 0.08173633  0.10509112 0.4255752
+#>      pods Open vs Cage   s09 -0.06606523 0.13840585 -0.37845422 0.1603209
+#>      pods Open vs Cage   s10  0.59125697 0.05446968  0.47019221 0.6832287
+#>      pods Open vs Cage   s11  0.01719350 0.12336040 -0.24395613 0.2221641
+#>      pods Open vs Cage   s12  0.12871303 0.10899986 -0.09798621 0.3039117
 #>  pooled  n     family scale basis distribution  interval
 #>    TRUE 16 dependence ratio  loss      nbinom2 posterior
 #>    TRUE 16 dependence ratio  loss      nbinom2 posterior

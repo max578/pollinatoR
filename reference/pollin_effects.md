@@ -101,6 +101,13 @@ deviation, and `p.value` is `NA`. With the same `seed` and `n_draws`,
 the row equals the summary of
 `pollin_draws(fit, n = n_draws, seed = seed)`.
 
+When the data declare a denominator
+([`pollin_data()`](https://max578.github.io/pollinatoR/reference/pollin_data.md)),
+each response is a count of successes out of that many trials, fitted as
+binomial, and the arm means are expected proportions (successes /
+trials), averaged over the rows with equal weight whatever their number
+of trials; the contrast is between those averaged proportions.
+
 The table reports the trial contrast, overall or per level of `by`. A
 population declared with
 [`pollin_population()`](https://max578.github.io/pollinatoR/reference/pollin_population.md)

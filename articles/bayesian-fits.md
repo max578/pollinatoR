@@ -13,10 +13,12 @@ carry the uncertainty in the variance components as well as in the fixed
 effects. The rest of the package takes those draws as it takes the
 glmmTMB ones: effects, populations, values and guards work unchanged.
 
-The engine is experimental in this release. In planted-truth simulations
-its 95% intervals cover close to 95% on designs with unit intercepts,
-and between 91% and 93% on designs with a random treatment slope. The
-package NEWS gives the full results.
+In planted-truth simulations the posterior 95% intervals cover close to
+95% on designs with unit intercepts and on binomial counts. On designs
+with a random treatment slope and 12 sites they cover about 91% to 93%.
+An exact posterior computed by Stan gives the same coverage there, so
+the shortfall comes from the interval itself with few sites. The package
+NEWS gives the full results.
 
 This vignette fits one simulated trial on both engines and compares the
 results: the overall effect, its value, and the effect in each variety.
@@ -96,7 +98,7 @@ binomial family is set explicitly, so both engines use it.
 `fit_fb`` ``<-`` `[`pollin_fit`](https://max578.github.io/pollinatoR/reference/pollin_fit.md)`(``est``, engine ``=`` ``"flexyBayes"``, family ``=`` ``glmmTMB``::`[`nbinom2`](https://rdrr.io/pkg/glmmTMB/man/nbinom2.html)`(``)``)`\
 `fit_fb`\
 `#> <pollin_fit>`\
-`#>   engine    : flexyBayes (experimental) `\
+`#>   engine    : flexyBayes `\
 `#>   family    : dependence `\
 `#>   contrast  : Open vs Bagged `\
 `#>   model     : <response> ~ trt + block `\
@@ -121,7 +123,7 @@ equal-tailed 95% interval, and `p.value` is `NA`.
 `]`\
 `#>    estimate  std.error  conf.low conf.high  interval`\
 `#> 1 0.3289669 0.03075109 0.2659063 0.3866105     delta`\
-`#> 2 0.3272636 0.03177412 0.2624174 0.3864074 posterior`
+`#> 2 0.3272635 0.03177409 0.2624175 0.3864073 posterior`
 
 With a few hundred plants and a block intercept as the only random term,
 the two engines agree closely. The posterior interval also covers the
@@ -174,7 +176,7 @@ illustrative.
 `)``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"median"``, ``"conf.low"``, ``"conf.high"``, ``"currency"``, ``"method"``)``]`\
 `#>     median conf.low conf.high currency     method`\
 `#> 1 824536.6 662938.5  977626.5      AUD simulation`\
-`#> 2 824704.2 661291.9  973746.5      AUD  posterior`
+`#> 2 824704.1 661292.1  973746.5      AUD  posterior`
 
 The vignette *From dependence to value* covers the channels, populations
 and the double-count guard. Each of them takes posterior draws.
@@ -371,8 +373,8 @@ with standard deviation 1:
 [`pollin_effects`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)`(``fit_prior``, n_draws ``=`` ``1000L``, seed ``=`` ``1L``)``$``table``[`\
 `  , `[`c`](https://rdrr.io/r/base/c.html)`(``"estimate"``, ``"conf.low"``, ``"conf.high"``)`\
 `]`\
-`#>    estimate  conf.low conf.high`\
-`#> 1 0.3267644 0.2618682 0.3858718`
+`#>    estimate conf.low conf.high`\
+`#> 1 0.3267644 0.261867  0.385872`
 
 [`flexyBayes::prior_summary()`](https://aagi-aus.github.io/flexyBayes/reference/prior_summary.html)
 on a fitted model, `fit_prior$fits$pods`, lists each prior and the INLA

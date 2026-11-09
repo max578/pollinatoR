@@ -53,8 +53,18 @@ pollin_data(
 
 - denominator:
 
-  Optional name of a numeric column giving what the response is counted
-  out of (ovules, flowers, plants). Values must be non-negative.
+  Optional name of a numeric column giving the number of trials each
+  response is counted out of (seeds out of ovules, pods out of flowers).
+  Values must be non-negative. With a denominator, every response is a
+  count of successes out of that many trials and is fitted as binomial
+  by
+  [`pollin_fit()`](https://max578.github.io/pollinatoR/reference/pollin_fit.md);
+  each response must then be a whole number between 0 and the
+  denominator, and the denominator positive, on the rows fitted. The arm
+  means of
+  [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
+  are then expected proportions (successes / trials), averaged over the
+  rows with equal weight, whatever each row's number of trials.
 
 - exposures:
 
