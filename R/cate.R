@@ -241,6 +241,21 @@ print.pollin_cate <- function(x, ...) {
   )
   estimate <- .effect_from_means(point, e$scale, e$basis)
 
+  # Stop on a slope variance at zero -------------------------------------------
+  re <- glmmTMB::ranef(fit$fits[[response]], condVar = TRUE)$cond[[by]]
+  cv <- attr(re, "condVar")
+  sds <- if (is.null(cv)) NULL else sqrt(apply(cv, 3L, diag))
+  if (is.null(sds) || any(!is.finite(sds))) {
+    stop(
+      "The fit of '",
+      response,
+      "' gives no conditional variance for the slope on '",
+      by,
+      "'; the slope variance may be at zero.",
+      call. = FALSE
+    )
+  }
+
   # Joint draws of the fixed and random effects ------------------------------
   m <- .joint_arm_draws(fit, response, as.character(d[[by]]), n, seed)
   .cate_table(estimate, .effect_from_means(m, e$scale, e$basis), conf_level)

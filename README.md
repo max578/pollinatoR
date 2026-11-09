@@ -86,7 +86,7 @@ pollin_value(dr, mk, channel = "dependence")
 | | `pollin_contribution()` | Dependence on the difference scale, with FDR-adjusted p-values and the treatment-slope SD |
 | | `pollin_moderation()` | Treatment-by-exposure terms, split within and between units |
 | Population | `pollin_population()` | Strata of one column (distance bands, regions) weighted by area, passed to `pollin_estimand()` |
-| Draws | `pollin_draws()` | Draws of the arm means and the estimand, by simulation of the fixed effects, parametric bootstrap, or from the posterior of a flexyBayes fit |
+| Draws | `pollin_draws()` | Draws of the arm means and the estimand, by joint simulation of the fixed and random effects, parametric bootstrap, or from the posterior of a flexyBayes fit |
 | Value | `pollin_market()` | Current production and price, as values or draws, with unit, currency, price year and source |
 | | `pollin_value()` | Value per draw through the `dependence` or `deficit` channel, with the assumptions it rests on |
 | Guards | `pollin_guard_spurious()` | Index-versus-yield slope against a permutation null |

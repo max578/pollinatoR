@@ -116,7 +116,8 @@ fit_fb
 ```
 
 `pollin_effects()` reads the loss share from each fit. On glmmTMB the interval
-is the delta interval. On flexyBayes it is the posterior interval: the
+is the delta interval, taken over the fixed and random effects jointly. On
+flexyBayes it is the posterior interval: the
 estimate is the median of the posterior draws of the loss share, the interval
 their equal-tailed 95% interval, and `p.value` is `NA`.
 
@@ -133,9 +134,9 @@ rbind(eff_tmb$table, eff_fb$table)[
 ```
 
 With a few hundred plants and a block intercept as the only random term, the
-two engines agree closely. The posterior interval also covers the
-uncertainty in the block variance, which the delta interval does not; with
-few blocks this can widen it.
+two engines agree closely. Both intervals carry the uncertainty in the block
+variance: the posterior integrates over it, and the delta interval
+approximates it through the joint precision of the Laplace approximation.
 
 ## From posterior draws to a value
 
@@ -237,11 +238,9 @@ varieties as a whole, not for each one.
 
 The two engines differ in how they get the interval. On flexyBayes it comes
 from the posterior draws, as for the overall effect. On glmmTMB it is
-approximate: the fixed effects are drawn from their sampling distribution
-and, independently of them, each variety's slope from its conditional
-variance. glmmTMB gives the conditional variance of each coefficient on its
-own, not their joint covariance, so the approximation cannot carry the
-correlation between them.
+approximate: the fixed effects and the varieties' slopes are drawn jointly
+from a normal distribution with the covariance of the delta interval, so the
+draws carry the correlation between them.
 
 ```{r intervals-tmb}
 cate_tmb$table[, c("level", "estimate", "conf.low", "conf.high")]
