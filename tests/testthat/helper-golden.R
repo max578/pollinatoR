@@ -316,3 +316,32 @@ golden_capture_v040_moderation <- function() {
     )
   )
 }
+
+# Outputs at 0.4.0: CATE -------------------------------------------------------
+
+golden_path_v040_cate <- function() {
+  testthat::test_path("_golden", "golden_v0.4.0_cate.rds")
+}
+
+# The shipped `pollin_cate()` example, glmmTMB engine, on two scales.
+golden_capture_v040_cate <- function() {
+  set.seed(3)
+  d <- data.frame(
+    trt = rep(rep(c("Cage", "Open"), each = 8L), 12L),
+    Site = rep(sprintf("s%02d", seq_len(12L)), each = 16L)
+  )
+  slope <- stats::rnorm(12L, 0, 0.3)[as.integer(factor(d$Site))]
+  d$pods <- stats::rnbinom(
+    nrow(d),
+    mu = exp(3 + (0.3 + slope) * (d$trt == "Open")),
+    size = 20
+  )
+  pd <- pollin_data(d, "pods", "trt", unit = "Site")
+  ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+  est_r <- pollin_estimand(ds, "dependence", "ratio", "loss")
+  est_d <- pollin_estimand(ds, "dependence", "difference", "loss")
+  list(
+    ratio_loss = pollin_cate(pollin_fit(est_r), n = 1000L, seed = 1L)$table,
+    difference = pollin_cate(pollin_fit(est_d), n = 1000L, seed = 1L)$table
+  )
+}

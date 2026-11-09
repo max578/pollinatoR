@@ -32,3 +32,18 @@ test_that("moderation matches 0.4.0", {
     )
   }
 })
+
+# Oracle `_golden/golden_v0.4.0_cate.rds`, written once from the 0.4.0 code
+# (2a5748b) by `validation/golden/make_golden_v0.4.0_cate.R`. Columns added
+# after 0.4.0 are allowed; the 0.4.0 columns must not move.
+
+test_that("CATE matches 0.4.0", {
+  skip_on_cran()
+  gold <- readRDS(golden_path_v040_cate())
+  now <- suppressWarnings(golden_capture_v040_cate())
+  expect_identical(names(now), names(gold))
+  for (k in names(gold)) {
+    expect_equal(now[[k]][names(gold[[k]])], gold[[k]], tolerance = 1e-10,
+      info = k)
+  }
+})
