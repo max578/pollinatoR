@@ -16,7 +16,7 @@
 #'
 #' @param estimand A [pollin_estimand()] object.
 #' @param engine The fitting engine: `"glmmTMB"` (the default) or
-#'   `"flexyBayes"`, a Bayesian fit on INLA through the flexyBayes package
+#'   `"flexyBayes"`, a Bayesian fit on INLA through flexyBayes
 #'   (see Details).
 #' @param family `NULL` (the default) chooses a family per response from its
 #'   values (count, proportion in (0, 1), positive continuous, or continuous

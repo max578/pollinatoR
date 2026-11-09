@@ -7,7 +7,7 @@
 pollin_draws(
   x,
   n = 4000L,
-  method = c("simulation", "bootstrap"),
+  method = c("simulation", "bootstrap", "posterior"),
   response = NULL,
   seed = NULL
 )
@@ -17,13 +17,15 @@ pollin_draws(
 
 \item{n}{Number of draws.}
 
-\item{method}{\code{"simulation"} (the default) or \code{"bootstrap"}.}
+\item{method}{\code{"simulation"} (the default for a glmmTMB fit),
+\code{"bootstrap"}, or \code{"posterior"} (for a flexyBayes fit).}
 
 \item{response}{The response to draw. Required when the fit holds more than
 one response.}
 
 \item{seed}{Optional seed for the draws. The session's random number state
-is restored afterwards.}
+is restored afterwards. Posterior draws with a seed set both R's
+generator and INLA's, and are reproducible.}
 }
 \value{
 An object of class \code{pollin_draws}: a list holding
@@ -46,9 +48,9 @@ pair of draws on the estimand's scale and basis. A quantity computed from
 the estimand is then computed per draw and summarised last.
 }
 \details{
-Two methods are available:
+Three methods are available:
 \itemize{
-\item \code{"simulation"} (the default) draws the fixed effects from their
+\item \code{"simulation"} (the default for a glmmTMB fit) draws the fixed effects from their
 estimated sampling distribution, a multivariate normal centred on the
 estimates with their covariance matrix, and recomputes the arm means for
 each draw. Every row keeps its estimated random effects, the prediction
@@ -61,6 +63,13 @@ model is refitted to each simulated set. With the same \code{seed} and
 \code{n = n_boot}, the percentile interval of the draws is the bootstrap
 interval of \code{\link[=pollin_effects]{pollin_effects()}}. Refits that fail are dropped, with a
 warning, so the number of draws can be smaller than \code{n}.
+\item \code{"posterior"}, the default and the only method for a fit with
+\code{engine = "flexyBayes"}, draws the fixed effects, the random effects and
+the variance parameters jointly from the posterior
+(\code{flexyBayes::fb_inla_posterior_sample()}) and recomputes the arm means
+for each draw with the prediction rule of \code{\link[=pollin_effects]{pollin_effects()}}: every row
+keeps its own random effects, here the drawn ones, and under each arm a
+row takes its unit's effect for that arm.
 }
 
 When the estimand refers to a population declared with

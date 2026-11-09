@@ -25,6 +25,13 @@
 #' and the interval is the percentile interval of the refitted estimates;
 #' `std.error` is their standard deviation and `p.value` is `NA`.
 #'
+#' A fit with `engine = "flexyBayes"` has the `"posterior"` interval, its
+#' default and only one: the estimate is the median of the posterior draws of
+#' the estimand from [pollin_draws()], the interval their equal-tailed
+#' interval, `std.error` their standard deviation, and `p.value` is `NA`.
+#' With the same `seed` and `n_draws`, the row equals the summary of
+#' `pollin_draws(fit, n = n_draws, seed = seed)`.
+#'
 #' The table reports the trial contrast, overall or per level of `by`. A
 #' population declared with [pollin_population()] is not used here; the
 #' population estimand is read with [pollin_draws()].
@@ -35,20 +42,24 @@
 #'   treatment-by-level effects, each averaged over the rows at that level.
 #'   `NULL` gives one contrast averaged over all rows. A column the fit was not
 #'   made with is an error: refit with `pollin_fit(..., by = )`.
-#' @param interval `"delta"` (the default) or `"bootstrap"`.
+#' @param interval `"delta"` (the default for a glmmTMB fit), `"bootstrap"`,
+#'   or `"posterior"` (for a flexyBayes fit).
 #' @param n_boot Number of parametric bootstrap refits, used when
 #'   `interval = "bootstrap"`.
-#' @param seed Optional integer seed for the bootstrap simulation. Each
-#'   response is simulated from this seed, and the session's random number
-#'   state is restored afterwards.
+#' @param seed Optional integer seed for the bootstrap simulation or the
+#'   posterior draws. Each response is drawn from this seed, and the
+#'   session's random number state is restored afterwards.
 #' @param conf_level Confidence level of the interval.
+#' @param n_draws Number of posterior draws, used when
+#'   `interval = "posterior"`.
 #'
 #' @return An object of class `pollin_effects`: a list holding `table`, with
 #'   one row per response (and per `by` level) and the columns `response`,
 #'   `contrast`, any `by` column, `estimate`, `std.error`, `conf.low`,
 #'   `conf.high`, `p.value`, `family` (the estimand family), `scale`, `basis`,
 #'   `distribution` (the model family) and `interval`; and `interval`, `n_boot`,
-#'   `seed`, `conf_level`, `by` and the `estimand`.
+#'   `seed`, `conf_level`, `by`, the `estimand` and `n_draws` (posterior
+#'   intervals only).
 #' @seealso [pollin_estimand()] for the scales and the basis.
 #' @export
 #' @examples
@@ -69,19 +80,25 @@
 pollin_effects <- function(
   fit,
   by = fit$by,
-  interval = c("delta", "bootstrap"),
+  interval = c("delta", "bootstrap", "posterior"),
   n_boot = 999L,
   seed = NULL,
-  conf_level = 0.95
+  conf_level = 0.95,
+  n_draws = 4000L
 ) {
   .check_class(fit, "pollin_fit", arg = "fit")
   if (missing(interval)) {
-    interval <- "delta"
+    interval <- if (fit$engine == "flexyBayes") "posterior" else "delta"
   }
-  .check_choice(interval, "interval", c("delta", "bootstrap"))
+  .check_choice(interval, "interval", c("delta", "bootstrap", "posterior"))
+  .effects_check_interval(interval, fit$engine)
   .check_conf_level(conf_level)
   if (interval == "bootstrap") {
     .check_n_boot(n_boot)
+    .check_seed(seed)
+  }
+  if (interval == "posterior") {
+    .draws_check_n(n_draws)
     .check_seed(seed)
   }
   .check_effects_by(by, fit$by)
@@ -96,6 +113,8 @@ pollin_effects <- function(
       .muffle_fixed_only(
         .effects_delta(fit$fits[[r]], fit$treatment, est, by, conf_level)
       )
+    } else if (interval == "posterior") {
+      .effects_posterior(fit, r, by, n_draws, seed, conf_level)
     } else {
       .effects_boot(fit, r, by, n_boot, seed, conf_level)
     }
@@ -130,7 +149,8 @@ pollin_effects <- function(
       seed = seed,
       conf_level = conf_level,
       by = by,
-      estimand = est
+      estimand = est,
+      n_draws = if (interval == "posterior") as.integer(n_draws)
     ),
     class = "pollin_effects"
   )
@@ -150,11 +170,12 @@ print.pollin_effects <- function(x, ...) {
   cat(
     "  interval :",
     sprintf("%g%%", 100 * x$conf_level),
-    if (x$interval == "delta") {
-      "delta"
-    } else {
-      paste0("parametric bootstrap (", x$n_boot, " refits)")
-    },
+    switch(
+      x$interval,
+      delta = "delta",
+      bootstrap = paste0("parametric bootstrap (", x$n_boot, " refits)"),
+      posterior = paste0("posterior, equal-tailed (", x$n_draws, " draws)")
+    ),
     "\n"
   )
   if (x$interval == "delta") {
@@ -423,7 +444,62 @@ print.pollin_effects <- function(x, ...) {
   out
 }
 
+# Posterior intervals ---------------------------------------------------------
+
+#' Posterior effects for one response of a flexyBayes fit: the median,
+#' standard deviation and equal-tailed interval of the estimand's draws
+#' @noRd
+#' @keywords internal
+.effects_posterior <- function(fit, response, by, n_draws, seed, conf_level) {
+  e <- fit$estimand
+  m <- .flexy_arm_draws(fit, response, n_draws, seed, by)
+  reps <- .effect_from_means(m, e$scale, e$basis)
+  a <- (1 - conf_level) / 2
+  q <- apply(
+    reps,
+    2L,
+    stats::quantile,
+    probs = c(0.5, a, 1 - a),
+    names = FALSE
+  )
+  out <- data.frame(
+    estimate = q[1L, ],
+    std.error = apply(reps, 2L, stats::sd),
+    conf.low = q[2L, ],
+    conf.high = q[3L, ],
+    p.value = NA_real_
+  )
+  if (!is.null(by)) {
+    lv <- data.frame(colnames(reps), stringsAsFactors = FALSE)
+    names(lv) <- by
+    out <- cbind(lv, out)
+  }
+  out
+}
+
 # Internal checks -------------------------------------------------------------
+
+#' Stop unless the interval suits the engine: posterior for a flexyBayes fit,
+#' delta or bootstrap for a glmmTMB fit
+#' @noRd
+#' @keywords internal
+.effects_check_interval <- function(interval, engine) {
+  if (engine == "flexyBayes" && interval != "posterior") {
+    stop(
+      "A flexyBayes fit has posterior intervals; `interval = \"",
+      interval,
+      "\"` applies to glmmTMB fits.",
+      call. = FALSE
+    )
+  }
+  if (engine != "flexyBayes" && interval == "posterior") {
+    stop(
+      "`interval = \"posterior\"` needs a fit with `engine = \"flexyBayes\"`.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
 
 #' Stop unless `by` is NULL or one column of the model data
 #' @noRd

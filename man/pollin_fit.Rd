@@ -10,7 +10,7 @@ pollin_fit(estimand, engine = "glmmTMB", family = NULL, by = NULL, ...)
 \item{estimand}{A \code{\link[=pollin_estimand]{pollin_estimand()}} object.}
 
 \item{engine}{The fitting engine: \code{"glmmTMB"} (the default) or
-\code{"flexyBayes"}, a Bayesian fit on INLA through the flexyBayes package
+\code{"flexyBayes"}, a Bayesian fit on INLA through flexyBayes
 (see Details).}
 
 \item{family}{\code{NULL} (the default) chooses a family per response from its

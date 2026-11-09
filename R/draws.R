@@ -8,9 +8,9 @@
 #' pair of draws on the estimand's scale and basis. A quantity computed from
 #' the estimand is then computed per draw and summarised last.
 #'
-#' Two methods are available:
+#' Three methods are available:
 #'
-#' * `"simulation"` (the default) draws the fixed effects from their
+#' * `"simulation"` (the default for a glmmTMB fit) draws the fixed effects from their
 #'   estimated sampling distribution, a multivariate normal centred on the
 #'   estimates with their covariance matrix, and recomputes the arm means for
 #'   each draw. Every row keeps its estimated random effects, the prediction
@@ -23,6 +23,13 @@
 #'   `n = n_boot`, the percentile interval of the draws is the bootstrap
 #'   interval of [pollin_effects()]. Refits that fail are dropped, with a
 #'   warning, so the number of draws can be smaller than `n`.
+#' * `"posterior"`, the default and the only method for a fit with
+#'   `engine = "flexyBayes"`, draws the fixed effects, the random effects and
+#'   the variance parameters jointly from the posterior
+#'   (`flexyBayes::fb_inla_posterior_sample()`) and recomputes the arm means
+#'   for each draw with the prediction rule of [pollin_effects()]: every row
+#'   keeps its own random effects, here the drawn ones, and under each arm a
+#'   row takes its unit's effect for that arm.
 #'
 #' When the estimand refers to a population declared with
 #' [pollin_population()], a further column `"population"` holds the
@@ -32,11 +39,13 @@
 #'
 #' @param x A [pollin_fit()] object.
 #' @param n Number of draws.
-#' @param method `"simulation"` (the default) or `"bootstrap"`.
+#' @param method `"simulation"` (the default for a glmmTMB fit),
+#'   `"bootstrap"`, or `"posterior"` (for a flexyBayes fit).
 #' @param response The response to draw. Required when the fit holds more than
 #'   one response.
 #' @param seed Optional seed for the draws. The session's random number state
-#'   is restored afterwards.
+#'   is restored afterwards. Posterior draws with a seed set both R's
+#'   generator and INLA's, and are reproducible.
 #'
 #' @return An object of class `pollin_draws`: a list holding
 #'   * `high`, `low`: numeric matrices of draws of the arm means, one row per
@@ -68,22 +77,25 @@
 pollin_draws <- function(
   x,
   n = 4000L,
-  method = c("simulation", "bootstrap"),
+  method = c("simulation", "bootstrap", "posterior"),
   response = NULL,
   seed = NULL
 ) {
   .check_class(x, "pollin_fit")
   if (missing(method)) {
-    method <- "simulation"
+    method <- if (x$engine == "flexyBayes") "posterior" else "simulation"
   }
-  .check_choice(method, "method", c("simulation", "bootstrap"))
+  .check_choice(method, "method", c("simulation", "bootstrap", "posterior"))
+  .draws_check_method(method, x$engine)
   .draws_check_n(n)
   .check_seed(seed)
   response <- .draws_response(response, names(x$fits))
   est <- x$estimand
   population <- .draws_population(est, x$by)
 
-  m <- if (method == "simulation") {
+  m <- if (method == "posterior") {
+    .flexy_arm_draws(x, response, n, seed, x$by)
+  } else if (method == "simulation") {
     .draws_simulation(x, response, n, seed)
   } else {
     bt <- .boot_arm_means(x, response, x$by, n, seed)
@@ -346,6 +358,7 @@ as.matrix.pollin_draws <- function(x, ...) {
     method,
     simulation = "simulation of the fixed effects",
     bootstrap = "parametric bootstrap refits",
+    posterior = "joint posterior draws (INLA)",
     method
   )
 }
@@ -361,6 +374,28 @@ as.matrix.pollin_draws <- function(x, ...) {
   }
   .population_check_fit_by(pop, fit_by)
   pop
+}
+
+#' Stop unless the method suits the engine: posterior draws for a
+#' flexyBayes fit, simulation or bootstrap for a glmmTMB fit
+#' @noRd
+#' @keywords internal
+.draws_check_method <- function(method, engine) {
+  if (engine == "flexyBayes" && method != "posterior") {
+    stop(
+      "A flexyBayes fit is drawn from its posterior; `method = \"",
+      method,
+      "\"` applies to glmmTMB fits.",
+      call. = FALSE
+    )
+  }
+  if (engine != "flexyBayes" && method == "posterior") {
+    stop(
+      "`method = \"posterior\"` needs a fit with `engine = \"flexyBayes\"`.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
 }
 
 #' Stop unless `n` is one whole number of at least 2

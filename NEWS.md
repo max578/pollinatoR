@@ -13,6 +13,15 @@
   refused: its posterior draws are not in the flexyBayes extension API
   version 1, which is checked when the fit is made. flexyBayes and INLA are
   suggested packages.
+* `pollin_draws(method = "posterior")`, the default and only method for a
+  flexyBayes fit, draws the fixed effects, random effects and variance
+  parameters jointly from the INLA posterior and recomputes the arm means
+  per draw by the G-computation rule of the glmmTMB engine (each row keeps
+  its own random effects). With a seed the draws are reproducible.
+  Population, value and the double-count guard take these draws unchanged.
+* `pollin_effects(interval = "posterior")`, the default for a flexyBayes
+  fit, reports the posterior median, standard deviation and equal-tailed
+  interval of the estimand, with `p.value` `NA`; new argument `n_draws`.
 
 # pollinatoR 0.2.0
 

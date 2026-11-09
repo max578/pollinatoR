@@ -285,3 +285,126 @@
     class = "pollin_fit"
   )
 }
+
+# Posterior draws ---------------------------------------------------------------
+
+#' Joint posterior samples of a flexyBayes fit as a matrix, one column per
+#' draw and one row per latent variable. With `seed`, R's generator (which
+#' picks each draw's hyperparameter configuration) and INLA's are both set,
+#' and the session's random number state is restored afterwards.
+#' @noRd
+#' @keywords internal
+.flexy_latent <- function(model, n, seed) {
+  args <- list(model, n, num.threads = "1:1")
+  if (!is.null(seed)) {
+    if (!exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+      stats::runif(1L)
+    }
+    old <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+    on.exit(assign(".Random.seed", old, envir = globalenv()))
+    set.seed(seed)
+    args$seed <- as.integer(seed)
+  }
+  s <- do.call(flexyBayes::fb_inla_posterior_sample, args)
+  latent <- do.call(cbind, lapply(s, `[[`, "latent"))
+  rownames(latent) <- rownames(s[[1L]]$latent)
+  latent
+}
+
+#' Row index into the latent matrix of each data row's level of a random
+#' term, or NA for a level the fit has no effect for
+#' @noRd
+#' @keywords internal
+.flexy_term_rows <- function(term, values, levels, latent_names) {
+  match(paste0(term, ":", match(values, levels)), latent_names)
+}
+
+#' Contribution of the random terms to the linear predictor of every row and
+#' draw. Cell terms take the unit-by-arm cell of `arm`, or of each row's own
+#' arm when `arm` is NULL; a cell the fit has no effect for adds zero.
+#' @noRd
+#' @keywords internal
+.flexy_random_part <- function(fit, d, latent, levels, treatment, arm) {
+  cell_terms <- vapply(fit$flexy$cells, `[[`, "", "term")
+  out <- matrix(0, nrow(d), ncol(latent))
+  for (v in fit$flexy$random) {
+    i <- match(v, cell_terms)
+    values <- if (is.na(i) || is.null(arm)) {
+      as.character(d[[v]])
+    } else {
+      key <- fit$flexy$cells[[i]]$key
+      do.call(paste, c(lapply(d[key], as.character), list(arm, sep = ":")))
+    }
+    rows <- .flexy_term_rows(v, values, levels[[v]], rownames(latent))
+    if (anyNA(rows) && (is.na(i) || is.null(arm))) {
+      stop(
+        "The posterior draws lack levels of the random term '",
+        v,
+        "' that the model data hold.",
+        call. = FALSE
+      )
+    }
+    u <- latent[rows, , drop = FALSE]
+    u[is.na(rows), ] <- 0
+    out <- out + u
+  }
+  out
+}
+
+#' Posterior draws of the G-computation arm means of one response of a
+#' flexyBayes fit, overall or per level of `by`: every row of the model data
+#' is predicted under each arm with its own random effects, as
+#' `predict(re.form = NULL)` does on the glmmTMB engine, on the response
+#' scale, and averaged. The linear predictor rebuilt for the rows as fitted
+#' must equal the fit's own, draw by draw.
+#' @noRd
+#' @keywords internal
+.flexy_arm_draws <- function(fit, response, n, seed, by) {
+  e <- fit$estimand
+  model <- fit$fits[[response]]
+  d <- fit$data[[response]]
+  trt <- fit$treatment
+  latent <- .flexy_latent(model, n, seed)
+  terms <- flexyBayes::fb_model_terms(model)$random_terms
+  levels <- stats::setNames(
+    lapply(terms, `[[`, "var_levels"),
+    vapply(terms, `[[`, "", "var")
+  )
+  fixed <- stats::reformulate(fit$flexy$fixed)
+  design <- function(data) {
+    x <- flexyBayes::fb_fixed_design(fixed, data)$X
+    rows <- match(paste0(colnames(x), ":1"), rownames(latent))
+    if (anyNA(rows)) {
+      stop(
+        "The posterior draws lack the fixed effects ",
+        paste(colnames(x)[is.na(rows)], collapse = ", "),
+        ".",
+        call. = FALSE
+      )
+    }
+    x %*% latent[rows, , drop = FALSE]
+  }
+
+  # The fitted rows: rebuilt linear predictor against the fit's own ----------
+  eta <- design(d) + .flexy_random_part(fit, d, latent, levels, trt, NULL)
+  pred <- latent[paste0("Predictor:", seq_len(nrow(d))), , drop = FALSE]
+  if (max(abs(eta - pred)) > 1e-8 * max(1, abs(pred))) {
+    stop(
+      "The posterior draws of '",
+      response,
+      "' do not rebuild the fit's linear predictor.",
+      call. = FALSE
+    )
+  }
+
+  # Each arm, every row ----------------------------------------------------
+  linkinv <- fit$families[[response]]$linkinv
+  g <- if (is.null(by)) rep("all", nrow(d)) else as.character(d[[by]])
+  arm <- function(level) {
+    nd <- d
+    nd[[trt]] <- factor(rep(level, nrow(d)), levels = levels(d[[trt]]))
+    eta <- design(nd) + .flexy_random_part(fit, nd, latent, levels, trt, level)
+    t(rowsum(linkinv(eta), g) / as.vector(table(g)))
+  }
+  list(high = arm(e$contrast[["high"]]), low = arm(e$contrast[["low"]]))
+}
