@@ -39,7 +39,7 @@ test_that("estimands and assumptions match 0.1.0 exactly", {
   }
 })
 
-test_that("delta effects on every scale match 0.1.0", {
+test_that("delta_fixed effects on every scale match the 0.1.0 delta", {
   skip_on_cran()
   ds <- golden_design_v010(d_v010)
   grid <- golden_grid_v010()
@@ -51,13 +51,17 @@ test_that("delta effects on every scale match 0.1.0", {
       fit <- suppressWarnings(pollin_fit(est))
       by_fit <- suppressWarnings(pollin_fit(est, by = "Region"))
       expect_equal(
-        golden_effects(suppressWarnings(pollin_effects(fit))),
+        golden_fixed_as_delta(golden_effects(suppressWarnings(
+          pollin_effects(fit, interval = "delta_fixed")
+        ))),
         gold$delta,
         tolerance = tol_v010,
         info = key
       )
       expect_equal(
-        golden_effects(suppressWarnings(pollin_effects(by_fit))),
+        golden_fixed_as_delta(golden_effects(suppressWarnings(
+          pollin_effects(by_fit, interval = "delta_fixed")
+        ))),
         gold$delta_by,
         tolerance = tol_v010,
         info = key
@@ -137,17 +141,23 @@ test_that("layered contribution, moderation and validation match 0.1.0", {
     "loss"
   )
   expect_equal(
-    suppressWarnings(pollin_contribution(e_one))$table,
+    golden_fixed_as_delta(suppressWarnings(
+      pollin_contribution(e_one, interval = "delta_fixed")
+    )$table),
     gold_v010$contribution_one,
     tolerance = tol_v010
   )
   expect_equal(
-    suppressWarnings(pollin_contribution(e_nest))$table,
+    golden_fixed_as_delta(suppressWarnings(
+      pollin_contribution(e_nest, interval = "delta_fixed")
+    )$table),
     gold_v010$contribution_nest,
     tolerance = tol_v010
   )
   expect_equal(
-    suppressWarnings(pollin_contribution(e_by, by = "Region"))$table,
+    golden_fixed_as_delta(suppressWarnings(
+      pollin_contribution(e_by, by = "Region", interval = "delta_fixed")
+    )$table),
     gold_v010$contribution_by,
     tolerance = tol_v010
   )

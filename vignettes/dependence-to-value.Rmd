@@ -309,9 +309,10 @@ Within each stratum of a population, the trial's expected yields are taken to
 hold across the stratum's area, and the areas are taken as exact.
 
 The value is gross: the revenue from the production at stake, before any
-costs. With the default simulation draws the interval covers the uncertainty
-in the fixed effects only, not the variation between blocks; `pollin_draws()`
-with `method = "bootstrap"` includes it, at the cost of refitting the model.
+costs. The default simulation draws take the fixed effects and the trial's
+own block effects jointly, so the interval covers the uncertainty in both. It
+does not cover new blocks drawn afresh; `pollin_draws()` with
+`method = "bootstrap"` includes those, at the cost of refitting the model.
 
 ## References
 

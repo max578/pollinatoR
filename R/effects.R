@@ -19,9 +19,20 @@
 #' With `interval = "delta"`, the interval for a ratio-type scale is a delta
 #' interval for `log(rr)`, transformed to the scale, so the loss share stays
 #' below 1 and the RII inside (-1, 1); its p-value tests `rr = 1`. The delta
-#' interval carries the uncertainty in the fixed effects only. With
-#' `interval = "bootstrap"`, responses are simulated from the fitted model
-#' (new random effects included), the model is refitted to each simulated set,
+#' interval is taken over the fixed effects and the random effects jointly,
+#' with their covariance from the inverse of the joint precision of the
+#' Laplace approximation: the estimand averages over the blocks and slopes of
+#' this trial, so the random effects enter at their realised values, with
+#' their uncertainty and their correlation with the fixed effects. A
+#' zero-inflated fit, or one whose joint precision is singular (a variance at
+#' zero), is an error that points to the bootstrap. `interval = "delta_fixed"`
+#' is the delta interval of pollinatoR 0.3.1 and earlier, from
+#' `marginaleffects`: it varies the fixed effects and holds the random effects
+#' at their modes, so it is wider than the joint interval wherever the
+#' estimand depends on both, as on a design with a random treatment slope or
+#' under a logit link. With `interval = "bootstrap"`, responses are simulated
+#' from the fitted model (new random effects included), the model is refitted
+#' to each simulated set,
 #' and the interval is the percentile interval of the refitted estimates;
 #' `std.error` is their standard deviation and `p.value` is `NA`.
 #'
@@ -48,8 +59,8 @@
 #'   treatment-by-level effects, each averaged over the rows at that level.
 #'   `NULL` gives one contrast averaged over all rows. A column the fit was not
 #'   made with is an error: refit with `pollin_fit(..., by = )`.
-#' @param interval `"delta"` (the default for a glmmTMB fit), `"bootstrap"`,
-#'   or `"posterior"` (for a flexyBayes fit).
+#' @param interval `"delta"` (the default for a glmmTMB fit),
+#'   `"delta_fixed"`, `"bootstrap"`, or `"posterior"` (for a flexyBayes fit).
 #' @param n_boot Number of parametric bootstrap refits, used when
 #'   `interval = "bootstrap"`.
 #' @param seed Optional integer seed for the bootstrap simulation or the
@@ -86,7 +97,7 @@
 pollin_effects <- function(
   fit,
   by = fit$by,
-  interval = c("delta", "bootstrap", "posterior"),
+  interval = c("delta", "delta_fixed", "bootstrap", "posterior"),
   n_boot = 999L,
   seed = NULL,
   conf_level = 0.95,
@@ -96,7 +107,11 @@ pollin_effects <- function(
   if (missing(interval)) {
     interval <- if (fit$engine == "flexyBayes") "posterior" else "delta"
   }
-  .check_choice(interval, "interval", c("delta", "bootstrap", "posterior"))
+  .check_choice(
+    interval,
+    "interval",
+    c("delta", "delta_fixed", "bootstrap", "posterior")
+  )
   .effects_check_interval(interval, fit$engine)
   .check_conf_level(conf_level)
   if (interval == "bootstrap") {
@@ -116,6 +131,8 @@ pollin_effects <- function(
   est <- fit$estimand
   rows <- lapply(names(fit$fits), function(r) {
     tab <- if (interval == "delta") {
+      .effects_joint(fit, r, est, by, conf_level)
+    } else if (interval == "delta_fixed") {
       .muffle_fixed_only(
         .effects_delta(fit$fits[[r]], fit$treatment, est, by, conf_level)
       )
@@ -178,13 +195,14 @@ print.pollin_effects <- function(x, ...) {
     sprintf("%g%%", 100 * x$conf_level),
     switch(
       x$interval,
-      delta = "delta",
+      delta = "delta, fixed and random effects jointly",
+      delta_fixed = "delta, fixed effects only",
       bootstrap = paste0("parametric bootstrap (", x$n_boot, " refits)"),
       posterior = paste0("posterior, equal-tailed (", x$n_draws, " draws)")
     ),
     "\n"
   )
-  if (x$interval == "delta") {
+  if (x$interval == "delta_fixed") {
     cat("  note     : delta intervals cover fixed-effect uncertainty only\n")
   }
   print(x$table, row.names = FALSE)

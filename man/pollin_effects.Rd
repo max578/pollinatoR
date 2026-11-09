@@ -7,7 +7,7 @@
 pollin_effects(
   fit,
   by = fit$by,
-  interval = c("delta", "bootstrap", "posterior"),
+  interval = c("delta", "delta_fixed", "bootstrap", "posterior"),
   n_boot = 999L,
   seed = NULL,
   conf_level = 0.95,
@@ -23,8 +23,8 @@ treatment-by-level effects, each averaged over the rows at that level.
 \code{NULL} gives one contrast averaged over all rows. A column the fit was not
 made with is an error: refit with \code{pollin_fit(..., by = )}.}
 
-\item{interval}{\code{"delta"} (the default for a glmmTMB fit), \code{"bootstrap"},
-or \code{"posterior"} (for a flexyBayes fit).}
+\item{interval}{\code{"delta"} (the default for a glmmTMB fit),
+\code{"delta_fixed"}, \code{"bootstrap"}, or \code{"posterior"} (for a flexyBayes fit).}
 
 \item{n_boot}{Number of parametric bootstrap refits, used when
 \code{interval = "bootstrap"}.}
@@ -68,9 +68,20 @@ never an average of unit ratios. With \code{rr = high / low}:
 With \code{interval = "delta"}, the interval for a ratio-type scale is a delta
 interval for \code{log(rr)}, transformed to the scale, so the loss share stays
 below 1 and the RII inside (-1, 1); its p-value tests \code{rr = 1}. The delta
-interval carries the uncertainty in the fixed effects only. With
-\code{interval = "bootstrap"}, responses are simulated from the fitted model
-(new random effects included), the model is refitted to each simulated set,
+interval is taken over the fixed effects and the random effects jointly,
+with their covariance from the inverse of the joint precision of the
+Laplace approximation: the estimand averages over the blocks and slopes of
+this trial, so the random effects enter at their realised values, with
+their uncertainty and their correlation with the fixed effects. A
+zero-inflated fit, or one whose joint precision is singular (a variance at
+zero), is an error that points to the bootstrap. \code{interval = "delta_fixed"}
+is the delta interval of pollinatoR 0.3.1 and earlier, from
+\code{marginaleffects}: it varies the fixed effects and holds the random effects
+at their modes, so it is wider than the joint interval wherever the
+estimand depends on both, as on a design with a random treatment slope or
+under a logit link. With \code{interval = "bootstrap"}, responses are simulated
+from the fitted model (new random effects included), the model is refitted
+to each simulated set,
 and the interval is the percentile interval of the refitted estimates;
 \code{std.error} is their standard deviation and \code{p.value} is \code{NA}.
 

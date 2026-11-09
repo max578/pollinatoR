@@ -24,6 +24,9 @@
 #'   level (for example a region).
 #' @param families Optional named list of `glmmTMB` family objects, one per
 #'   outcome; outcomes it does not name are chosen from their values.
+#' @param interval `"delta"` (the default) or `"delta_fixed"`, the interval of
+#'   [pollin_effects()]; `"delta_fixed"` reproduces the intervals of
+#'   pollinatoR 0.3.1 and earlier.
 #' @param ... Passed to [glmmTMB::glmmTMB()].
 #' @inheritParams pollin_fit
 #'
@@ -51,9 +54,14 @@ pollin_contribution <- function(
   outcomes = NULL,
   by = NULL,
   families = list(),
+  interval = c("delta", "delta_fixed"),
   ...
 ) {
   .check_class(x, "pollin_estimand")
+  if (missing(interval)) {
+    interval <- "delta"
+  }
+  .check_choice(interval, "interval", c("delta", "delta_fixed"))
   .check_contribution_estimand(x)
   inputs <- .estimand_inputs(x)
   if (is.null(outcomes)) {
@@ -63,7 +71,7 @@ pollin_contribution <- function(
   .check_family_arg(families, inputs$responses)
 
   fit <- .new_fit(x, inputs, outcomes, families, ..., by = by)
-  tab <- pollin_effects(fit, by = by)$table
+  tab <- pollin_effects(fit, by = by, interval = interval)$table
   high <- x$contrast[["high"]]
   slope_sd <- vapply(
     fit$fits,

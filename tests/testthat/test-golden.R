@@ -76,7 +76,9 @@ test_that("model-based contributions match 0.0.0.9000", {
   num <- c("estimate", "std.error", "p.value", "conf.low", "conf.high")
   for (k in c("one", "nest")) {
     est <- pollin_estimand(ds[[k]], "dependence", "difference", "loss")
-    tab <- suppressWarnings(pollin_contribution(est))$table
+    tab <- suppressWarnings(
+      pollin_contribution(est, interval = "delta_fixed")
+    )$table
     old <- gold[[paste0("contribution_", k)]]$table
     expect_identical(tab$response, old$outcome, info = k)
     expect_identical(tab$distribution, old$family, info = k)

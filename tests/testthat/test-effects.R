@@ -211,7 +211,7 @@ test_that("by recovers planted levels that a pooled fit would merge", {
   expect_lt(tab$std.error[1L], 0.04)
   expect_lt(tab$std.error[2L], 0.02)
   expect_lt(tab$conf.high[1L], tab$conf.low[2L])
-  expect_output(print(ef), "fixed-effect uncertainty only")
+  expect_output(print(ef), "fixed and random effects jointly")
 })
 
 test_that("the parametric bootstrap is seeded and reproducible", {
