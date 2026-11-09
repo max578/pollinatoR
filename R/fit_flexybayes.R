@@ -120,12 +120,13 @@
 
 #' The random terms of the flexyBayes route, each a column of the data: one
 #' grouping column per unit level, outer to inner (a combined factor for a
-#' nested level), and for the slope level a site-by-arm cell column. Returns
+#' nested level), and for the slope level a site-by-arm cell column; a
+#' `pooled` column adds its own intercept and cell columns. Returns
 #' the data with the columns added, the term names, and the cell terms with
 #' their unit key.
 #' @noRd
 #' @keywords internal
-.flexy_random <- function(d, unit, treatment, slope) {
+.flexy_random <- function(d, unit, treatment, slope, pooled = NULL) {
   terms <- character(0)
   cells <- list()
   add_column <- function(d, key) {
@@ -155,6 +156,12 @@
       terms <- c(terms, g$name)
       cells[[length(cells) + 1L]] <- list(term = g$name, key = key)
     }
+  }
+  if (!is.null(pooled)) {
+    g <- add_column(d, c(pooled, treatment))
+    d <- g$data
+    terms <- c(terms, pooled, g$name)
+    cells[[length(cells) + 1L]] <- list(term = g$name, key = pooled)
   }
   list(data = d, terms = terms, cells = cells)
 }
@@ -244,7 +251,8 @@
       d,
       inputs$unit,
       inputs$treatment,
-      estimand$design$slope
+      estimand$design$slope,
+      inputs$pooled
     )
     fit <- tryCatch(
       .flexy_fit_one(r, fixed, random$terms, random$data, fam, dots),
@@ -279,6 +287,7 @@
       treatment = inputs$treatment,
       by = by,
       slope_key = inputs$slope_key,
+      pooled = inputs$pooled,
       args = dots,
       flexy = list(fixed = fixed, random = random$terms, cells = random$cells)
     ),

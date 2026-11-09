@@ -29,6 +29,13 @@
 #'   level. The column is treated as a factor. An estimand whose population
 #'   is a [pollin_population()] must be fitted with `by` set to the
 #'   population's `by` column.
+#' @param pooled Optional name of a column of the data that is not a unit
+#'   column (for example variety). Its levels get a random intercept and a
+#'   random treatment slope, so the treatment effect at each level is pooled
+#'   towards the overall effect; [pollin_cate()] reads the per-level effects.
+#'   It must differ from `by`. A slope on a unit column is declared with
+#'   `pollin_design(slope = )` instead. Rows with a missing value in the
+#'   column are dropped.
 #' @param ... Passed to [glmmTMB::glmmTMB()], or to `flexyBayes::flexybayes()`
 #'   on the flexyBayes engine (for example `prior` or `seed`).
 #'
@@ -42,7 +49,7 @@
 #' the design is a random intercept per unit plus an independent effect per
 #' unit-by-arm cell (column `pollin_<unit>_<treatment>`): equal variances
 #' across arms and a non-negative correlation between them, the exchangeable
-#' form of the slope. The families are `nbinom2()`, `poisson()`,
+#' form of the slope. A `pooled` column enters the same way. The families are `nbinom2()`, `poisson()`,
 #' `binomial()`, `Gamma(link = "log")` and `beta_family()`, mapped to the
 #' flexyBayes families of the same name; any other family is refused. Priors
 #' and the seed are passed through `...` as `flexybayes()` takes them; the
@@ -78,6 +85,7 @@ pollin_fit <- function(
   engine = "glmmTMB",
   family = NULL,
   by = NULL,
+  pooled = NULL,
   ...
 ) {
   .check_class(estimand, "pollin_estimand", arg = "estimand")
@@ -85,7 +93,7 @@ pollin_fit <- function(
   if (inherits(estimand$population, "pollin_population")) {
     .population_check_fit_by(estimand$population, by)
   }
-  inputs <- .estimand_inputs(estimand)
+  inputs <- .pooled_inputs(.estimand_inputs(estimand), pooled, by)
   .check_family_arg(family, inputs$responses)
   if (engine == "flexyBayes") {
     return(.flexy_new_fit(estimand, inputs, family, ..., by = by))
@@ -103,6 +111,9 @@ print.pollin_fit <- function(x, ...) {
   cat("  model     : <response> ~", paste(x$rhs, collapse = " + "), "\n")
   if (!is.null(x$by)) {
     cat("  by        :", x$by, "\n")
+  }
+  if (!is.null(x$pooled)) {
+    cat("  pooled    :", x$pooled, "(random treatment slope)\n")
   }
   for (r in names(x$fits)) {
     cat(sprintf(
@@ -170,6 +181,54 @@ print.pollin_fit <- function(x, ...) {
     exposures = r$exposures,
     adjust = r$adjust
   )
+}
+
+#' Fit inputs with a random treatment slope on the levels of `pooled`: rows
+#' missing it dropped, the column a factor, and the slope term added to the
+#' random terms
+#' @noRd
+#' @keywords internal
+.pooled_inputs <- function(inputs, pooled, by) {
+  if (is.null(pooled)) {
+    return(inputs)
+  }
+  d <- inputs$data
+  if (
+    !is.character(pooled) ||
+      length(pooled) != 1L ||
+      !pooled %in% names(d) ||
+      pooled %in% c(inputs$treatment, inputs$responses)
+  ) {
+    stop(
+      "`pooled` must name one column of the data other than the treatment ",
+      "and the responses.",
+      call. = FALSE
+    )
+  }
+  if (pooled %in% inputs$unit) {
+    stop(
+      "`pooled` names the unit column '",
+      pooled,
+      "'; declare a slope on a unit with `pollin_design(slope = )`.",
+      call. = FALSE
+    )
+  }
+  if (identical(pooled, by)) {
+    stop(
+      "`pooled` and `by` name the same column; a level's effect is either ",
+      "fixed (`by`) or pooled (`pooled`).",
+      call. = FALSE
+    )
+  }
+  d <- d[!is.na(d[[pooled]]), , drop = FALSE]
+  d[[pooled]] <- factor(d[[pooled]])
+  inputs$data <- d
+  inputs$random <- c(
+    inputs$random,
+    sprintf("(%s | %s)", inputs$treatment, pooled)
+  )
+  inputs$pooled <- pooled
+  inputs
 }
 
 #' Fit inputs from a `pollin_estimand`: the design's inputs with the estimand's
@@ -257,6 +316,7 @@ print.pollin_fit <- function(x, ...) {
       treatment = inputs$treatment,
       by = by,
       slope_key = inputs$slope_key,
+      pooled = inputs$pooled,
       args = list(...)
     ),
     class = "pollin_fit"

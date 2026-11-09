@@ -4,7 +4,14 @@
 \alias{pollin_fit}
 \title{Fit the outcome models for an estimand}
 \usage{
-pollin_fit(estimand, engine = "glmmTMB", family = NULL, by = NULL, ...)
+pollin_fit(
+  estimand,
+  engine = "glmmTMB",
+  family = NULL,
+  by = NULL,
+  pooled = NULL,
+  ...
+)
 }
 \arguments{
 \item{estimand}{A \code{\link[=pollin_estimand]{pollin_estimand()}} object.}
@@ -25,6 +32,14 @@ as an interaction, and \code{\link[=pollin_effects]{pollin_effects()}} then repo
 level. The column is treated as a factor. An estimand whose population
 is a \code{\link[=pollin_population]{pollin_population()}} must be fitted with \code{by} set to the
 population's \code{by} column.}
+
+\item{pooled}{Optional name of a column of the data that is not a unit
+column (for example variety). Its levels get a random intercept and a
+random treatment slope, so the treatment effect at each level is pooled
+towards the overall effect; \code{\link[=pollin_cate]{pollin_cate()}} reads the per-level effects.
+It must differ from \code{by}. A slope on a unit column is declared with
+\code{pollin_design(slope = )} instead. Rows with a missing value in the
+column are dropped.}
 
 \item{...}{Passed to \code{\link[glmmTMB:glmmTMB]{glmmTMB::glmmTMB()}}, or to \code{flexyBayes::flexybayes()}
 on the flexyBayes engine (for example \code{prior} or \code{seed}).}
@@ -59,7 +74,7 @@ correlated random slope on brms only, so on INLA the treatment slope of
 the design is a random intercept per unit plus an independent effect per
 unit-by-arm cell (column \verb{pollin_<unit>_<treatment>}): equal variances
 across arms and a non-negative correlation between them, the exchangeable
-form of the slope. The families are \code{nbinom2()}, \code{poisson()},
+form of the slope. A \code{pooled} column enters the same way. The families are \code{nbinom2()}, \code{poisson()},
 \code{binomial()}, \code{Gamma(link = "log")} and \code{beta_family()}, mapped to the
 flexyBayes families of the same name; any other family is refused. Priors
 and the seed are passed through \code{...} as \code{flexybayes()} takes them; the

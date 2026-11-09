@@ -22,6 +22,15 @@
 * `pollin_effects(interval = "posterior")`, the default for a flexyBayes
   fit, reports the posterior median, standard deviation and equal-tailed
   interval of the estimand, with `p.value` `NA`; new argument `n_draws`.
+* `pollin_cate()` reports the contrast at each level of a column carrying a
+  random treatment slope, with partial pooling: the design's slope unit, or a
+  column declared with the new `pollin_fit(pooled = )`, which gives its
+  levels a random intercept and treatment slope. On glmmTMB the estimate
+  uses the conditional modes and the interval is approximate (fixed-effect
+  covariance plus the conditional variance of each slope coefficient, drawn
+  independently); on flexyBayes it comes from the posterior draws. The
+  print separates the pooled table from the unpooled per-level contrasts,
+  which come from a fit with `by` and are read with `pollin_effects()`.
 
 # pollinatoR 0.2.0
 
