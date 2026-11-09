@@ -24,8 +24,15 @@
 #'   `c("Site", "Plot")`).
 #' @param groups Optional character vector of further grouping columns that are
 #'   not part of the unit nesting (for example region, variety or year).
-#' @param denominator Optional name of a numeric column giving what the response
-#'   is counted out of (ovules, flowers, plants). Values must be non-negative.
+#' @param denominator Optional name of a numeric column giving the number of
+#'   trials each response is counted out of (seeds out of ovules, pods out of
+#'   flowers). Values must be non-negative. With a denominator, every response
+#'   is a count of successes out of that many trials and is fitted as
+#'   binomial by [pollin_fit()]; each response must then be a whole number
+#'   between 0 and the denominator, and the denominator positive, on the rows
+#'   fitted. The arm means of [pollin_effects()] are then expected
+#'   proportions (successes / trials), averaged over the rows with equal
+#'   weight, whatever each row's number of trials.
 #' @param exposures Optional character vector of exposure columns (for example
 #'   insect abundances).
 #' @param adjust Optional character vector of adjustment covariates (for example

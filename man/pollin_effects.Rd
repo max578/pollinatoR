@@ -81,6 +81,12 @@ interval, \code{std.error} their standard deviation, and \code{p.value} is \code
 With the same \code{seed} and \code{n_draws}, the row equals the summary of
 \code{pollin_draws(fit, n = n_draws, seed = seed)}.
 
+When the data declare a denominator (\code{\link[=pollin_data]{pollin_data()}}), each response is a
+count of successes out of that many trials, fitted as binomial, and the
+arm means are expected proportions (successes / trials), averaged over the
+rows with equal weight whatever their number of trials; the contrast is
+between those averaged proportions.
+
 The table reports the trial contrast, overall or per level of \code{by}. A
 population declared with \code{\link[=pollin_population]{pollin_population()}} is not used here; the
 population estimand is read with \code{\link[=pollin_draws]{pollin_draws()}}.

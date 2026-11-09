@@ -32,6 +32,12 @@
 #' With the same `seed` and `n_draws`, the row equals the summary of
 #' `pollin_draws(fit, n = n_draws, seed = seed)`.
 #'
+#' When the data declare a denominator ([pollin_data()]), each response is a
+#' count of successes out of that many trials, fitted as binomial, and the
+#' arm means are expected proportions (successes / trials), averaged over the
+#' rows with equal weight whatever their number of trials; the contrast is
+#' between those averaged proportions.
+#'
 #' The table reports the trial contrast, overall or per level of `by`. A
 #' population declared with [pollin_population()] is not used here; the
 #' population estimand is read with [pollin_draws()].
@@ -340,20 +346,23 @@ print.pollin_effects <- function(x, ...) {
 
   # Simulate, refit and recompute --------------------------------------------
   sims <- stats::simulate(model, nsim = n_boot, seed = seed)
+  lhs <- .response_lhs(response, fit$denominator)
   n_warned <- 0L
   first_warning <- NULL
   reps <- vapply(
     seq_len(n_boot),
     function(b) {
       d_b <- d
-      d_b[[response]] <- sims[[b]]
+      y_b <- sims[[b]]
+      # A binomial fit with trials simulates successes and failures as columns.
+      d_b[[response]] <- if (is.matrix(y_b)) y_b[, 1L] else y_b
       warned <- FALSE
       m_b <- tryCatch(
         withCallingHandlers(
           do.call(
             .fit_glmm,
             c(
-              list(response, fit$rhs, d_b, fit$families[[response]]),
+              list(lhs, fit$rhs, d_b, fit$families[[response]]),
               fit$args
             )
           ),

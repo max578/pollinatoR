@@ -24,9 +24,11 @@ slightly narrow on designs with a random treatment slope.}
 
 \item{family}{\code{NULL} (the default) chooses a family per response from its
 values (count, proportion in (0, 1), positive continuous, or continuous
-with zeros). A single \code{glmmTMB} family object applies to every response; a
-named list gives one per response, and responses it does not name are
-chosen from their values.}
+with zeros), or \code{binomial()} when the data declare a denominator. A
+single \code{glmmTMB} family object applies to every response; a named list
+gives one per response, and responses it does not name are chosen as
+for \code{NULL}. With a denominator, a family other than binomial is an
+error.}
 
 \item{by}{Optional name of a column of the data (for example variety or
 region). The treatment effect is fitted separately at each of its levels,
@@ -51,7 +53,8 @@ An object of class \code{pollin_fit}: a list holding the \code{estimand}, the
 \code{engine}, the fitted models \code{fits} (named by response), the model \code{data}
 for each response, the right-hand-side terms \code{rhs}, the \code{families} (as
 glmmTMB family objects on both engines), the \code{by} column (or \code{NULL}),
-and the further fitting arguments \code{args}.
+the \code{denominator} column (or \code{NULL}), and the further fitting arguments
+\code{args}.
 }
 \description{
 Fits one generalised linear mixed model per response in the estimand's data,
@@ -64,8 +67,14 @@ data is kept in the fit; the contrast is read from the fitted model by
 \code{\link[=pollin_effects]{pollin_effects()}}.
 }
 \details{
-Rows with a missing value in the response, the treatment, a unit column or
-the \code{by} column are dropped for that response's model.
+Rows with a missing value in the response, the treatment, a unit column,
+the denominator or the \code{by} column are dropped for that response's model.
+
+When the data declare a denominator (\code{pollin_data(denominator = )}), each
+response is a count of successes out of that many trials and is fitted as
+binomial with a logit link, \code{cbind(response, denominator - response)} on
+glmmTMB. The arm means read by \code{\link[=pollin_effects]{pollin_effects()}} and \code{\link[=pollin_draws]{pollin_draws()}}
+are then expected proportions, averaged over the rows with equal weight.
 
 With \code{engine = "flexyBayes"} each response is fitted by
 \code{flexyBayes::flexybayes(backend = "inla")}, which needs the flexyBayes and
@@ -79,7 +88,12 @@ across arms and a non-negative correlation between them, the exchangeable
 form of the slope. A \code{pooled} column enters the same way. The families
 map as \code{nbinom2()} to \code{"negative_binomial"}, \code{poisson()} to \code{"poisson"},
 \code{binomial()} to \code{"binomial"}, \code{Gamma(link = "log")} to \code{"gamma"} and
-\code{beta_family()} to \code{"beta"}; any other family is refused. Priors are
+\code{beta_family()} to \code{"beta"}; any other family is refused. With a
+denominator, flexyBayes takes a binomial response as one 0/1 row per
+trial, so each row is expanded to as many rows as its denominator, its
+successes coded 1 and the rest 0; the arm means are still averaged over
+the original rows. An expansion beyond two million rows is an error, and
+such data are fitted with the glmmTMB engine. Priors are
 passed through \code{...} as \code{flexybayes()} takes them; the seed of the
 posterior draws is set in \code{\link[=pollin_draws]{pollin_draws()}}. The backend is INLA only, since the posterior draws of a brms fit are not in
 the flexyBayes extension API version 1. A fit whose convergence verdict
