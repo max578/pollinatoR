@@ -244,8 +244,8 @@ pollin_validate(pd, expect_levels = list(trt = c("Cage", "Open")))
 
 ## Moving from `pollin_spec()`
 
-`pollin_spec()` is deprecated and is removed at version 0.2.0. It declared the
-data and the design in one call; they are now two layers.
+`pollin_spec()` was removed at version 0.2.0. It declared the data and the
+design in one call; they are now two layers.
 
 ```r
 # Before

@@ -63,8 +63,8 @@ excluded plants yielding 75% of open ones give a loss share of 25% and a gain of
 | | `pollin_within_between()` | Between-unit and within-unit split of a variable |
 | | `pollin_fdr()` | Benjamini-Hochberg adjustment |
 
-`pollin_spec()` is deprecated and is removed at version 0.2.0; the
-getting-started vignette shows the equivalent calls.
+`pollin_spec()` was removed at version 0.2.0; the getting-started vignette
+shows the equivalent calls.
 
 ## Vignettes
 

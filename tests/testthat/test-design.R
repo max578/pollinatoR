@@ -15,27 +15,23 @@ l1_df <- function() {
 }
 l1_arms <- c(excluded = "Cage", open = "Open")
 
-test_that("each layout builds the random terms of the equivalent spec", {
+test_that("each layout nests the units and puts the slope where asked", {
   d <- l1_df()
   unit <- c("Site", "Plot", "Pair")
   pd <- pollin_data(d, "pods", "trt", unit = unit)
+  intercepts <- c("(1 | Site)", "(1 | Site:Plot)", "(1 | Site:Plot:Pair)")
+  slopes <- c("(trt | Site)", "(trt | Site:Plot)", "(trt | Site:Plot:Pair)")
   for (lay in c("rcbd", "split_plot", "matched_pairs", "multi_site")) {
-    for (s in unit) {
-      ds <- pollin_design(pd, l1_arms, layout = lay, slope = s)
-      sp <- suppressWarnings(pollin_spec(
-        d,
-        "pods",
-        "trt",
-        "Cage",
-        unit,
-        latent_unit = s
-      ))
-      expect_identical(ds$random, .random_terms(sp))
+    for (i in seq_along(unit)) {
+      ds <- pollin_design(pd, l1_arms, layout = lay, slope = unit[i])
+      expected <- intercepts
+      expected[i] <- slopes[i]
+      expect_identical(ds$random, expected, info = paste(lay, unit[i]))
     }
   }
   expect_identical(
     pollin_design(pd, l1_arms, "multi_site")$random,
-    .random_terms(suppressWarnings(pollin_spec(d, "pods", "trt", "Cage", unit)))
+    c(slopes[1L], intercepts[2:3])
   )
 })
 

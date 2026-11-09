@@ -40,9 +40,6 @@ reference:
       - pollin_compensation
       - pollin_within_between
       - pollin_fdr
-  - title: Deprecated
-    contents:
-      - pollin_spec
 
 articles:
   - title: Get started

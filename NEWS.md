@@ -4,6 +4,10 @@
   on every scale, with delta and bootstrap intervals, overall and by level, and
   the layered contribution, moderation, validation and index results
   (`validation/golden/make_golden_v0.1.0.R`).
+* `pollin_spec()` is removed, as announced in 0.1.0, with its print method
+  and the paths that accepted it in `pollin_contribution()`,
+  `pollin_moderation()` and `pollin_validate()`; these now take only the
+  layered objects. The getting-started vignette shows the equivalent calls.
 
 # pollinatoR 0.1.0
 

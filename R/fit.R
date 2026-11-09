@@ -149,24 +149,6 @@ print.pollin_fit <- function(x, ...) {
   .design_inputs(estimand$design, estimand$contrast[["low"]])
 }
 
-#' Fit inputs from a deprecated `pollin_spec`, without the `pollin_data` checks
-#' @noRd
-#' @keywords internal
-.spec_inputs <- function(spec) {
-  .fit_inputs(
-    data = spec$data,
-    responses = spec$outcomes,
-    treatment = spec$treatment,
-    low = spec$control,
-    unit = spec$random,
-    random = .random_terms(spec),
-    slope_key = spec$latent_unit,
-    wb_group = spec$data[[spec$latent_unit]],
-    exposures = spec$exposures,
-    adjust = spec$adjust
-  )
-}
-
 # Fitting ---------------------------------------------------------------------
 
 #' Fit one `glmmTMB` model; the formula is built in this frame and its

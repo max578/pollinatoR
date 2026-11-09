@@ -7,7 +7,7 @@
 pollin_validate(x, expect_levels = NULL, identities = NULL)
 }
 \arguments{
-\item{x}{A \code{\link[=pollin_data]{pollin_data()}} object, or a \code{\link[=pollin_spec]{pollin_spec()}} object.}
+\item{x}{A \code{\link[=pollin_data]{pollin_data()}} object.}
 
 \item{expect_levels}{Optional named list mapping column names to the expected
 set of factor levels.}

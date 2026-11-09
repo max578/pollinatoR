@@ -8,7 +8,7 @@ pollin_contribution(x, outcomes = NULL, by = NULL, families = list(), ...)
 }
 \arguments{
 \item{x}{A \code{\link[=pollin_estimand]{pollin_estimand()}} object with \code{family = "dependence"} and
-\code{scale = "difference"}, or a deprecated \code{\link[=pollin_spec]{pollin_spec()}} object.}
+\code{scale = "difference"}.}
 
 \item{outcomes}{Outcomes to model. \code{NULL} (the default) models every
 response.}
@@ -43,9 +43,6 @@ outcome from its values unless supplied.
 The treatment effect is causal by design here -- the exclusion contrast is an
 experimental manipulation -- so no covariate adjustment is applied; see
 \code{\link[=pollin_moderation]{pollin_moderation()}} for the observational "which insects" question.
-
-A \code{\link[=pollin_spec]{pollin_spec()}} is still accepted and is fitted as before; \code{pollin_spec()}
-is deprecated and is removed at version 0.2.0.
 }
 \examples{
 \donttest{

@@ -12,18 +12,8 @@ test_that("print methods run", {
     trt = rep(c("Cage", "Open"), 2),
     Site = rep(c("a", "b"), each = 2)
   )
-  sp <- suppressWarnings(pollin_spec(
-    df,
-    "y",
-    "trt",
-    "Cage",
-    "Site",
-    exposures = "y",
-    adjust = "y",
-    group = "Site"
-  ))
-  expect_output(print(sp))
-  expect_output(print(pollin_validate(sp)))
+  pd <- pollin_data(df, "y", "trt", unit = "Site")
+  expect_output(print(pollin_validate(pd)))
   expect_output(print(pollin_compensation(data.frame(
     a = c(1, 2, 3),
     b = c(3, 2, 1)
@@ -54,16 +44,7 @@ test_that("input-validation errors fire", {
   expect_error(pollin_within_between(1:3, c("a", "b")))
   expect_error(pollin_guard_spurious(1:3, 1:2))
   expect_error(pollin_compensation(data.frame(a = 1:3)))
-  expect_error(pollin_moderation(
-    suppressWarnings(pollin_spec(
-      data.frame(y = 1:2, trt = c("Cage", "Open"), Site = c("a", "b")),
-      "y",
-      "trt",
-      "Cage",
-      "Site"
-    )),
-    outcome = "y"
-  ))
+  expect_error(pollin_validate(list(data = data.frame())), "pollin_data")
 })
 
 test_that("validate flags NA columns and a decoupled guard runs", {
@@ -72,8 +53,8 @@ test_that("validate flags NA columns and a decoupled guard runs", {
     trt = rep(c("Cage", "Open"), 2),
     Site = rep(c("a", "b"), each = 2)
   )
-  sp <- suppressWarnings(pollin_spec(df, "y", "trt", "Cage", "Site"))
-  v <- pollin_validate(sp)
+  pd <- pollin_data(df, "y", "trt", unit = "Site")
+  v <- pollin_validate(pd)
   expect_true(any(grepl("NA:y", v$table$check)))
   g <- pollin_guard_spurious(
     c(10, 20, 30, 40),

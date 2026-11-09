@@ -58,24 +58,6 @@ test_that("compensation flags a negative component correlation", {
   expect_true(cp$pairs$compensation[1])
 })
 
-test_that("spec validates columns and control level", {
-  df <- data.frame(
-    y = rpois(20, 5),
-    trt = rep(c("Cage", "Open"), 10),
-    Site = rep(letters[1:4], each = 5)
-  )
-  sp <- suppressWarnings(pollin_spec(df, "y", "trt", "Cage", "Site"))
-  expect_s3_class(sp, "pollin_spec")
-  expect_error(suppressWarnings(pollin_spec(df, "nope", "trt", "Cage", "Site")))
-  expect_error(suppressWarnings(pollin_spec(
-    df,
-    "y",
-    "trt",
-    "Nonexist",
-    "Site"
-  )))
-})
-
 test_that("validate reports levels and user identities", {
   df <- data.frame(
     y = c(1, 2, 3, 4),
@@ -85,9 +67,9 @@ test_that("validate reports levels and user identities", {
     p = c(1, 2, 3, 4),
     q = c(2, 1, 4, 3)
   )
-  sp <- suppressWarnings(pollin_spec(df, "y", "trt", "Cage", "Site"))
+  pd <- pollin_data(df, "y", "trt", unit = "Site")
   v <- pollin_validate(
-    sp,
+    pd,
     expect_levels = list(trt = c("Cage", "Open")),
     identities = list(tot_eq = function(d) d$tot == d$p + d$q)
   )

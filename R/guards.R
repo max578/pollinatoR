@@ -26,8 +26,7 @@
 #' @param index `"rii"` or `"dependence"`. There is no default.
 #' @param allow `FALSE` (the default) stops with an error; `TRUE` returns the
 #'   average with the warning statement attached.
-#' @param response,unit With a design, the response and the unit level, as in
-#'   [pollin_rii()].
+#' @inheritParams pollin_rii
 #'
 #' @return With `allow = TRUE`, an object of class `pollin_bounded`: a list
 #'   holding `index`, `n` (units averaged), `mean_of_units`, `ratio_of_means`
