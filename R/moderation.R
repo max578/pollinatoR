@@ -34,6 +34,7 @@
 #'   exposure.
 #' @param family Optional `glmmTMB` family (chosen from the outcome's values if
 #'   missing).
+#' @param ... Passed to [glmmTMB::glmmTMB()].
 #' @inheritParams pollin_fit
 #'
 #' @return An object of class `pollin_moderation` with a tidy `table` of the

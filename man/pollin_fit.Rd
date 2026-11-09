@@ -4,13 +4,23 @@
 \alias{pollin_fit}
 \title{Fit the outcome models for an estimand}
 \usage{
-pollin_fit(estimand, engine = "glmmTMB", family = NULL, by = NULL, ...)
+pollin_fit(
+  estimand,
+  engine = "glmmTMB",
+  family = NULL,
+  by = NULL,
+  pooled = NULL,
+  ...
+)
 }
 \arguments{
 \item{estimand}{A \code{\link[=pollin_estimand]{pollin_estimand()}} object.}
 
-\item{engine}{The fitting engine. Only \code{"glmmTMB"} is available;
-\code{"flexyBayes"} arrives in version 0.2.0.}
+\item{engine}{The fitting engine: \code{"glmmTMB"} (the default) or
+\code{"flexyBayes"}, a Bayesian fit on INLA through flexyBayes
+(see Details). The flexyBayes engine is experimental: its posterior
+intervals are calibrated on designs with unit intercepts and run
+slightly narrow on designs with a random treatment slope.}
 
 \item{family}{\code{NULL} (the default) chooses a family per response from its
 values (count, proportion in (0, 1), positive continuous, or continuous
@@ -25,13 +35,23 @@ level. The column is treated as a factor. An estimand whose population
 is a \code{\link[=pollin_population]{pollin_population()}} must be fitted with \code{by} set to the
 population's \code{by} column.}
 
-\item{...}{Passed to \code{\link[glmmTMB:glmmTMB]{glmmTMB::glmmTMB()}}.}
+\item{pooled}{Optional name of a column of the data that is not a unit
+column (for example variety). Its levels get a random intercept and a
+random treatment slope, so the treatment effect at each level is pooled
+towards the overall effect; \code{\link[=pollin_cate]{pollin_cate()}} reads the per-level effects.
+It must differ from \code{by}. A slope on a unit column is declared with
+\code{pollin_design(slope = )} instead. Rows with a missing value in the
+column are dropped.}
+
+\item{...}{Passed to \code{\link[glmmTMB:glmmTMB]{glmmTMB::glmmTMB()}}, or to \code{flexyBayes::flexybayes()}
+on the flexyBayes engine (for example \code{prior} or \code{seed}).}
 }
 \value{
 An object of class \code{pollin_fit}: a list holding the \code{estimand}, the
 \code{engine}, the fitted models \code{fits} (named by response), the model \code{data}
-for each response, the right-hand-side terms \code{rhs}, the \code{families}, the
-\code{by} column (or \code{NULL}), and the further fitting arguments \code{args}.
+for each response, the right-hand-side terms \code{rhs}, the \code{families} (as
+glmmTMB family objects on both engines), the \code{by} column (or \code{NULL}),
+and the further fitting arguments \code{args}.
 }
 \description{
 Fits one generalised linear mixed model per response in the estimand's data,
@@ -46,6 +66,26 @@ data is kept in the fit; the contrast is read from the fitted model by
 \details{
 Rows with a missing value in the response, the treatment, a unit column or
 the \code{by} column are dropped for that response's model.
+
+With \code{engine = "flexyBayes"} each response is fitted by
+\code{flexyBayes::flexybayes(backend = "inla")}, which needs the flexyBayes and
+INLA packages. The fixed part is that of the glmmTMB engine. Each unit
+level is a random intercept; a nested level enters as one grouping column
+\verb{pollin_<outer>_<inner>} added to the model data. flexyBayes fits a
+correlated random slope on brms only, so on INLA the treatment slope of
+the design is a random intercept per unit plus an independent effect per
+unit-by-arm cell (column \verb{pollin_<unit>_<treatment>}): equal variances
+across arms and a non-negative correlation between them, the exchangeable
+form of the slope. A \code{pooled} column enters the same way. The families
+map as \code{nbinom2()} to \code{"negative_binomial"}, \code{poisson()} to \code{"poisson"},
+\code{binomial()} to \code{"binomial"}, \code{Gamma(link = "log")} to \code{"gamma"} and
+\code{beta_family()} to \code{"beta"}; any other family is refused. Priors are
+passed through \code{...} as \code{flexybayes()} takes them; the seed of the
+posterior draws is set in \code{\link[=pollin_draws]{pollin_draws()}}. The backend is INLA only, since the posterior draws of a brms fit are not in
+the flexyBayes extension API version 1. A fit whose convergence verdict
+(\code{flexyBayes::fb_convergence()}) is \code{FALSE} is an error, and one with no
+verdict a warning. Estimates and intervals of a flexyBayes fit come from
+its posterior draws; see \code{\link[=pollin_draws]{pollin_draws()}}.
 }
 \examples{
 \donttest{

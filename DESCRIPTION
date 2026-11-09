@@ -1,7 +1,7 @@
 Package: pollinatoR
 Title: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion
     Experiments
-Version: 0.2.0
+Version: 0.3.0
 Authors@R:
     person("Max", "Moldovan", email = "max.moldovan@gmail.com",
            role = c("aut", "cre"),
@@ -31,10 +31,13 @@ Imports:
     marginaleffects,
     stats
 Suggests:
-    testthat (>= 3.0.0),
+    flexyBayes,
+    INLA,
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
+Additional_repositories: https://inla.r-inla-download.org/R/stable
 Config/testthat/edition: 3
 URL: https://github.com/max578/pollinatoR, https://max578.github.io/pollinatoR/
 BugReports: https://github.com/max578/pollinatoR/issues

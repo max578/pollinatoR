@@ -24,6 +24,7 @@
 #'   level (for example a region).
 #' @param families Optional named list of `glmmTMB` family objects, one per
 #'   outcome; outcomes it does not name are chosen from their values.
+#' @param ... Passed to [glmmTMB::glmmTMB()].
 #' @inheritParams pollin_fit
 #'
 #' @return An object of class `pollin_contribution`: a list with `table` (a tidy

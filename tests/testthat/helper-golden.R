@@ -111,3 +111,93 @@ golden_effects <- function(x) {
 golden_path_v010 <- function() {
   testthat::test_path("_golden", "golden_v0.1.0.rds")
 }
+
+# Outputs at 0.2.0: draws, population, value and total ------------------------
+
+golden_path_v020 <- function() {
+  testthat::test_path("_golden", "golden_v0.2.0.rds")
+}
+
+# The numbers an analyst reads from a pollin_draws object.
+golden_draws <- function(x) {
+  list(
+    summary = summary(x),
+    high = x$high,
+    low = x$low,
+    estimate = x$estimate,
+    method = x$method,
+    engine = x$engine,
+    n = x$n,
+    seed = x$seed
+  )
+}
+
+# The numbers an analyst reads from a pollin_value or pollin_value_total.
+golden_value <- function(x) {
+  list(draws = x$draws, summary = x$summary)
+}
+
+# Every 0.2.0 output the Stage 3 golden test compares, on the 0.1.0 inputs.
+golden_capture_v020 <- function() {
+  d <- golden_inputs_v010()
+  pd <- pollin_data(d, "pods", "trt", unit = "Block")
+  ds <- pollin_design(pd, golden_arms_v010, "rcbd")
+  e_dep <- pollin_estimand(ds, "dependence", "ratio", "loss")
+  e_def <- pollin_estimand(ds, "deficit", "ratio", "gain")
+  pop <- pollin_population(
+    "Region",
+    c(north = 1200, south = 800),
+    label = "two regions"
+  )
+  e_pop <- pollin_estimand(ds, "dependence", "ratio", "loss", population = pop)
+
+  fit_dep <- suppressWarnings(pollin_fit(e_dep))
+  fit_dep_by <- suppressWarnings(pollin_fit(e_dep, by = "Region"))
+  fit_def <- suppressWarnings(pollin_fit(e_def))
+  fit_pop <- suppressWarnings(pollin_fit(e_pop, by = "Region"))
+
+  dr_sim <- pollin_draws(fit_dep, n = 1000L, seed = 41L)
+  dr_by <- pollin_draws(fit_dep_by, n = 1000L, seed = 42L)
+  dr_boot <- suppressWarnings(
+    pollin_draws(fit_dep, n = 19L, method = "bootstrap", seed = 43L)
+  )
+  dr_pop <- pollin_draws(fit_pop, n = 1000L, seed = 44L)
+  dr_def <- pollin_draws(fit_def, n = 1000L, seed = 45L)
+
+  canola <- pollin_market(
+    1000,
+    500,
+    "t",
+    "AUD",
+    2024,
+    "Synthetic inputs",
+    crop = "canola"
+  )
+  faba <- pollin_market(
+    400,
+    650,
+    "t",
+    "AUD",
+    2024,
+    "Synthetic inputs",
+    price_draws = stats::setNames(
+      650 * exp(stats::qnorm(stats::ppoints(1000L), 0, 0.1)),
+      NULL
+    ),
+    crop = "faba bean"
+  )
+  v_dep <- pollin_value(dr_pop, canola, channel = "dependence")
+  v_def <- pollin_value(dr_def, faba, channel = "deficit")
+  tot <- pollin_guard_doublecount(v_dep, v_def)
+
+  list(
+    draws_simulation = golden_draws(dr_sim),
+    draws_by = golden_draws(dr_by),
+    draws_bootstrap = golden_draws(dr_boot),
+    draws_population = golden_draws(dr_pop),
+    draws_deficit = golden_draws(dr_def),
+    value_dependence = golden_value(v_dep),
+    value_deficit = golden_value(v_def),
+    total = golden_value(tot)
+  )
+}

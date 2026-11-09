@@ -29,6 +29,7 @@ reference:
     desc: Estimates and intervals on the estimand's scale.
     contents:
       - pollin_effects
+      - pollin_cate
       - pollin_contribution
       - pollin_moderation
   - title: Draws
@@ -72,3 +73,7 @@ articles:
     navbar: Value
     contents:
       - dependence-to-value
+  - title: Bayesian fits
+    navbar: Bayesian fits
+    contents:
+      - bayesian-fits

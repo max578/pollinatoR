@@ -86,8 +86,7 @@ test_that("family takes one family or a list named by response", {
 
 test_that("pollin_fit refuses other engines and other objects", {
   est <- l3_estimand()
-  expect_error(pollin_fit(est, engine = "flexyBayes"), "0.2.0")
-  expect_error(pollin_fit(est, engine = "brms"), "glmmTMB")
+  expect_error(pollin_fit(est, engine = "brms"), "\"glmmTMB\", \"flexyBayes\"")
   expect_error(pollin_fit(est$design), "pollin_estimand")
 })
 

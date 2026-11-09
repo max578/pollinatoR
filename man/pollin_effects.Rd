@@ -7,10 +7,11 @@
 pollin_effects(
   fit,
   by = fit$by,
-  interval = c("delta", "bootstrap"),
+  interval = c("delta", "bootstrap", "posterior"),
   n_boot = 999L,
   seed = NULL,
-  conf_level = 0.95
+  conf_level = 0.95,
+  n_draws = 4000L
 )
 }
 \arguments{
@@ -22,16 +23,20 @@ treatment-by-level effects, each averaged over the rows at that level.
 \code{NULL} gives one contrast averaged over all rows. A column the fit was not
 made with is an error: refit with \code{pollin_fit(..., by = )}.}
 
-\item{interval}{\code{"delta"} (the default) or \code{"bootstrap"}.}
+\item{interval}{\code{"delta"} (the default for a glmmTMB fit), \code{"bootstrap"},
+or \code{"posterior"} (for a flexyBayes fit).}
 
 \item{n_boot}{Number of parametric bootstrap refits, used when
 \code{interval = "bootstrap"}.}
 
-\item{seed}{Optional integer seed for the bootstrap simulation. Each
-response is simulated from this seed, and the session's random number
-state is restored afterwards.}
+\item{seed}{Optional integer seed for the bootstrap simulation or the
+posterior draws. Each response is drawn from this seed, and the
+session's random number state is restored afterwards.}
 
 \item{conf_level}{Confidence level of the interval.}
+
+\item{n_draws}{Number of posterior draws, used when
+\code{interval = "posterior"}.}
 }
 \value{
 An object of class \code{pollin_effects}: a list holding \code{table}, with
@@ -39,7 +44,8 @@ one row per response (and per \code{by} level) and the columns \code{response},
 \code{contrast}, any \code{by} column, \code{estimate}, \code{std.error}, \code{conf.low},
 \code{conf.high}, \code{p.value}, \code{family} (the estimand family), \code{scale}, \code{basis},
 \code{distribution} (the model family) and \code{interval}; and \code{interval}, \code{n_boot},
-\code{seed}, \code{conf_level}, \code{by} and the \code{estimand}.
+\code{seed}, \code{conf_level}, \code{by}, the \code{estimand} and \code{n_draws} (posterior
+intervals only).
 }
 \description{
 Reads the estimand's contrast from each fitted model by G-computation: every
@@ -67,6 +73,13 @@ interval carries the uncertainty in the fixed effects only. With
 (new random effects included), the model is refitted to each simulated set,
 and the interval is the percentile interval of the refitted estimates;
 \code{std.error} is their standard deviation and \code{p.value} is \code{NA}.
+
+A fit with \code{engine = "flexyBayes"} has the \code{"posterior"} interval, its
+default and only one: the estimate is the median of the posterior draws of
+the estimand from \code{\link[=pollin_draws]{pollin_draws()}}, the interval their equal-tailed
+interval, \code{std.error} their standard deviation, and \code{p.value} is \code{NA}.
+With the same \code{seed} and \code{n_draws}, the row equals the summary of
+\code{pollin_draws(fit, n = n_draws, seed = seed)}.
 
 The table reports the trial contrast, overall or per level of \code{by}. A
 population declared with \code{\link[=pollin_population]{pollin_population()}} is not used here; the

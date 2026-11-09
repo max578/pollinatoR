@@ -15,8 +15,11 @@
 #' the `by` column are dropped for that response's model.
 #'
 #' @param estimand A [pollin_estimand()] object.
-#' @param engine The fitting engine. Only `"glmmTMB"` is available;
-#'   `"flexyBayes"` arrives in version 0.2.0.
+#' @param engine The fitting engine: `"glmmTMB"` (the default) or
+#'   `"flexyBayes"`, a Bayesian fit on INLA through flexyBayes
+#'   (see Details). The flexyBayes engine is experimental: its posterior
+#'   intervals are calibrated on designs with unit intercepts and run
+#'   slightly narrow on designs with a random treatment slope.
 #' @param family `NULL` (the default) chooses a family per response from its
 #'   values (count, proportion in (0, 1), positive continuous, or continuous
 #'   with zeros). A single `glmmTMB` family object applies to every response; a
@@ -28,12 +31,42 @@
 #'   level. The column is treated as a factor. An estimand whose population
 #'   is a [pollin_population()] must be fitted with `by` set to the
 #'   population's `by` column.
-#' @param ... Passed to [glmmTMB::glmmTMB()].
+#' @param pooled Optional name of a column of the data that is not a unit
+#'   column (for example variety). Its levels get a random intercept and a
+#'   random treatment slope, so the treatment effect at each level is pooled
+#'   towards the overall effect; [pollin_cate()] reads the per-level effects.
+#'   It must differ from `by`. A slope on a unit column is declared with
+#'   `pollin_design(slope = )` instead. Rows with a missing value in the
+#'   column are dropped.
+#' @param ... Passed to [glmmTMB::glmmTMB()], or to `flexyBayes::flexybayes()`
+#'   on the flexyBayes engine (for example `prior` or `seed`).
+#'
+#' @details
+#' With `engine = "flexyBayes"` each response is fitted by
+#' `flexyBayes::flexybayes(backend = "inla")`, which needs the flexyBayes and
+#' INLA packages. The fixed part is that of the glmmTMB engine. Each unit
+#' level is a random intercept; a nested level enters as one grouping column
+#' `pollin_<outer>_<inner>` added to the model data. flexyBayes fits a
+#' correlated random slope on brms only, so on INLA the treatment slope of
+#' the design is a random intercept per unit plus an independent effect per
+#' unit-by-arm cell (column `pollin_<unit>_<treatment>`): equal variances
+#' across arms and a non-negative correlation between them, the exchangeable
+#' form of the slope. A `pooled` column enters the same way. The families
+#' map as `nbinom2()` to `"negative_binomial"`, `poisson()` to `"poisson"`,
+#' `binomial()` to `"binomial"`, `Gamma(link = "log")` to `"gamma"` and
+#' `beta_family()` to `"beta"`; any other family is refused. Priors are
+#' passed through `...` as `flexybayes()` takes them; the seed of the
+#' posterior draws is set in [pollin_draws()]. The backend is INLA only, since the posterior draws of a brms fit are not in
+#' the flexyBayes extension API version 1. A fit whose convergence verdict
+#' (`flexyBayes::fb_convergence()`) is `FALSE` is an error, and one with no
+#' verdict a warning. Estimates and intervals of a flexyBayes fit come from
+#' its posterior draws; see [pollin_draws()].
 #'
 #' @return An object of class `pollin_fit`: a list holding the `estimand`, the
 #'   `engine`, the fitted models `fits` (named by response), the model `data`
-#'   for each response, the right-hand-side terms `rhs`, the `families`, the
-#'   `by` column (or `NULL`), and the further fitting arguments `args`.
+#'   for each response, the right-hand-side terms `rhs`, the `families` (as
+#'   glmmTMB family objects on both engines), the `by` column (or `NULL`),
+#'   and the further fitting arguments `args`.
 #' @seealso [pollin_effects()] for estimates and intervals on the estimand's
 #'   scale.
 #' @export
@@ -55,6 +88,7 @@ pollin_fit <- function(
   engine = "glmmTMB",
   family = NULL,
   by = NULL,
+  pooled = NULL,
   ...
 ) {
   .check_class(estimand, "pollin_estimand", arg = "estimand")
@@ -62,8 +96,11 @@ pollin_fit <- function(
   if (inherits(estimand$population, "pollin_population")) {
     .population_check_fit_by(estimand$population, by)
   }
-  inputs <- .estimand_inputs(estimand)
+  inputs <- .pooled_inputs(.estimand_inputs(estimand), pooled, by)
   .check_family_arg(family, inputs$responses)
+  if (engine == "flexyBayes") {
+    return(.flexy_new_fit(estimand, inputs, family, ..., by = by))
+  }
   .new_fit(estimand, inputs, inputs$responses, family, by = by, ...)
 }
 
@@ -71,12 +108,20 @@ pollin_fit <- function(
 print.pollin_fit <- function(x, ...) {
   e <- x$estimand
   cat("<pollin_fit>\n")
-  cat("  engine    :", x$engine, "\n")
+  cat(
+    "  engine    :",
+    x$engine,
+    if (identical(x$engine, "flexyBayes")) "(experimental)",
+    "\n"
+  )
   cat("  family    :", e$family, "\n")
   cat("  contrast  :", e$contrast[["high"]], "vs", e$contrast[["low"]], "\n")
   cat("  model     : <response> ~", paste(x$rhs, collapse = " + "), "\n")
   if (!is.null(x$by)) {
     cat("  by        :", x$by, "\n")
+  }
+  if (!is.null(x$pooled)) {
+    cat("  pooled    :", x$pooled, "(random treatment slope)\n")
   }
   for (r in names(x$fits)) {
     cat(sprintf(
@@ -144,6 +189,54 @@ print.pollin_fit <- function(x, ...) {
     exposures = r$exposures,
     adjust = r$adjust
   )
+}
+
+#' Fit inputs with a random treatment slope on the levels of `pooled`: rows
+#' missing it dropped, the column a factor, and the slope term added to the
+#' random terms
+#' @noRd
+#' @keywords internal
+.pooled_inputs <- function(inputs, pooled, by) {
+  if (is.null(pooled)) {
+    return(inputs)
+  }
+  d <- inputs$data
+  if (
+    !is.character(pooled) ||
+      length(pooled) != 1L ||
+      !pooled %in% names(d) ||
+      pooled %in% c(inputs$treatment, inputs$responses)
+  ) {
+    stop(
+      "`pooled` must name one column of the data other than the treatment ",
+      "and the responses.",
+      call. = FALSE
+    )
+  }
+  if (pooled %in% inputs$unit) {
+    stop(
+      "`pooled` names the unit column '",
+      pooled,
+      "'; declare a slope on a unit with `pollin_design(slope = )`.",
+      call. = FALSE
+    )
+  }
+  if (identical(pooled, by)) {
+    stop(
+      "`pooled` and `by` name the same column; a level's effect is either ",
+      "fixed (`by`) or pooled (`pooled`).",
+      call. = FALSE
+    )
+  }
+  d <- d[!is.na(d[[pooled]]), , drop = FALSE]
+  d[[pooled]] <- factor(d[[pooled]])
+  inputs$data <- d
+  inputs$random <- c(
+    inputs$random,
+    sprintf("(%s | %s)", inputs$treatment, pooled)
+  )
+  inputs$pooled <- pooled
+  inputs
 }
 
 #' Fit inputs from a `pollin_estimand`: the design's inputs with the estimand's
@@ -231,6 +324,7 @@ print.pollin_fit <- function(x, ...) {
       treatment = inputs$treatment,
       by = by,
       slope_key = inputs$slope_key,
+      pooled = inputs$pooled,
       args = list(...)
     ),
     class = "pollin_fit"
@@ -292,21 +386,11 @@ print.pollin_fit <- function(x, ...) {
   invisible(TRUE)
 }
 
-#' Stop unless `engine` is "glmmTMB"; "flexyBayes" points to 0.2.0
+#' Stop unless `engine` is "glmmTMB" or "flexyBayes"
 #' @noRd
 #' @keywords internal
 .check_engine <- function(engine) {
-  if (identical(engine, "flexyBayes")) {
-    stop(
-      "The `flexyBayes` engine arrives in pollinatoR 0.2.0; ",
-      "use `engine = \"glmmTMB\"`.",
-      call. = FALSE
-    )
-  }
-  if (!identical(engine, "glmmTMB")) {
-    stop("`engine` must be \"glmmTMB\".", call. = FALSE)
-  }
-  invisible(TRUE)
+  .check_choice(engine, "engine", c("glmmTMB", "flexyBayes"))
 }
 
 #' Check `family`: NULL, one family object, or a list of family objects named
