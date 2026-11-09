@@ -38,6 +38,15 @@
   Market draws are paired with the estimand draws by index. Every print names
   the basis, population, price year, currency, source, method and the
   assumptions of the value.
+* Each value carries an attribution: the pollinators its exclusion removed
+  (`pollin_value(agent = )`, `"all"` by default), the product valued
+  (`product`, the response name by default) and the crop
+  (`pollin_market(crop = )`). `pollin_guard_doublecount()` adds two or more
+  values draw by draw and refuses overlapping attributions within a crop: a
+  part plus its total, the same agent twice, two products of one agent (seed
+  plus oil), and two named guilds unless `nested = FALSE` asserts separate,
+  non-nested contrasts, an assertion printed with the total. Values must
+  share currency, price year and number of draws.
 
 # pollinatoR 0.1.0
 

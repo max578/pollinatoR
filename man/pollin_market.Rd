@@ -12,7 +12,8 @@ pollin_market(
   year,
   source,
   quantity_draws = NULL,
-  price_draws = NULL
+  price_draws = NULL,
+  crop = NULL
 )
 }
 \arguments{
@@ -31,11 +32,15 @@ value.}
 
 \item{quantity_draws, price_draws}{Optional numeric vectors of positive
 draws of \code{quantity} and \code{price}.}
+
+\item{crop}{Optional name of the crop, one string. It enters the
+attribution of each value, which \code{\link[=pollin_guard_doublecount]{pollin_guard_doublecount()}} reads; a
+value without a crop is taken to be of the same crop as any other.}
 }
 \value{
 An object of class \code{pollin_market}: a list holding \code{quantity},
 \code{price}, \code{unit}, \code{currency}, \code{year}, \code{source}, \code{quantity_draws} and
-\code{price_draws} (\code{NULL} when not given).
+\code{price_draws} (\code{NULL} when not given), and \code{crop}.
 }
 \description{
 The production and price that \code{\link[=pollin_value]{pollin_value()}} multiplies a ratio estimand
@@ -59,7 +64,8 @@ pollin_market(
   unit = "t",
   currency = "AUD",
   year = 2024,
-  source = "Illustrative inputs"
+  source = "Illustrative inputs",
+  crop = "canola"
 )
 
 # Price uncertainty as draws

@@ -24,10 +24,13 @@
 #'   value.
 #' @param quantity_draws,price_draws Optional numeric vectors of positive
 #'   draws of `quantity` and `price`.
+#' @param crop Optional name of the crop, one string. It enters the
+#'   attribution of each value, which [pollin_guard_doublecount()] reads; a
+#'   value without a crop is taken to be of the same crop as any other.
 #'
 #' @return An object of class `pollin_market`: a list holding `quantity`,
 #'   `price`, `unit`, `currency`, `year`, `source`, `quantity_draws` and
-#'   `price_draws` (`NULL` when not given).
+#'   `price_draws` (`NULL` when not given), and `crop`.
 #' @seealso [pollin_value()].
 #' @export
 #' @examples
@@ -37,7 +40,8 @@
 #'   unit = "t",
 #'   currency = "AUD",
 #'   year = 2024,
-#'   source = "Illustrative inputs"
+#'   source = "Illustrative inputs",
+#'   crop = "canola"
 #' )
 #'
 #' # Price uncertainty as draws
@@ -59,7 +63,8 @@ pollin_market <- function(
   year,
   source,
   quantity_draws = NULL,
-  price_draws = NULL
+  price_draws = NULL,
+  crop = NULL
 ) {
   .market_check_positive(quantity, "quantity")
   .market_check_positive(price, "price")
@@ -76,6 +81,9 @@ pollin_market <- function(
   }
   .market_check_draws(quantity_draws, "quantity_draws")
   .market_check_draws(price_draws, "price_draws")
+  if (!is.null(crop)) {
+    .market_check_string(crop, "crop")
+  }
   structure(
     list(
       quantity = quantity,
@@ -85,7 +93,8 @@ pollin_market <- function(
       year = as.integer(year),
       source = source,
       quantity_draws = quantity_draws,
-      price_draws = price_draws
+      price_draws = price_draws,
+      crop = crop
     ),
     class = "pollin_market"
   )
@@ -94,6 +103,9 @@ pollin_market <- function(
 #' @export
 print.pollin_market <- function(x, ...) {
   cat("<pollin_market>\n")
+  if (!is.null(x$crop)) {
+    cat("  crop     :", x$crop, "\n")
+  }
   cat(
     "  quantity :",
     format(x$quantity, big.mark = ","),

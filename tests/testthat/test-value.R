@@ -106,7 +106,8 @@ test_that("dependence value draws equal D x P x Q exactly", {
       "level",
       "market",
       "assumptions",
-      "conf_level"
+      "conf_level",
+      "attribution"
     )
   )
   s <- summary(v)
@@ -323,4 +324,156 @@ test_that("the print names basis, population, year, currency and source", {
   )) {
     expect_true(any(grepl(pat, out, fixed = TRUE)), info = pat)
   }
+})
+
+# Layer L5: attribution and pollin_guard_doublecount() -------------------------
+
+dc_value <- function(
+  agent = "all",
+  product = NULL,
+  crop = "canola",
+  currency = "AUD",
+  year = 2024,
+  high = cbind(overall = c(30, 32, 28, 31)),
+  low = cbind(overall = c(20, 24, 21, 18))
+) {
+  m <- pollin_market(1000, 500, "t", currency, year, "Synthetic", crop = crop)
+  pollin_value(
+    va_draws(high = high, low = low),
+    m,
+    channel = "dependence",
+    agent = agent,
+    product = product
+  )
+}
+
+test_that("a value carries its attribution", {
+  v <- dc_value()
+  expect_identical(
+    v$attribution,
+    list(agent = "all", product = "pods", crop = "canola")
+  )
+  v2 <- dc_value(agent = "wild insects", product = "seed", crop = NULL)
+  expect_identical(v2$attribution$product, "seed")
+  expect_null(v2$attribution$crop)
+  out <- capture.output(print(v2))
+  expect_true(any(grepl("agent wild insects, product seed, crop not", out)))
+  expect_error(dc_value(agent = ""), "`agent`")
+  expect_error(dc_value(product = 1), "`product`")
+  expect_error(
+    pollin_market(1, 1, "t", "AUD", 2024, "s", crop = 2),
+    "`crop`"
+  )
+})
+
+test_that("(a) a part plus its total is refused; parts of two crops pass", {
+  expect_error(
+    pollin_guard_doublecount(dc_value(), dc_value(agent = "honey bees")),
+    "The total already contains the part"
+  )
+  tot <- pollin_guard_doublecount(
+    dc_value(),
+    dc_value(agent = "honey bees", crop = "almond")
+  )
+  expect_s3_class(tot, "pollin_value_total")
+})
+
+test_that("(b) the same agent twice is refused; two crops pass", {
+  expect_error(
+    pollin_guard_doublecount(a = dc_value(), b = dc_value()),
+    "`a` and `b` are both for 'pods'.*counts one contribution twice"
+  )
+  expect_s3_class(
+    pollin_guard_doublecount(dc_value(), dc_value(crop = "faba bean")),
+    "pollin_value_total"
+  )
+})
+
+test_that("(c) two products of one crop and agent are refused", {
+  expect_error(
+    pollin_guard_doublecount(
+      dc_value(product = "seed"),
+      dc_value(product = "oil")
+    ),
+    "two products \\('seed' and 'oil'\\)"
+  )
+  expect_s3_class(
+    pollin_guard_doublecount(
+      dc_value(product = "seed"),
+      dc_value(product = "oil", crop = "sunflower")
+    ),
+    "pollin_value_total"
+  )
+})
+
+test_that("(d) two guilds need nested = FALSE, which is recorded", {
+  m <- dc_value(agent = "managed honey bees")
+  w <- dc_value(agent = "wild insects")
+  expect_error(pollin_guard_doublecount(m, w), "nested = FALSE")
+  expect_error(pollin_guard_doublecount(m, w, nested = TRUE), "two guilds")
+  tot <- pollin_guard_doublecount(m, w, nested = FALSE)
+  expect_s3_class(tot, "pollin_value_total")
+  expect_match(tot$assertion, "separate, non-nested exclusion contrasts")
+  out <- capture.output(print(tot))
+  expect_true(any(grepl("asserted by the caller", out)))
+  expect_true(any(grepl("managed honey bees", out)))
+  expect_error(pollin_guard_doublecount(m, w, nested = NA), "`nested`")
+})
+
+test_that("a market without a crop matches any crop", {
+  expect_error(
+    pollin_guard_doublecount(dc_value(crop = NULL), dc_value(crop = "x")),
+    "a market without `crop` matches any crop"
+  )
+})
+
+test_that("agents and products compare ignoring case and spaces", {
+  expect_error(
+    pollin_guard_doublecount(dc_value(agent = "ALL "), dc_value()),
+    "counts one contribution twice"
+  )
+})
+
+test_that("the total is the per-draw sum of the components", {
+  a <- dc_value(crop = "canola")
+  b <- dc_value(
+    crop = "faba bean",
+    high = cbind(overall = c(10, 12, 11, 9)),
+    low = cbind(overall = c(8, 9, 10, 7))
+  )
+  tot <- pollin_guard_doublecount(canola = a, faba = b, conf_level = 0.9)
+  expect_identical(tot$draws, a$draws + b$draws)
+  expect_identical(names(tot$components), c("canola", "faba"))
+  expect_identical(
+    c(tot$summary$conf.low, tot$summary$conf.high),
+    stats::quantile(tot$draws, c(0.05, 0.95), names = FALSE)
+  )
+  expect_identical(summary(tot), tot$summary)
+  expect_identical(tot$summary$components, 2L)
+  expect_null(tot$assertion)
+  out <- capture.output(print(tot))
+  expect_true(any(grepl("canola:", out, fixed = TRUE)))
+  expect_true(any(grepl("90% interval", out, fixed = TRUE)))
+})
+
+test_that("the guard refuses mixed currencies, years and draw counts", {
+  expect_error(
+    pollin_guard_doublecount(dc_value(), dc_value(crop = "x", currency = "NZD")),
+    "differ in currency"
+  )
+  expect_error(
+    pollin_guard_doublecount(dc_value(), dc_value(crop = "x", year = 2020)),
+    "differ in price year"
+  )
+  short <- dc_value(
+    crop = "x",
+    high = cbind(overall = c(30, 32)),
+    low = cbind(overall = c(20, 24))
+  )
+  expect_error(
+    pollin_guard_doublecount(dc_value(), short),
+    "different numbers of draws"
+  )
+  expect_error(pollin_guard_doublecount(dc_value()), "two or more")
+  expect_error(pollin_guard_doublecount(dc_value(), 3), "two or more")
 })

@@ -39,6 +39,7 @@ reference:
       - pollin_market
       - pollin_value
       - summary.pollin_value
+      - pollin_guard_doublecount
   - title: Guards
     contents:
       - pollin_guard_spurious

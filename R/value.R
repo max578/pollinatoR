@@ -27,8 +27,14 @@
 #'
 #' Draws of quantity or price in the market are paired with the estimand
 #' draws by index; their number must equal the number of estimand draws.
-#' Only a [pollin_draws()] object can be valued: a descriptive index such as
+#' Only a [pollin_draws()] object can be valued. A descriptive index from
 #' [pollin_index()] or [pollin_rii()], or a plain number, carries no estimand.
+#'
+#' Each value carries an attribution: the pollinators the exclusion removed
+#' (`agent`), the product valued (`product`) and the crop (from
+#' [pollin_market()]). [pollin_guard_doublecount()] reads it before values are
+#' added. For the deficit channel, `agent` names the pollinators whose
+#' shortfall hand pollination closes.
 #'
 #' @param draws A [pollin_draws()] object.
 #' @param market A [pollin_market()] object.
@@ -38,6 +44,12 @@
 #'   draws hold it, else the only column; with several columns and no
 #'   population, `level` must be given.
 #' @param conf_level Level of the percentile interval.
+#' @param agent The pollinators the estimand's exclusion removes, one string:
+#'   `"all"` (the default) for a contrast that excludes every pollinator, or
+#'   the label of a guild, for example `"managed honey bees"` or
+#'   `"wild insects"`.
+#' @param product The product valued, one string (for example `"seed"`,
+#'   `"oil"` or `"fruit"`). The default is the name of the response.
 #'
 #' @return An object of class `pollin_value`: a list holding
 #'   * `draws`: the numeric vector of value draws, in `currency`;
@@ -46,7 +58,9 @@
 #'     `population`, `method` and `n`;
 #'   * `channel`, `estimand`, `level`, `market`;
 #'   * `assumptions`: the statements the value rests on;
-#'   * `conf_level`: the level of the interval in `summary`.
+#'   * `conf_level`: the level of the interval in `summary`;
+#'   * `attribution`: a list of `agent`, `product` and `crop` (`NULL` when
+#'     the market names none).
 #' @seealso [pollin_draws()], [pollin_market()].
 #' @export
 #' @examples
@@ -69,7 +83,9 @@ pollin_value <- function(
   market,
   channel,
   level = NULL,
-  conf_level = 0.95
+  conf_level = 0.95,
+  agent = "all",
+  product = NULL
 ) {
   .value_check_draws(draws)
   .check_class(market, "pollin_market", arg = "market")
@@ -79,6 +95,11 @@ pollin_value <- function(
     c("dependence", "deficit")
   )
   .check_conf_level(conf_level)
+  .market_check_string(agent, "agent")
+  if (is.null(product)) {
+    product <- draws$response
+  }
+  .market_check_string(product, "product")
   e <- draws$estimand
   .value_check_estimand(e, channel)
   level <- .value_level(level, colnames(draws$estimate))
@@ -119,7 +140,8 @@ pollin_value <- function(
       level = level,
       market = market,
       assumptions = .value_assumptions(draws, channel, level),
-      conf_level = conf_level
+      conf_level = conf_level,
+      attribution = list(agent = agent, product = product, crop = market$crop)
     ),
     class = "pollin_value"
   )
@@ -174,6 +196,7 @@ print.pollin_value <- function(x, ...) {
     "\n"
   )
   cat("  source     :", x$market$source, "\n")
+  cat("  attribution:", .attribution_label(x$attribution), "\n")
   cat(
     "  method     :",
     .draws_method_label(s$method),

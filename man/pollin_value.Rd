@@ -4,7 +4,15 @@
 \alias{pollin_value}
 \title{Value a dependence or deficit estimand}
 \usage{
-pollin_value(draws, market, channel, level = NULL, conf_level = 0.95)
+pollin_value(
+  draws,
+  market,
+  channel,
+  level = NULL,
+  conf_level = 0.95,
+  agent = "all",
+  product = NULL
+)
 }
 \arguments{
 \item{draws}{A \code{\link[=pollin_draws]{pollin_draws()}} object.}
@@ -19,6 +27,14 @@ draws hold it, else the only column; with several columns and no
 population, \code{level} must be given.}
 
 \item{conf_level}{Level of the percentile interval.}
+
+\item{agent}{The pollinators the estimand's exclusion removes, one string:
+\code{"all"} (the default) for a contrast that excludes every pollinator, or
+the label of a guild, for example \code{"managed honey bees"} or
+\code{"wild insects"}.}
+
+\item{product}{The product valued, one string (for example \code{"seed"},
+\code{"oil"} or \code{"fruit"}). The default is the name of the response.}
 }
 \value{
 An object of class \code{pollin_value}: a list holding
@@ -29,7 +45,9 @@ An object of class \code{pollin_value}: a list holding
 \code{population}, \code{method} and \code{n};
 \item \code{channel}, \code{estimand}, \code{level}, \code{market};
 \item \code{assumptions}: the statements the value rests on;
-\item \code{conf_level}: the level of the interval in \code{summary}.
+\item \code{conf_level}: the level of the interval in \code{summary};
+\item \code{attribution}: a list of \code{agent}, \code{product} and \code{crop} (\code{NULL} when
+the market names none).
 }
 }
 \description{
@@ -59,8 +77,14 @@ is not the contribution of the pollination the crop receives now.
 
 Draws of quantity or price in the market are paired with the estimand
 draws by index; their number must equal the number of estimand draws.
-Only a \code{\link[=pollin_draws]{pollin_draws()}} object can be valued: a descriptive index such as
+Only a \code{\link[=pollin_draws]{pollin_draws()}} object can be valued. A descriptive index from
 \code{\link[=pollin_index]{pollin_index()}} or \code{\link[=pollin_rii]{pollin_rii()}}, or a plain number, carries no estimand.
+
+Each value carries an attribution: the pollinators the exclusion removed
+(\code{agent}), the product valued (\code{product}) and the crop (from
+\code{\link[=pollin_market]{pollin_market()}}). \code{\link[=pollin_guard_doublecount]{pollin_guard_doublecount()}} reads it before values are
+added. For the deficit channel, \code{agent} names the pollinators whose
+shortfall hand pollination closes.
 }
 \examples{
 \donttest{
