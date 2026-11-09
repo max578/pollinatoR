@@ -4,7 +4,14 @@
 \alias{pollin_contribution}
 \title{Estimate the pollinator contribution per outcome}
 \usage{
-pollin_contribution(x, outcomes = NULL, by = NULL, families = list(), ...)
+pollin_contribution(
+  x,
+  outcomes = NULL,
+  by = NULL,
+  families = list(),
+  interval = c("delta", "delta_fixed"),
+  ...
+)
 }
 \arguments{
 \item{x}{A \code{\link[=pollin_estimand]{pollin_estimand()}} object with \code{family = "dependence"} and
@@ -18,6 +25,10 @@ level (for example a region).}
 
 \item{families}{Optional named list of \code{glmmTMB} family objects, one per
 outcome; outcomes it does not name are chosen from their values.}
+
+\item{interval}{\code{"delta"} (the default) or \code{"delta_fixed"}, the interval of
+\code{\link[=pollin_effects]{pollin_effects()}}; \code{"delta_fixed"} reproduces the intervals of
+pollinatoR 0.3.1 and earlier.}
 
 \item{...}{Passed to \code{\link[glmmTMB:glmmTMB]{glmmTMB::glmmTMB()}}.}
 }

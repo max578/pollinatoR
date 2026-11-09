@@ -10,12 +10,13 @@
 #'
 #' Three methods are available:
 #'
-#' * `"simulation"` (the default for a glmmTMB fit) draws the fixed effects from their
-#'   estimated sampling distribution, a multivariate normal centred on the
-#'   estimates with their covariance matrix, and recomputes the arm means for
-#'   each draw. Every row keeps its estimated random effects, the prediction
-#'   rule of [pollin_effects()], so the draws carry the uncertainty in the
-#'   fixed effects only, like the delta interval.
+#' * `"simulation"` (the default for a glmmTMB fit) draws the fixed effects
+#'   and the random effects jointly from a multivariate normal centred on the
+#'   estimates and the conditional modes, with the covariance of the delta
+#'   interval of [pollin_effects()] (the inverse of the joint precision of the
+#'   Laplace approximation), and recomputes the arm means for each draw. The
+#'   draws carry the uncertainty in the realised block and slope effects of
+#'   the trial and their correlation with the fixed effects.
 #' * `"bootstrap"` keeps the arm means of the parametric bootstrap refits
 #'   that [pollin_effects()] runs with `interval = "bootstrap"`: responses are
 #'   simulated from the fitted model (new random effects included) and the
@@ -145,9 +146,6 @@ print.pollin_draws <- function(x, ...) {
   cat("  engine   :", x$engine, "\n")
   cat("  draws    :", x$n, "\n")
   cat("  columns  :", paste(colnames(x$estimate), collapse = ", "), "\n")
-  if (x$method == "simulation") {
-    cat("  note     : simulation draws cover fixed-effect uncertainty only\n")
-  }
   invisible(x)
 }
 
@@ -273,63 +271,19 @@ as.matrix.pollin_draws <- function(x, ...) {
 
 # Simulation ------------------------------------------------------------------
 
-#' Arm-mean draws from a multivariate normal draw of the fixed effects. The
-#' random-effect part of each row's linear predictor, `predict(type = "link")`
-#' less the fixed part, is held at its estimate, so at the estimated fixed
-#' effects the arm means equal those of `.arm_means()`.
+#' Arm-mean draws from a joint multivariate normal draw of the fixed and
+#' random effects, per level of the fit's `by` (or one column for all rows).
+#' At the estimates the arm means equal those of `.arm_means()`.
 #' @noRd
 #' @keywords internal
 .draws_simulation <- function(fit, response, n, seed) {
-  e <- fit$estimand
-  model <- fit$fits[[response]]
   d <- fit$data[[response]]
-  beta <- glmmTMB::fixef(model)$cond
-  v <- stats::vcov(model, full = FALSE)$cond
-  r <- tryCatch(chol(v), error = function(err) NULL)
-  if (is.null(r)) {
-    stop(
-      "The covariance matrix of the fixed effects of '",
-      response,
-      "' is not positive definite; use `method = \"bootstrap\"`.",
-      call. = FALSE
-    )
+  group <- if (is.null(fit$by)) {
+    rep("all", nrow(d))
+  } else {
+    as.character(d[[fit$by]])
   }
-  z <- matrix(.draws_rnorm(n * length(beta), seed), nrow = n)
-  b <- z %*% r + rep(beta, each = n)
-
-  arm <- function(level) {
-    p <- .draws_arm_linear(model, d, fit$treatment, level, beta)
-    mu <- stats::family(model)$linkinv(p$x %*% t(b) + p$re)
-    g <- if (is.null(fit$by)) rep("all", nrow(d)) else as.character(d[[fit$by]])
-    t(rowsum(mu, g) / as.vector(table(g)))
-  }
-  list(high = arm(e$contrast[["high"]]), low = arm(e$contrast[["low"]]))
-}
-
-#' Fixed-effect design matrix of the model data with every row set to one
-#' treatment level, and the random-effect offset of each row's linear
-#' predictor
-#' @noRd
-#' @keywords internal
-.draws_arm_linear <- function(model, d, treatment, level, beta) {
-  nd <- d
-  nd[[treatment]] <- factor(
-    rep(level, nrow(d)),
-    levels = levels(d[[treatment]])
-  )
-  tt <- stats::delete.response(stats::terms(model))
-  x <- stats::model.matrix(tt, nd)
-  missing_cols <- setdiff(names(beta), colnames(x))
-  if (length(missing_cols)) {
-    stop(
-      "Fixed effects not found in the model matrix: ",
-      paste(missing_cols, collapse = ", "),
-      call. = FALSE
-    )
-  }
-  x <- x[, names(beta), drop = FALSE]
-  eta <- stats::predict(model, newdata = nd, type = "link")
-  list(x = x, re = as.vector(eta - x %*% beta))
+  .joint_arm_draws(fit, response, group, n, seed)
 }
 
 #' `n` standard normal deviates, from `seed` when given, restoring the
@@ -356,7 +310,7 @@ as.matrix.pollin_draws <- function(x, ...) {
 .draws_method_label <- function(method) {
   switch(
     method,
-    simulation = "simulation of the fixed effects",
+    simulation = "simulation of the fixed and random effects",
     bootstrap = "parametric bootstrap refits",
     posterior = "joint posterior draws (INLA)",
     method

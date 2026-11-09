@@ -12,9 +12,9 @@
 #'
 #' On the glmmTMB engine the estimate uses the fixed effects and the
 #' conditional modes of the random effects. The interval is approximate: the
-#' fixed effects are drawn from their sampling distribution and, independently
-#' of them, each coefficient of the slope term from its conditional
-#' variance, the other random terms held at their modes; it is the percentile
+#' fixed and random effects are drawn jointly from a multivariate normal with
+#' the covariance of the delta interval of [pollin_effects()] (the inverse of
+#' the joint precision of the Laplace approximation); it is the percentile
 #' interval of the effects recomputed per draw, and `std.error` their standard
 #' deviation. On the flexyBayes engine the effects come from the posterior
 #' draws of [pollin_draws()]: the estimate is their median and the interval
@@ -153,7 +153,7 @@ print.pollin_cate <- function(x, ...) {
       paste0("posterior, equal-tailed (", x$n, " draws)")
     } else {
       paste0(
-        "approximate, fixed effects and conditional variance of the slope (",
+        "approximate, fixed and random effects jointly (",
         x$n,
         " draws)"
       )
@@ -224,72 +224,25 @@ print.pollin_cate <- function(x, ...) {
 }
 
 #' Per-level effects on the glmmTMB engine: the estimate from the fixed
-#' effects and conditional modes, the interval from draws of the fixed
-#' effects and of the slope coefficients from their conditional variances
+#' effects and conditional modes, the interval from joint draws of the fixed
+#' and random effects
 #' @noRd
 #' @keywords internal
 .cate_conditional <- function(fit, response, by, n, seed, conf_level) {
   e <- fit$estimand
-  model <- fit$fits[[response]]
   d <- fit$data[[response]]
-  trt <- fit$treatment
   point <- .arm_means(
-    model,
+    fit$fits[[response]],
     d,
-    trt,
+    fit$treatment,
     e$contrast[["high"]],
     e$contrast[["low"]],
     by
   )
   estimate <- .effect_from_means(point, e$scale, e$basis)
 
-  # Draws of the fixed effects and of the slope term ---------------------------
-  beta <- glmmTMB::fixef(model)$cond
-  v <- stats::vcov(model, full = FALSE)$cond
-  r <- tryCatch(chol(v), error = function(err) NULL)
-  re <- glmmTMB::ranef(model, condVar = TRUE)$cond[[by]]
-  cv <- attr(re, "condVar")
-  sds <- if (is.null(cv)) NULL else sqrt(apply(cv, 3L, diag))
-  if (is.null(r) || is.null(sds) || any(!is.finite(sds))) {
-    stop(
-      "The fit of '",
-      response,
-      "' gives no covariance for its fixed effects or no conditional ",
-      "variance for the slope on '",
-      by,
-      "'; the slope variance may be at zero.",
-      call. = FALSE
-    )
-  }
-  sds <- matrix(sds, nrow = ncol(re))
-  p <- length(beta)
-  k <- ncol(re)
-  g <- nrow(re)
-  z <- matrix(.draws_rnorm(n * (p + k * g), seed), nrow = n)
-  b <- z[, seq_len(p), drop = FALSE] %*% r + rep(beta, each = n)
-  shift <- z[, p + seq_len(k * g), drop = FALSE] *
-    rep(as.vector(sds), each = n)
-
-  # Arm means per draw ---------------------------------------------------------
-  grp <- match(as.character(d[[by]]), rownames(re))
-  lev <- as.character(d[[by]])
-  arm <- function(level) {
-    a <- .draws_arm_linear(model, d, trt, level, beta)
-    nd <- d
-    nd[[trt]] <- factor(rep(level, nrow(d)), levels = levels(d[[trt]]))
-    zr <- stats::model.matrix(
-      stats::reformulate(trt),
-      nd
-    )[, colnames(re), drop = FALSE]
-    eta <- a$x %*% t(b) + a$re
-    for (j in seq_len(k)) {
-      cols <- (seq_len(g) - 1L) * k + j
-      eta <- eta + zr[, j] * t(shift[, cols, drop = FALSE])[grp, , drop = FALSE]
-    }
-    mu <- stats::family(model)$linkinv(eta)
-    t(rowsum(mu, lev) / as.vector(table(lev)))
-  }
-  m <- list(high = arm(e$contrast[["high"]]), low = arm(e$contrast[["low"]]))
+  # Joint draws of the fixed and random effects ------------------------------
+  m <- .joint_arm_draws(fit, response, as.character(d[[by]]), n, seed)
   .cate_table(estimate, .effect_from_means(m, e$scale, e$basis), conf_level)
 }
 

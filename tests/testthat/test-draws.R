@@ -102,21 +102,23 @@ test_that("bootstrap draws reproduce the bootstrap interval exactly", {
   }
 })
 
-test_that("at the estimated fixed effects the simulation rule is .arm_means", {
+test_that("at the estimates the joint simulation rule is .arm_means", {
   skip_on_cran()
   for (by in list(NULL, "Region")) {
     fit <- dr_fit(by = by)
     model <- fit$fits$pods
     d <- fit$data$pods
-    beta <- glmmTMB::fixef(model)$cond
     am <- .arm_means(model, d, "trt", "Open", "Cage", by)
-    for (arm in c("Open", "Cage")) {
-      p <- .draws_arm_linear(model, d, "trt", arm, beta)
-      mu <- stats::family(model)$linkinv(as.vector(p$x %*% beta) + p$re)
-      g <- if (is.null(by)) rep("all", nrow(d)) else as.character(d[[by]])
-      got <- tapply(mu, g, mean)
-      want <- if (arm == "Open") am$high else am$low
-      expect_equal(unname(got), unname(want), tolerance = 1e-10)
+    jc <- .joint_cov(model, "pods")
+    designs <- .joint_arm_designs(fit, "pods")
+    g <- if (is.null(by)) rep("all", nrow(d)) else as.character(d[[by]])
+    for (arm in c("high", "low")) {
+      got <- .joint_arm_gradient(model, designs[[arm]], jc$par, jc$n_beta, g)
+      expect_equal(
+        unname(got$mean),
+        as.vector(am[[arm]]),
+        tolerance = 1e-10
+      )
     }
   }
 })
@@ -214,8 +216,8 @@ test_that("summary and print name the estimand, scale, basis and method", {
   out <- capture.output(print(dr))
   expect_true(any(grepl("dependence \\(E2\\)", out)))
   expect_true(any(grepl("basis +: gain", out)))
-  expect_true(any(grepl("simulation of the fixed effects", out)))
-  expect_true(any(grepl("fixed-effect uncertainty only", out)))
+  expect_true(any(grepl("simulation of the fixed and random effects", out)))
+  expect_false(any(grepl("fixed-effect uncertainty only", out)))
 })
 
 test_that("pollin_draws checks its arguments", {

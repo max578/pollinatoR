@@ -50,12 +50,13 @@ the estimand is then computed per draw and summarised last.
 \details{
 Three methods are available:
 \itemize{
-\item \code{"simulation"} (the default for a glmmTMB fit) draws the fixed effects from their
-estimated sampling distribution, a multivariate normal centred on the
-estimates with their covariance matrix, and recomputes the arm means for
-each draw. Every row keeps its estimated random effects, the prediction
-rule of \code{\link[=pollin_effects]{pollin_effects()}}, so the draws carry the uncertainty in the
-fixed effects only, like the delta interval.
+\item \code{"simulation"} (the default for a glmmTMB fit) draws the fixed effects
+and the random effects jointly from a multivariate normal centred on the
+estimates and the conditional modes, with the covariance of the delta
+interval of \code{\link[=pollin_effects]{pollin_effects()}} (the inverse of the joint precision of the
+Laplace approximation), and recomputes the arm means for each draw. The
+draws carry the uncertainty in the realised block and slope effects of
+the trial and their correlation with the fixed effects.
 \item \code{"bootstrap"} keeps the arm means of the parametric bootstrap refits
 that \code{\link[=pollin_effects]{pollin_effects()}} runs with \code{interval = "bootstrap"}: responses are
 simulated from the fitted model (new random effects included) and the

@@ -108,6 +108,19 @@ golden_effects <- function(x) {
   x[c("table", "interval", "n_boot", "seed", "conf_level", "by")]
 }
 
+# The delta route of 0.1.0 to 0.3.1 is `interval = "delta_fixed"` since 0.4.0;
+# its outputs are compared to the 0.1.0 oracle under the old label.
+golden_fixed_as_delta <- function(x) {
+  relabel <- function(v) replace(v, v == "delta_fixed", "delta")
+  if (is.data.frame(x)) {
+    x$interval <- relabel(x$interval)
+    return(x)
+  }
+  x$table$interval <- relabel(x$table$interval)
+  x$interval <- relabel(x$interval)
+  x
+}
+
 golden_path_v010 <- function() {
   testthat::test_path("_golden", "golden_v0.1.0.rds")
 }
@@ -199,5 +212,49 @@ golden_capture_v020 <- function() {
     value_dependence = golden_value(v_dep),
     value_deficit = golden_value(v_def),
     total = golden_value(tot)
+  )
+}
+
+# Outputs at 0.4.0: the joint delta interval and the joint simulation draws ----
+
+golden_path_v040 <- function() {
+  testthat::test_path("_golden", "golden_v0.4.0.rds")
+}
+
+# The joint delta effects on the 0.1.0 inputs, every scale, overall and by
+# region, and the contributions; then every 0.2.0 output.
+golden_capture_v040 <- function() {
+  d <- golden_inputs_v010()
+  pd <- pollin_data(
+    d,
+    c("pods", "seed_wt"),
+    "trt",
+    unit = "Block",
+    groups = "Region",
+    exposures = "bees"
+  )
+  ds <- pollin_design(pd, golden_arms_v010, "rcbd")
+  grid <- golden_grid_v010()
+  delta <- list()
+  for (fam in c("deficit", "dependence")) {
+    for (i in seq_len(nrow(grid))) {
+      key <- paste(fam, grid$scale[i], grid$basis[i], sep = "_")
+      est <- pollin_estimand(ds, fam, grid$scale[i], grid$basis[i])
+      delta[[key]] <- list(
+        delta = golden_effects(pollin_effects(pollin_fit(est))),
+        delta_by = golden_effects(
+          pollin_effects(pollin_fit(est, by = "Region"))
+        )
+      )
+    }
+  }
+  e_diff <- pollin_estimand(ds, "dependence", "difference", "loss")
+  c(
+    list(
+      delta = delta,
+      contribution = pollin_contribution(e_diff)$table,
+      contribution_by = pollin_contribution(e_diff, by = "Region")$table
+    ),
+    golden_capture_v020()
   )
 }

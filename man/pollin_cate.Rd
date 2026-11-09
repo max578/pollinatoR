@@ -40,9 +40,9 @@ effect.
 \details{
 On the glmmTMB engine the estimate uses the fixed effects and the
 conditional modes of the random effects. The interval is approximate: the
-fixed effects are drawn from their sampling distribution and, independently
-of them, each coefficient of the slope term from its conditional
-variance, the other random terms held at their modes; it is the percentile
+fixed and random effects are drawn jointly from a multivariate normal with
+the covariance of the delta interval of \code{\link[=pollin_effects]{pollin_effects()}} (the inverse of
+the joint precision of the Laplace approximation); it is the percentile
 interval of the effects recomputed per draw, and \code{std.error} their standard
 deviation. On the flexyBayes engine the effects come from the posterior
 draws of \code{\link[=pollin_draws]{pollin_draws()}}: the estimate is their median and the interval
