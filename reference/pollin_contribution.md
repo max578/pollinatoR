@@ -25,10 +25,7 @@ pollin_contribution(x, outcomes = NULL, by = NULL, families = list(), ...)
 
   A
   [`pollin_estimand()`](https://max578.github.io/pollinatoR/reference/pollin_estimand.md)
-  object with `family = "dependence"` and `scale = "difference"`, or a
-  deprecated
-  [`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
-  object.
+  object with `family = "dependence"` and `scale = "difference"`.
 
 - outcomes:
 
@@ -65,12 +62,6 @@ is an experimental manipulation – so no covariate adjustment is applied;
 see
 [`pollin_moderation()`](https://max578.github.io/pollinatoR/reference/pollin_moderation.md)
 for the observational "which insects" question.
-
-A
-[`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
-is still accepted and is fitted as before;
-[`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
-is deprecated and is removed at version 0.2.0.
 
 ## Examples
 

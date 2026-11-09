@@ -13,10 +13,11 @@ averaged predictions, never an average of unit ratios. With
 pollin_effects(
   fit,
   by = fit$by,
-  interval = c("delta", "bootstrap"),
+  interval = c("delta", "bootstrap", "posterior"),
   n_boot = 999L,
   seed = NULL,
-  conf_level = 0.95
+  conf_level = 0.95,
+  n_draws = 4000L
 )
 ```
 
@@ -38,7 +39,8 @@ pollin_effects(
 
 - interval:
 
-  `"delta"` (the default) or `"bootstrap"`.
+  `"delta"` (the default for a glmmTMB fit), `"bootstrap"`, or
+  `"posterior"` (for a flexyBayes fit).
 
 - n_boot:
 
@@ -47,13 +49,17 @@ pollin_effects(
 
 - seed:
 
-  Optional integer seed for the bootstrap simulation. Each response is
-  simulated from this seed, and the session's random number state is
-  restored afterwards.
+  Optional integer seed for the bootstrap simulation or the posterior
+  draws. Each response is drawn from this seed, and the session's random
+  number state is restored afterwards.
 
 - conf_level:
 
   Confidence level of the interval.
+
+- n_draws:
+
+  Number of posterior draws, used when `interval = "posterior"`.
 
 ## Value
 
@@ -62,7 +68,8 @@ row per response (and per `by` level) and the columns `response`,
 `contrast`, any `by` column, `estimate`, `std.error`, `conf.low`,
 `conf.high`, `p.value`, `family` (the estimand family), `scale`,
 `basis`, `distribution` (the model family) and `interval`; and
-`interval`, `n_boot`, `seed`, `conf_level`, `by` and the `estimand`.
+`interval`, `n_boot`, `seed`, `conf_level`, `by`, the `estimand` and
+`n_draws` (posterior intervals only).
 
 ## Details
 
@@ -84,6 +91,21 @@ from the fitted model (new random effects included), the model is
 refitted to each simulated set, and the interval is the percentile
 interval of the refitted estimates; `std.error` is their standard
 deviation and `p.value` is `NA`.
+
+A fit with `engine = "flexyBayes"` has the `"posterior"` interval, its
+default and only one: the estimate is the median of the posterior draws
+of the estimand from
+[`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md),
+the interval their equal-tailed interval, `std.error` their standard
+deviation, and `p.value` is `NA`. With the same `seed` and `n_draws`,
+the row equals the summary of
+`pollin_draws(fit, n = n_draws, seed = seed)`.
+
+The table reports the trial contrast, overall or per level of `by`. A
+population declared with
+[`pollin_population()`](https://max578.github.io/pollinatoR/reference/pollin_population.md)
+is not used here; the population estimand is read with
+[`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md).
 
 ## See also
 

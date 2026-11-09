@@ -15,7 +15,7 @@ never an average of unit ratios. With rr = high / low:"></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,12 @@ never an average of unit ratios. With rr = high / low:"></head><body>
     <li><a class="dropdown-item" href="../articles/three-arm-trial.html">A three-arm trial: deficit and dependence</a></li>
     <li><a class="dropdown-item" href="../articles/split-plot-trial.html">A split-plot trial: dependence by variety</a></li>
     <li><a class="dropdown-item" href="../articles/matched-pair-field-study.html">A matched-pair field study</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Value</h6></li>
+    <li><a class="dropdown-item" href="../articles/dependence-to-value.html">From dependence to value</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Bayesian fits</h6></li>
+    <li><a class="dropdown-item" href="../articles/bayesian-fits.html">Bayesian fits with flexyBayes</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -63,10 +69,11 @@ never an average of unit ratios. With <code>rr = high / low</code>:</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pollin_effects</span><span class="op">(</span></span>
 <span>  <span class="va">fit</span>,</span>
 <span>  by <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">by</span>,</span>
-<span>  interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"delta"</span>, <span class="st">"bootstrap"</span><span class="op">)</span>,</span>
+<span>  interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"delta"</span>, <span class="st">"bootstrap"</span>, <span class="st">"posterior"</span><span class="op">)</span>,</span>
 <span>  n_boot <span class="op">=</span> <span class="fl">999L</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  conf_level <span class="op">=</span> <span class="fl">0.95</span></span>
+<span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  n_draws <span class="op">=</span> <span class="fl">4000L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -87,7 +94,8 @@ made with is an error: refit with <code>pollin_fit(..., by = )</code>.</p></dd>
 
 
 <dt id="arg-interval">interval<a class="anchor" aria-label="anchor" href="#arg-interval"></a></dt>
-<dd><p><code>"delta"</code> (the default) or <code>"bootstrap"</code>.</p></dd>
+<dd><p><code>"delta"</code> (the default for a glmmTMB fit), <code>"bootstrap"</code>,
+or <code>"posterior"</code> (for a flexyBayes fit).</p></dd>
 
 
 <dt id="arg-n-boot">n_boot<a class="anchor" aria-label="anchor" href="#arg-n-boot"></a></dt>
@@ -96,13 +104,18 @@ made with is an error: refit with <code>pollin_fit(..., by = )</code>.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Optional integer seed for the bootstrap simulation. Each
-response is simulated from this seed, and the session's random number
-state is restored afterwards.</p></dd>
+<dd><p>Optional integer seed for the bootstrap simulation or the
+posterior draws. Each response is drawn from this seed, and the
+session's random number state is restored afterwards.</p></dd>
 
 
 <dt id="arg-conf-level">conf_level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
 <dd><p>Confidence level of the interval.</p></dd>
+
+
+<dt id="arg-n-draws">n_draws<a class="anchor" aria-label="anchor" href="#arg-n-draws"></a></dt>
+<dd><p>Number of posterior draws, used when
+<code>interval = "posterior"</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -112,7 +125,8 @@ one row per response (and per <code>by</code> level) and the columns <code>respo
 <code>contrast</code>, any <code>by</code> column, <code>estimate</code>, <code>std.error</code>, <code>conf.low</code>,
 <code>conf.high</code>, <code>p.value</code>, <code>family</code> (the estimand family), <code>scale</code>, <code>basis</code>,
 <code>distribution</code> (the model family) and <code>interval</code>; and <code>interval</code>, <code>n_boot</code>,
-<code>seed</code>, <code>conf_level</code>, <code>by</code> and the <code>estimand</code>.</p>
+<code>seed</code>, <code>conf_level</code>, <code>by</code>, the <code>estimand</code> and <code>n_draws</code> (posterior
+intervals only).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -125,6 +139,15 @@ interval carries the uncertainty in the fixed effects only. With
 (new random effects included), the model is refitted to each simulated set,
 and the interval is the percentile interval of the refitted estimates;
 <code>std.error</code> is their standard deviation and <code>p.value</code> is <code>NA</code>.</p>
+<p>A fit with <code>engine = "flexyBayes"</code> has the <code>"posterior"</code> interval, its
+default and only one: the estimate is the median of the posterior draws of
+the estimand from <code><a href="pollin_draws.html">pollin_draws()</a></code>, the interval their equal-tailed
+interval, <code>std.error</code> their standard deviation, and <code>p.value</code> is <code>NA</code>.
+With the same <code>seed</code> and <code>n_draws</code>, the row equals the summary of
+<code>pollin_draws(fit, n = n_draws, seed = seed)</code>.</p>
+<p>The table reports the trial contrast, overall or per level of <code>by</code>. A
+population declared with <code><a href="pollin_population.html">pollin_population()</a></code> is not used here; the
+population estimand is read with <code><a href="pollin_draws.html">pollin_draws()</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

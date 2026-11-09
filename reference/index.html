@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,6 +24,12 @@
     <li><a class="dropdown-item" href="../articles/three-arm-trial.html">A three-arm trial: deficit and dependence</a></li>
     <li><a class="dropdown-item" href="../articles/split-plot-trial.html">A split-plot trial: dependence by variety</a></li>
     <li><a class="dropdown-item" href="../articles/matched-pair-field-study.html">A matched-pair field study</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Value</h6></li>
+    <li><a class="dropdown-item" href="../articles/dependence-to-value.html">From dependence to value</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Bayesian fits</h6></li>
+    <li><a class="dropdown-item" href="../articles/bayesian-fits.html">Bayesian fits with flexyBayes</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -103,6 +109,22 @@
         </dt>
         <dd>List the assumptions an estimand rests on</dd>
       </dl></div><div class="section level2">
+      <h2 id="population">Population<a class="anchor" aria-label="anchor" href="#population"></a></h2>
+
+      <div class="section-desc"><p>Carry the estimand from the trial to a population of strata.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pollin_population.html">pollin_population()</a></code>
+
+        </dt>
+        <dd>Declare a population of strata for an estimand</dd>
+      </dl></div><div class="section level2">
       <h2 id="fit">Fit<a class="anchor" aria-label="anchor" href="#fit"></a></h2>
 
 
@@ -137,6 +159,13 @@
 
         <dt>
 
+          <code><a href="pollin_cate.html">pollin_cate()</a></code>
+
+        </dt>
+        <dd>Estimate the effect at each level of a grouping, with partial pooling</dd>
+
+        <dt>
+
           <code><a href="pollin_contribution.html">pollin_contribution()</a></code>
 
         </dt>
@@ -148,6 +177,66 @@
 
         </dt>
         <dd>Estimate exposure moderation of the contribution</dd>
+      </dl></div><div class="section level2">
+      <h2 id="draws">Draws<a class="anchor" aria-label="anchor" href="#draws"></a></h2>
+
+      <div class="section-desc"><p>Draws of the estimand, for quantities computed per draw.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pollin_draws.html">pollin_draws()</a></code>
+
+        </dt>
+        <dd>Draw the estimand from its sampling distribution</dd>
+
+        <dt>
+
+          <code><a href="summary.pollin_draws.html">summary(<i>&lt;pollin_draws&gt;</i>)</a></code> <code><a href="summary.pollin_draws.html">as.matrix(<i>&lt;pollin_draws&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Summarise draws of the estimand</dd>
+      </dl></div><div class="section level2">
+      <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+
+      <div class="section-desc"><p>Economic value of an estimand, computed per draw.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pollin_market.html">pollin_market()</a></code>
+
+        </dt>
+        <dd>Declare the market inputs a value rests on</dd>
+
+        <dt>
+
+          <code><a href="pollin_value.html">pollin_value()</a></code>
+
+        </dt>
+        <dd>Value a dependence or deficit estimand</dd>
+
+        <dt>
+
+          <code><a href="summary.pollin_value.html">summary(<i>&lt;pollin_value&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Summarise a value</dd>
+
+        <dt>
+
+          <code><a href="pollin_guard_doublecount.html">pollin_guard_doublecount()</a></code> <code><a href="pollin_guard_doublecount.html">summary(<i>&lt;pollin_value_total&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Guard against adding values that count one contribution twice</dd>
       </dl></div><div class="section level2">
       <h2 id="guards">Guards<a class="anchor" aria-label="anchor" href="#guards"></a></h2>
 
@@ -229,22 +318,6 @@
 
         </dt>
         <dd>Benjamini-Hochberg false-discovery-rate adjustment</dd>
-      </dl></div><div class="section level2">
-      <h2 id="deprecated">Deprecated<a class="anchor" aria-label="anchor" href="#deprecated"></a></h2>
-
-
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="pollin_spec.html">pollin_spec()</a></code>
-
-        </dt>
-        <dd>Declare a pollinator-exclusion study</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

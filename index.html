@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,12 @@
     <li><a class="dropdown-item" href="articles/three-arm-trial.html">A three-arm trial: deficit and dependence</a></li>
     <li><a class="dropdown-item" href="articles/split-plot-trial.html">A split-plot trial: dependence by variety</a></li>
     <li><a class="dropdown-item" href="articles/matched-pair-field-study.html">A matched-pair field study</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Value</h6></li>
+    <li><a class="dropdown-item" href="articles/dependence-to-value.html">From dependence to value</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Bayesian fits</h6></li>
+    <li><a class="dropdown-item" href="articles/bayesian-fits.html">Bayesian fits with flexyBayes</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -60,19 +66,31 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="pollinator">pollinatoR<a class="anchor" aria-label="anchor" href="#pollinator"></a>
 </h1></div>
-<p><code>pollinatoR</code> estimates how much of a crop’s yield depends on insect pollinators, from experiments that compare plants with and without pollinator access: caged or bagged plants against open ones, and hand-supplemented plants where a trial has them. Estimates come from mixed models, with intervals, on a scale and basis you declare. The methods apply to any crop studied with such a design.</p>
+<p><code>pollinatoR</code> estimates how much of a crop’s yield depends on insect pollinators, from experiments that compare plants with and without pollinator access: caged or bagged plants against open ones, and hand-supplemented plants where a trial has them. Estimates come from mixed models, with intervals, on a scale and basis you declare. The estimand can be carried to a population of fields and on to an economic value, with its uncertainty kept by working draw by draw. The methods apply to any crop studied with such a design.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"max578/pollinatoR"</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="optional-bayesian-engine">Optional Bayesian engine<a class="anchor" aria-label="anchor" href="#optional-bayesian-engine"></a>
+</h3>
+<p><code>pollin_fit(engine = "flexyBayes")</code> fits on INLA through the flexyBayes package. Neither is on CRAN, and neither is needed for the rest of the package.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"AAGI-AUS/flexyBayes"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span></span>
+<span>  <span class="st">"INLA"</span>,</span>
+<span>  repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span>, INLA <span class="op">=</span> <span class="st">"https://inla.r-inla-download.org/R/stable"</span><span class="op">)</span>,</span>
+<span>  dependencies <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="a-minimal-example">A minimal example<a class="anchor" aria-label="anchor" href="#a-minimal-example"></a>
 </h2>
 <p>An analysis is declared in layers: the data, the design, the estimand. It is then fitted, and the effect is read on the declared scale.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/max578/pollinatoR" class="external-link">pollinatoR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
@@ -89,6 +107,16 @@
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pollin_fit.html">pollin_fit</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/pollin_effects.html">pollin_effects</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
 <p><code>basis</code> has no default. A loss share (the part of present yield that pollinators supply) and a gain (the rise over a crop without them) are different numbers: excluded plants yielding 75% of open ones give a loss share of 25% and a gain of 33%.</p>
+</div>
+<div class="section level2">
+<h2 id="from-dependence-to-value">From dependence to value<a class="anchor" aria-label="anchor" href="#from-dependence-to-value"></a>
+</h2>
+<p>Draws of the estimand, multiplied by price and current production, give the value of pollination with an interval. The channel has no default: the <code>dependence</code> channel values the production lost without pollinators and needs a loss share.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">dr</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pollin_draws.html">pollin_draws</a></span><span class="op">(</span><span class="va">fit</span>, n <span class="op">=</span> <span class="fl">1000L</span>, seed <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="va">mk</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pollin_market.html">pollin_market</a></span><span class="op">(</span>quantity <span class="op">=</span> <span class="fl">12000</span>, price <span class="op">=</span> <span class="fl">650</span>, unit <span class="op">=</span> <span class="st">"t"</span>,</span>
+<span>                    currency <span class="op">=</span> <span class="st">"AUD"</span>, year <span class="op">=</span> <span class="fl">2024</span>, source <span class="op">=</span> <span class="st">"Illustrative inputs"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/pollin_value.html">pollin_value</a></span><span class="op">(</span><span class="va">dr</span>, <span class="va">mk</span>, channel <span class="op">=</span> <span class="st">"dependence"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="functions-by-layer">Functions by layer<a class="anchor" aria-label="anchor" href="#functions-by-layer"></a>
@@ -133,13 +161,18 @@
 <tr>
 <td>Fit</td>
 <td><code><a href="reference/pollin_fit.html">pollin_fit()</a></code></td>
-<td>One <code>glmmTMB</code> model per response, optionally with the treatment effect fitted per level of a grouping column (<code>by</code>)</td>
+<td>One model per response, on <code>glmmTMB</code> or, with <code>engine = "flexyBayes"</code>, a Bayesian fit on INLA; the treatment effect fitted per level of a column (<code>by</code>), or pooled across its levels (<code>pooled</code>)</td>
 </tr>
 <tr>
 <td>Effects</td>
 <td><code><a href="reference/pollin_effects.html">pollin_effects()</a></code></td>
-<td>Estimates with delta or parametric bootstrap intervals, overall or per level of <code>by</code>
+<td>Estimates with delta, parametric bootstrap or posterior intervals, overall or per level of <code>by</code>
 </td>
+</tr>
+<tr>
+<td></td>
+<td><code><a href="reference/pollin_cate.html">pollin_cate()</a></code></td>
+<td>The effect at each level of a column with a random treatment slope, partially pooled</td>
 </tr>
 <tr>
 <td></td>
@@ -150,6 +183,27 @@
 <td></td>
 <td><code><a href="reference/pollin_moderation.html">pollin_moderation()</a></code></td>
 <td>Treatment-by-exposure terms, split within and between units</td>
+</tr>
+<tr>
+<td>Population</td>
+<td><code><a href="reference/pollin_population.html">pollin_population()</a></code></td>
+<td>Strata of one column (distance bands, regions) weighted by area, passed to <code><a href="reference/pollin_estimand.html">pollin_estimand()</a></code>
+</td>
+</tr>
+<tr>
+<td>Draws</td>
+<td><code><a href="reference/pollin_draws.html">pollin_draws()</a></code></td>
+<td>Draws of the arm means and the estimand, by simulation of the fixed effects, parametric bootstrap, or from the posterior of a flexyBayes fit</td>
+</tr>
+<tr>
+<td>Value</td>
+<td><code><a href="reference/pollin_market.html">pollin_market()</a></code></td>
+<td>Current production and price, as values or draws, with unit, currency, price year and source</td>
+</tr>
+<tr>
+<td></td>
+<td><code><a href="reference/pollin_value.html">pollin_value()</a></code></td>
+<td>Value per draw through the <code>dependence</code> or <code>deficit</code> channel, with the assumptions it rests on</td>
 </tr>
 <tr>
 <td>Guards</td>
@@ -170,6 +224,11 @@
 <td></td>
 <td><code><a href="reference/pollin_guard_posttreatment.html">pollin_guard_posttreatment()</a></code></td>
 <td>Refuses an adjustment covariate declared downstream of treatment</td>
+</tr>
+<tr>
+<td></td>
+<td><code><a href="reference/pollin_guard_doublecount.html">pollin_guard_doublecount()</a></code></td>
+<td>Adds values draw by draw and refuses overlapping attributions</td>
 </tr>
 <tr>
 <td>Indices and utilities</td>
@@ -195,16 +254,18 @@
 </tr>
 </tbody>
 </table>
-<p><code><a href="reference/pollin_spec.html">pollin_spec()</a></code> is deprecated and is removed at version 0.2.0; the getting-started vignette shows the equivalent calls.</p>
+<p><code>pollin_spec()</code> was removed at version 0.2.0; the getting-started vignette shows the equivalent calls.</p>
 </div>
 <div class="section level2">
 <h2 id="vignettes">Vignettes<a class="anchor" aria-label="anchor" href="#vignettes"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"pollinatoR"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"three-arm-trial"</span>, package <span class="op">=</span> <span class="st">"pollinatoR"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"split-plot-trial"</span>, package <span class="op">=</span> <span class="st">"pollinatoR"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"matched-pair-field-study"</span>, package <span class="op">=</span> <span class="st">"pollinatoR"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"matched-pair-field-study"</span>, package <span class="op">=</span> <span class="st">"pollinatoR"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"dependence-to-value"</span>, package <span class="op">=</span> <span class="st">"pollinatoR"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"bayesian-fits"</span>, package <span class="op">=</span> <span class="st">"pollinatoR"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>

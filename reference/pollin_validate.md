@@ -21,8 +21,6 @@ pollin_validate(x, expect_levels = NULL, identities = NULL)
 
   A
   [`pollin_data()`](https://max578.github.io/pollinatoR/reference/pollin_data.md)
-  object, or a
-  [`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
   object.
 
 - expect_levels:

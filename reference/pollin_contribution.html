@@ -23,7 +23,7 @@ outcome from its values unless supplied."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,12 @@ outcome from its values unless supplied."></head><body>
     <li><a class="dropdown-item" href="../articles/three-arm-trial.html">A three-arm trial: deficit and dependence</a></li>
     <li><a class="dropdown-item" href="../articles/split-plot-trial.html">A split-plot trial: dependence by variety</a></li>
     <li><a class="dropdown-item" href="../articles/matched-pair-field-study.html">A matched-pair field study</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Value</h6></li>
+    <li><a class="dropdown-item" href="../articles/dependence-to-value.html">From dependence to value</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Bayesian fits</h6></li>
+    <li><a class="dropdown-item" href="../articles/bayesian-fits.html">Bayesian fits with flexyBayes</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -81,7 +87,7 @@ outcome from its values unless supplied.</p>
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>A <code><a href="pollin_estimand.html">pollin_estimand()</a></code> object with <code>family = "dependence"</code> and
-<code>scale = "difference"</code>, or a deprecated <code><a href="pollin_spec.html">pollin_spec()</a></code> object.</p></dd>
+<code>scale = "difference"</code>.</p></dd>
 
 
 <dt id="arg-outcomes">outcomes<a class="anchor" aria-label="anchor" href="#arg-outcomes"></a></dt>
@@ -116,8 +122,6 @@ for diagnostics). From an estimand, <code>table</code> carries the columns of
     <p>The treatment effect is causal by design here – the exclusion contrast is an
 experimental manipulation – so no covariate adjustment is applied; see
 <code><a href="pollin_moderation.html">pollin_moderation()</a></code> for the observational "which insects" question.</p>
-<p>A <code><a href="pollin_spec.html">pollin_spec()</a></code> is still accepted and is fitted as before; <code><a href="pollin_spec.html">pollin_spec()</a></code>
-is deprecated and is removed at version 0.2.0.</p>
     </div>
 
     <div class="section level2">

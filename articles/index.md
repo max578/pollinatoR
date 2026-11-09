@@ -13,3 +13,13 @@
   variety](https://max578.github.io/pollinatoR/articles/split-plot-trial.md):
 - [A matched-pair field
   study](https://max578.github.io/pollinatoR/articles/matched-pair-field-study.md):
+
+### Value
+
+- [From dependence to
+  value](https://max578.github.io/pollinatoR/articles/dependence-to-value.md):
+
+### Bayesian fits
+
+- [Bayesian fits with
+  flexyBayes](https://max578.github.io/pollinatoR/articles/bayesian-fits.md):

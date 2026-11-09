@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,12 @@
     <li><a class="dropdown-item" href="../articles/three-arm-trial.html">A three-arm trial: deficit and dependence</a></li>
     <li><a class="dropdown-item" href="../articles/split-plot-trial.html">A split-plot trial: dependence by variety</a></li>
     <li><a class="dropdown-item" href="../articles/matched-pair-field-study.html">A matched-pair field study</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Value</h6></li>
+    <li><a class="dropdown-item" href="../articles/dependence-to-value.html">From dependence to value</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Bayesian fits</h6></li>
+    <li><a class="dropdown-item" href="../articles/bayesian-fits.html">Bayesian fits with flexyBayes</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -288,6 +294,52 @@ intervals.</p>
 <span><span class="co">#&gt; 3 point; do not regress on open yield (see pollin_guard_spurious)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="from-the-sampled-fields-to-the-growing-area">From the sampled fields to the growing area<a class="anchor" aria-label="anchor" href="#from-the-sampled-fields-to-the-growing-area"></a>
+</h2>
+<p>The 24 fields are eight per region, but the regions grow different
+areas of canola. Suppose the North grows 2,000 ha, the Central region
+1,000 ha and the South 500 ha. <code><a href="../reference/pollin_population.html">pollin_population()</a></code> declares
+the regions as strata weighted by area. The model is fitted with the
+region as <code>by</code>, and <code><a href="../reference/pollin_draws.html">pollin_draws()</a></code> returns the
+loss share per region and for the population.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">regions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pollin_population.html">pollin_population</a></span><span class="op">(</span></span>
+<span>  <span class="st">"region"</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>North <span class="op">=</span> <span class="fl">2000</span>, Central <span class="op">=</span> <span class="fl">1000</span>, South <span class="op">=</span> <span class="fl">500</span><span class="op">)</span>,</span>
+<span>  label <span class="op">=</span> <span class="st">"canola area by region"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">est_pop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pollin_estimand.html">pollin_estimand</a></span><span class="op">(</span><span class="va">ds</span>, <span class="st">"dependence"</span>, <span class="st">"ratio"</span>, <span class="st">"loss"</span>, population <span class="op">=</span> <span class="va">regions</span><span class="op">)</span></span>
+<span><span class="va">dr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pollin_draws.html">pollin_draws</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/pollin_fit.html">pollin_fit</a></span><span class="op">(</span><span class="va">est_pop</span>, by <span class="op">=</span> <span class="st">"region"</span><span class="op">)</span>,</span>
+<span>  n <span class="op">=</span> <span class="fl">1000L</span>,</span>
+<span>  response <span class="op">=</span> <span class="st">"seed_g"</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">1L</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">dr</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"level"</span>, <span class="st">"median"</span>, <span class="st">"conf.low"</span>, <span class="st">"conf.high"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;        level     median     conf.low conf.high</span></span>
+<span><span class="co">#&gt; 1    Central 0.25858044  0.180760050 0.3318839</span></span>
+<span><span class="co">#&gt; 2      North 0.09242441 -0.003609891 0.1755858</span></span>
+<span><span class="co">#&gt; 3      South 0.11473639  0.022422333 0.1999879</span></span>
+<span><span class="co">#&gt; 4 population 0.13594660  0.075141990 0.1946263</span></span></code></pre></div>
+<p>The population loss share is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><mo>∑</mo><mi>w</mi><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">g</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">d</mi></mrow><mi>/</mi><mo>∑</mo><mi>w</mi><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">o</mi><mi mathvariant="normal">p</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">n</mi></mrow></mrow><annotation encoding="application/x-tex">1 - \sum w\,\mathrm{caged} / \sum w\,\mathrm{open}</annotation></semantics></math>,
+a ratio of the area-weighted arm means. It is not the area-weighted mean
+of the regional loss shares, shown below for comparison.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">w</span> <span class="op">&lt;-</span> <span class="va">regions</span><span class="op">$</span><span class="va">weights</span></span>
+<span><span class="va">weighted_mean</span> <span class="op">&lt;-</span> <span class="va">dr</span><span class="op">$</span><span class="va">estimate</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">w</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">weighted_mean</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.025</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        50%       2.5%      97.5% </span></span>
+<span><span class="co">#&gt; 0.14228785 0.08327175 0.19839943</span></span></code></pre></div>
+<p>The ratio of means weights each region by its area times its open
+yield, that is, by its share of the seed harvested. A loss share is a
+share of harvested seed, so that is the weighting it needs. In these
+estimates the North yields most and loses least, so the weighted mean of
+the regional shares comes out higher. (The regions were simulated with
+the same loss share; their estimates differ by chance.) The gap widens
+as regions differ more in yield and in dependence.</p>
+</div>
+<div class="section level2">
 <h2 id="guard-a-between-field-slope-is-not-a-plant-level-effect">Guard: a between-field slope is not a plant-level effect<a class="anchor" aria-label="anchor" href="#guard-a-between-field-slope-is-not-a-plant-level-effect"></a>
 </h2>
 <p>The fields with more honey bee visits also yield more. Read across
@@ -297,7 +349,7 @@ the plants with more visits yield no more than the others.
 <code><a href="../reference/pollin_guard_ecological.html">pollin_guard_ecological()</a></code> splits the exposure into its
 between-field and within-field parts and warns when only the
 between-field slope is distinguishable from zero.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">open_plants</span> <span class="op">&lt;-</span> <span class="va">study</span><span class="op">[</span><span class="va">study</span><span class="op">$</span><span class="va">trt</span> <span class="op">==</span> <span class="st">"Open"</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="../reference/pollin_guard_ecological.html">pollin_guard_ecological</a></span><span class="op">(</span></span>
 <span>  <span class="va">open_plants</span>,</span>
@@ -325,7 +377,7 @@ pollination effect from the contrast. Whether a variable is downstream
 is a judgement about the crop that the data cannot settle, so
 <code><a href="../reference/pollin_guard_posttreatment.html">pollin_guard_posttreatment()</a></code> takes it as a declaration and
 checks the declared adjustment covariates against it.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pollin_guard_posttreatment.html">pollin_guard_posttreatment</a></span><span class="op">(</span><span class="va">pd</span>, downstream <span class="op">=</span> <span class="st">"veg_biomass"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pd_bad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pollin_data.html">pollin_data</a></span><span class="op">(</span></span>

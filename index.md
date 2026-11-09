@@ -5,13 +5,29 @@ pollinators, from experiments that compare plants with and without
 pollinator access: caged or bagged plants against open ones, and
 hand-supplemented plants where a trial has them. Estimates come from
 mixed models, with intervals, on a scale and basis you declare. The
-methods apply to any crop studied with such a design.
+estimand can be carried to a population of fields and on to an economic
+value, with its uncertainty kept by working draw by draw. The methods
+apply to any crop studied with such a design.
 
 ## Installation
 
 \
 `# install.packages("remotes")`\
 `remotes``::`[`install_github`](https://rdrr.io/pkg/remotes/man/install_github.html)`(``"max578/pollinatoR"``)`
+
+### Optional Bayesian engine
+
+`pollin_fit(engine = "flexyBayes")` fits on INLA through the flexyBayes
+package. Neither is on CRAN, and neither is needed for the rest of the
+package.
+
+\
+`remotes``::`[`install_github`](https://rdrr.io/pkg/remotes/man/install_github.html)`(``"AAGI-AUS/flexyBayes"``)`\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(`\
+`  ``"INLA"``,`\
+`  repos ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`[`getOption`](https://rdrr.io/r/base/options.html)`(``"repos"``)``, INLA ``=`` ``"https://inla.r-inla-download.org/R/stable"``)``,`\
+`  dependencies ``=`` ``TRUE`\
+`)`
 
 ## A minimal example
 
@@ -40,6 +56,19 @@ pollinators supply) and a gain (the rise over a crop without them) are
 different numbers: excluded plants yielding 75% of open ones give a loss
 share of 25% and a gain of 33%.
 
+## From dependence to value
+
+Draws of the estimand, multiplied by price and current production, give
+the value of pollination with an interval. The channel has no default:
+the `dependence` channel values the production lost without pollinators
+and needs a loss share.
+
+\
+`dr`` ``<-`` `[`pollin_draws`](https://max578.github.io/pollinatoR/reference/pollin_draws.md)`(``fit``, n ``=`` ``1000L``, seed ``=`` ``1L``)`\
+`mk`` ``<-`` `[`pollin_market`](https://max578.github.io/pollinatoR/reference/pollin_market.md)`(``quantity ``=`` ``12000``, price ``=`` ``650``, unit ``=`` ``"t"``,`\
+`                    currency ``=`` ``"AUD"``, year ``=`` ``2024``, source ``=`` ``"Illustrative inputs"``)`\
+[`pollin_value`](https://max578.github.io/pollinatoR/reference/pollin_value.md)`(``dr``, ``mk``, channel ``=`` ``"dependence"``)`
+
 ## Functions by layer
 
 | Layer | Function | Purpose |
@@ -49,21 +78,26 @@ share of 25% and a gain of 33%.
 | Design | [`pollin_design()`](https://max578.github.io/pollinatoR/reference/pollin_design.md) | Map treatment levels to the excluded, open and supplemented arms; set the layout |
 | Estimand | [`pollin_estimand()`](https://max578.github.io/pollinatoR/reference/pollin_estimand.md) | Deficit or dependence, on the difference, ratio, RII or lnRR scale, with a loss or gain basis |
 |  | [`pollin_assumptions()`](https://max578.github.io/pollinatoR/reference/pollin_assumptions.md) | The assumptions the estimand rests on |
-| Fit | [`pollin_fit()`](https://max578.github.io/pollinatoR/reference/pollin_fit.md) | One `glmmTMB` model per response, optionally with the treatment effect fitted per level of a grouping column (`by`) |
-| Effects | [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md) | Estimates with delta or parametric bootstrap intervals, overall or per level of `by` |
+| Fit | [`pollin_fit()`](https://max578.github.io/pollinatoR/reference/pollin_fit.md) | One model per response, on `glmmTMB` or, with `engine = "flexyBayes"`, a Bayesian fit on INLA; the treatment effect fitted per level of a column (`by`), or pooled across its levels (`pooled`) |
+| Effects | [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md) | Estimates with delta, parametric bootstrap or posterior intervals, overall or per level of `by` |
+|  | [`pollin_cate()`](https://max578.github.io/pollinatoR/reference/pollin_cate.md) | The effect at each level of a column with a random treatment slope, partially pooled |
 |  | [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md) | Dependence on the difference scale, with FDR-adjusted p-values and the treatment-slope SD |
 |  | [`pollin_moderation()`](https://max578.github.io/pollinatoR/reference/pollin_moderation.md) | Treatment-by-exposure terms, split within and between units |
+| Population | [`pollin_population()`](https://max578.github.io/pollinatoR/reference/pollin_population.md) | Strata of one column (distance bands, regions) weighted by area, passed to [`pollin_estimand()`](https://max578.github.io/pollinatoR/reference/pollin_estimand.md) |
+| Draws | [`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md) | Draws of the arm means and the estimand, by simulation of the fixed effects, parametric bootstrap, or from the posterior of a flexyBayes fit |
+| Value | [`pollin_market()`](https://max578.github.io/pollinatoR/reference/pollin_market.md) | Current production and price, as values or draws, with unit, currency, price year and source |
+|  | [`pollin_value()`](https://max578.github.io/pollinatoR/reference/pollin_value.md) | Value per draw through the `dependence` or `deficit` channel, with the assumptions it rests on |
 | Guards | [`pollin_guard_spurious()`](https://max578.github.io/pollinatoR/reference/pollin_guard_spurious.md) | Index-versus-yield slope against a permutation null |
 |  | [`pollin_guard_bounded()`](https://max578.github.io/pollinatoR/reference/pollin_guard_bounded.md) | Refuses to average unit-level ratios unless asked |
 |  | [`pollin_guard_ecological()`](https://max578.github.io/pollinatoR/reference/pollin_guard_ecological.md) | Warns when an exposure slope exists only between units |
 |  | [`pollin_guard_posttreatment()`](https://max578.github.io/pollinatoR/reference/pollin_guard_posttreatment.md) | Refuses an adjustment covariate declared downstream of treatment |
+|  | [`pollin_guard_doublecount()`](https://max578.github.io/pollinatoR/reference/pollin_guard_doublecount.md) | Adds values draw by draw and refuses overlapping attributions |
 | Indices and utilities | [`pollin_index()`](https://max578.github.io/pollinatoR/reference/pollin_index.md), [`pollin_rii()`](https://max578.github.io/pollinatoR/reference/pollin_rii.md) | Descriptive indices with intervals, from arm means |
 |  | [`pollin_compensation()`](https://max578.github.io/pollinatoR/reference/pollin_compensation.md) | Trade-offs among yield components |
 |  | [`pollin_within_between()`](https://max578.github.io/pollinatoR/reference/pollin_within_between.md) | Between-unit and within-unit split of a variable |
 |  | [`pollin_fdr()`](https://max578.github.io/pollinatoR/reference/pollin_fdr.md) | Benjamini-Hochberg adjustment |
 
-[`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
-is deprecated and is removed at version 0.2.0; the getting-started
+`pollin_spec()` was removed at version 0.2.0; the getting-started
 vignette shows the equivalent calls.
 
 ## Vignettes
@@ -72,7 +106,9 @@ vignette shows the equivalent calls.
 [`vignette`](https://rdrr.io/r/utils/vignette.html)`(``"pollinatoR"``)`\
 [`vignette`](https://rdrr.io/r/utils/vignette.html)`(``"three-arm-trial"``, package ``=`` ``"pollinatoR"``)`\
 [`vignette`](https://rdrr.io/r/utils/vignette.html)`(``"split-plot-trial"``, package ``=`` ``"pollinatoR"``)`\
-[`vignette`](https://rdrr.io/r/utils/vignette.html)`(``"matched-pair-field-study"``, package ``=`` ``"pollinatoR"``)`
+[`vignette`](https://rdrr.io/r/utils/vignette.html)`(``"matched-pair-field-study"``, package ``=`` ``"pollinatoR"``)`\
+[`vignette`](https://rdrr.io/r/utils/vignette.html)`(``"dependence-to-value"``, package ``=`` ``"pollinatoR"``)`\
+[`vignette`](https://rdrr.io/r/utils/vignette.html)`(``"bayesian-fits"``, package ``=`` ``"pollinatoR"``)`
 
 ## Status
 

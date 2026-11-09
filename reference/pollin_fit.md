@@ -13,7 +13,14 @@ from the fitted model by
 ## Usage
 
 ``` r
-pollin_fit(estimand, engine = "glmmTMB", family = NULL, by = NULL, ...)
+pollin_fit(
+  estimand,
+  engine = "glmmTMB",
+  family = NULL,
+  by = NULL,
+  pooled = NULL,
+  ...
+)
 ```
 
 ## Arguments
@@ -26,8 +33,11 @@ pollin_fit(estimand, engine = "glmmTMB", family = NULL, by = NULL, ...)
 
 - engine:
 
-  The fitting engine. Only `"glmmTMB"` is available; `"flexyBayes"`
-  arrives in version 0.2.0.
+  The fitting engine: `"glmmTMB"` (the default) or `"flexyBayes"`, a
+  Bayesian fit on INLA through flexyBayes (see Details). The flexyBayes
+  engine is experimental: its posterior intervals are calibrated on
+  designs with unit intercepts and run slightly narrow on designs with a
+  random treatment slope.
 
 - family:
 
@@ -44,24 +54,66 @@ pollin_fit(estimand, engine = "glmmTMB", family = NULL, by = NULL, ...)
   interaction, and
   [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
   then reports one contrast per level. The column is treated as a
-  factor.
+  factor. An estimand whose population is a
+  [`pollin_population()`](https://max578.github.io/pollinatoR/reference/pollin_population.md)
+  must be fitted with `by` set to the population's `by` column.
+
+- pooled:
+
+  Optional name of a column of the data that is not a unit column (for
+  example variety). Its levels get a random intercept and a random
+  treatment slope, so the treatment effect at each level is pooled
+  towards the overall effect;
+  [`pollin_cate()`](https://max578.github.io/pollinatoR/reference/pollin_cate.md)
+  reads the per-level effects. It must differ from `by`. A slope on a
+  unit column is declared with `pollin_design(slope = )` instead. Rows
+  with a missing value in the column are dropped.
 
 - ...:
 
   Passed to
-  [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html).
+  [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html),
+  or to
+  [`flexyBayes::flexybayes()`](https://aagi-aus.github.io/flexyBayes/reference/flexybayes.html)
+  on the flexyBayes engine (for example `prior` or `seed`).
 
 ## Value
 
 An object of class `pollin_fit`: a list holding the `estimand`, the
 `engine`, the fitted models `fits` (named by response), the model `data`
-for each response, the right-hand-side terms `rhs`, the `families`, the
-`by` column (or `NULL`), and the further fitting arguments `args`.
+for each response, the right-hand-side terms `rhs`, the `families` (as
+glmmTMB family objects on both engines), the `by` column (or `NULL`),
+and the further fitting arguments `args`.
 
 ## Details
 
 Rows with a missing value in the response, the treatment, a unit column
 or the `by` column are dropped for that response's model.
+
+With `engine = "flexyBayes"` each response is fitted by
+`flexyBayes::flexybayes(backend = "inla")`, which needs the flexyBayes
+and INLA packages. The fixed part is that of the glmmTMB engine. Each
+unit level is a random intercept; a nested level enters as one grouping
+column `pollin_<outer>_<inner>` added to the model data. flexyBayes fits
+a correlated random slope on brms only, so on INLA the treatment slope
+of the design is a random intercept per unit plus an independent effect
+per unit-by-arm cell (column `pollin_<unit>_<treatment>`): equal
+variances across arms and a non-negative correlation between them, the
+exchangeable form of the slope. A `pooled` column enters the same way.
+The families map as `nbinom2()` to `"negative_binomial"`,
+[`poisson()`](https://rdrr.io/r/stats/family.html) to `"poisson"`,
+[`binomial()`](https://rdrr.io/r/stats/family.html) to `"binomial"`,
+`Gamma(link = "log")` to `"gamma"` and `beta_family()` to `"beta"`; any
+other family is refused. Priors are passed through `...` as
+`flexybayes()` takes them; the seed of the posterior draws is set in
+[`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md).
+The backend is INLA only, since the posterior draws of a brms fit are
+not in the flexyBayes extension API version 1. A fit whose convergence
+verdict
+([`flexyBayes::fb_convergence()`](https://aagi-aus.github.io/flexyBayes/reference/fb_extension.html))
+is `FALSE` is an error, and one with no verdict a warning. Estimates and
+intervals of a flexyBayes fit come from its posterior draws; see
+[`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md).
 
 ## See also
 

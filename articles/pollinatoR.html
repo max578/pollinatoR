@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,12 @@
     <li><a class="dropdown-item" href="../articles/three-arm-trial.html">A three-arm trial: deficit and dependence</a></li>
     <li><a class="dropdown-item" href="../articles/split-plot-trial.html">A split-plot trial: dependence by variety</a></li>
     <li><a class="dropdown-item" href="../articles/matched-pair-field-study.html">A matched-pair field study</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Value</h6></li>
+    <li><a class="dropdown-item" href="../articles/dependence-to-value.html">From dependence to value</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Bayesian fits</h6></li>
+    <li><a class="dropdown-item" href="../articles/bayesian-fits.html">Bayesian fits with flexyBayes</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -461,12 +467,11 @@ only.</p>
 <div class="section level2">
 <h2 id="moving-from-pollin_spec">Moving from <code>pollin_spec()</code><a class="anchor" aria-label="anchor" href="#moving-from-pollin_spec"></a>
 </h2>
-<p><code><a href="../reference/pollin_spec.html">pollin_spec()</a></code> is deprecated and is removed at version
-0.2.0. It declared the data and the design in one call; they are now two
-layers.</p>
+<p><code>pollin_spec()</code> was removed at version 0.2.0. It declared
+the data and the design in one call; they are now two layers.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Before</span></span>
-<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pollin_spec.html">pollin_spec</a></span><span class="op">(</span></span>
+<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu">pollin_spec</span><span class="op">(</span></span>
 <span>  <span class="va">canola</span>,</span>
 <span>  outcomes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pods"</span>, <span class="st">"seeds_per_pod"</span><span class="op">)</span>,</span>
 <span>  treatment <span class="op">=</span> <span class="st">"trt"</span>,</span>
@@ -503,6 +508,7 @@ the slope on the site by default).</p>
 <li><em>A three-arm trial: deficit and dependence</em></li>
 <li><em>A split-plot trial: dependence by variety</em></li>
 <li><em>A matched-pair field study</em></li>
+<li><em>From dependence to value</em></li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

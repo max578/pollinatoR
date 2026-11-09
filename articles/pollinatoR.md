@@ -342,13 +342,12 @@ any identities supplied, as counts only.
 
 ## Moving from `pollin_spec()`
 
-[`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
-is deprecated and is removed at version 0.2.0. It declared the data and
+`pollin_spec()` was removed at version 0.2.0. It declared the data and
 the design in one call; they are now two layers.
 
 \
 `# Before`\
-`spec`` ``<-`` `[`pollin_spec`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)`(`\
+`spec`` ``<-`` ``pollin_spec``(`\
 `  ``canola``,`\
 `  outcomes ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"pods"``, ``"seeds_per_pod"``)``,`\
 `  treatment ``=`` ``"trt"``,`\
@@ -384,3 +383,4 @@ becomes the `excluded` entry of `arms`, and `latent_unit` becomes the
 - *A three-arm trial: deficit and dependence*
 - *A split-plot trial: dependence by variety*
 - *A matched-pair field study*
+- *From dependence to value*

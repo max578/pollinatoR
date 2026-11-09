@@ -34,8 +34,12 @@ pollin_estimand(design, family, scale, basis, population = "trial")
 
 - population:
 
-  The population the estimand refers to. Only `"trial"` (the units in
-  the experiment) is available.
+  The population the estimand refers to: `"trial"` (the default, the
+  units in the experiment) or a
+  [`pollin_population()`](https://max578.github.io/pollinatoR/reference/pollin_population.md)
+  object, strata of one column weighted by area. A population estimand
+  is fitted with the strata as `by` and read with
+  [`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md).
 
 ## Value
 

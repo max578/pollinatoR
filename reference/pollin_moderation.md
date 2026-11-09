@@ -23,9 +23,7 @@ pollin_moderation(x, outcome, exposures = NULL, family = NULL, ...)
 
   A
   [`pollin_design()`](https://max578.github.io/pollinatoR/reference/pollin_design.md)
-  object whose data declare `exposures`, or a deprecated
-  [`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
-  object with `exposures` set.
+  object whose data declare `exposures`.
 
 - outcome:
 
@@ -58,9 +56,7 @@ From a
 the unit of the split is the design's slope unit (with the unit levels
 outside it), or the outermost unit when the design carries no slope; the
 treatment reference level is the excluded arm, or the open arm when the
-design has no excluded arm. A deprecated
-[`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
-is still accepted and splits on its `latent_unit`.
+design has no excluded arm.
 
 ## Examples
 

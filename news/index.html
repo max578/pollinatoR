@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,6 +24,12 @@
     <li><a class="dropdown-item" href="../articles/three-arm-trial.html">A three-arm trial: deficit and dependence</a></li>
     <li><a class="dropdown-item" href="../articles/split-plot-trial.html">A split-plot trial: dependence by variety</a></li>
     <li><a class="dropdown-item" href="../articles/matched-pair-field-study.html">A matched-pair field study</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Value</h6></li>
+    <li><a class="dropdown-item" href="../articles/dependence-to-value.html">From dependence to value</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Bayesian fits</h6></li>
+    <li><a class="dropdown-item" href="../articles/bayesian-fits.html">Bayesian fits with flexyBayes</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -42,6 +48,82 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.0" id="pollinator-030">pollinatoR 0.3.0<a class="anchor" aria-label="anchor" href="#pollinator-030"></a></h2>
+<p>This release adds a Bayesian engine and per-level effects with partial pooling. A fit made through flexyBayes on INLA gives posterior draws, and effects, populations, values and guards take them as they take the glmmTMB draws. The vignette <em>Bayesian fits with flexyBayes</em> compares the two engines. The flexyBayes engine is experimental in this release; the validation below says where its intervals are and are not calibrated.</p>
+<div class="section level3">
+<h3 id="new-features-0-3-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-3-0"></a></h3>
+<ul><li>
+<code>pollin_fit(engine = "flexyBayes")</code> fits each response with <code><a href="https://aagi-aus.github.io/flexyBayes/reference/flexybayes.html" class="external-link">flexyBayes::flexybayes()</a></code> on INLA, with the fixed part of the glmmTMB engine and the design’s random terms. The families <code>nbinom2()</code>, <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>, <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code>, <code>Gamma(link = "log")</code> and <code>beta_family()</code> are mapped to the flexyBayes families <code>negative_binomial</code>, <code>poisson</code>, <code>binomial</code>, <code>gamma</code> and <code>beta</code>, with their log or logit links. Priors pass through <code>...</code> as written. flexyBayes and INLA are suggested packages, and the extension API version of flexyBayes is checked when the fit is made.</li>
+<li>
+<code>pollin_draws(method = "posterior")</code>, the default and only method for a flexyBayes fit, draws the fixed effects, random effects and variance parameters jointly from the posterior and recomputes the arm means per draw by the G-computation rule of the glmmTMB engine. With a seed, which sets both R’s generator and INLA’s, the draws repeat exactly.</li>
+<li>
+<code>pollin_effects(interval = "posterior")</code>, the default for a flexyBayes fit, reports the posterior median, standard deviation and equal-tailed interval of the estimand, with <code>p.value</code> <code>NA</code>. New argument <code>n_draws</code>.</li>
+<li>
+<code><a href="../reference/pollin_cate.html">pollin_cate()</a></code> reports the contrast at each level of a column with a random treatment slope, partially pooled towards the overall effect. The column is the design’s slope unit (<code>pollin_design(slope = )</code>) or one declared with the new <code>pollin_fit(pooled = )</code>. On flexyBayes the estimate and interval come from the posterior draws. The print points to the unpooled per-level contrasts, from a fit with <code>by</code> and no slope, read with <code><a href="../reference/pollin_effects.html">pollin_effects()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="validation-0-3-0">Validation<a class="anchor" aria-label="anchor" href="#validation-0-3-0"></a></h3>
+<ul><li>Planted-truth simulations, 200 trials per cell (100 for per-level effects), compare the engines and check posterior coverage (<code>validation/planted_truth_S3_report.md</code>). None of the three pre-set criteria is met in full:
+<ul><li>The two engines agree on the estimate (within 0.25 glmmTMB standard errors) in 97% to 100% of trials in every cell. On designs with a random treatment slope, glmmTMB stops at a variance on its boundary in 4% to 12% of trials; flexyBayes fits every trial.</li>
+<li>Posterior 95% intervals cover 0.945 to 0.960 on designs with unit intercepts (negative binomial, Poisson, deficit) and 0.932 to 0.939 on the overall effect of pooled fits, but 0.909 to 0.925 on designs with a site slope, and 0.925 on a binary response. On slope designs the glmmTMB delta interval over-covers (0.989 to 1.000) at about 1.7 times the posterior width.</li>
+<li>
+<code><a href="../reference/pollin_cate.html">pollin_cate()</a></code> lowers the error of per-level effects by 12% to 15% on average against unpooled contrasts, but does better in only 69% to 79% of trials, against a 90% target. Posterior per-level coverage is 0.940 to 0.941.</li>
+</ul></li>
+</ul></div>
+<div class="section level3">
+<h3 id="known-limitations-0-3-0">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations-0-3-0"></a></h3>
+<ul><li>The flexyBayes engine is experimental: its intervals run slightly narrow on designs with a random treatment slope (see Validation).</li>
+<li>
+<code>pollin_data(denominator = )</code> does not reach the fit on either engine, so a count out of a known number of trials (seeds out of ovules) cannot yet be fitted as binomial; one 0/1 row per trial works.</li>
+<li>flexyBayes on INLA does not fit a correlated random treatment slope. The flexyBayes engine fits a unit intercept plus an independent unit-by-arm effect instead, a restricted form of glmmTMB’s unstructured slope: equal variances across arms and a non-negative correlation between them.</li>
+<li>The brms backend of flexyBayes is refused, because posterior draws of a brms fit are not in the flexyBayes extension API version 1. Families other than the five above, Tweedie among them, are refused by name.</li>
+<li>On glmmTMB, <code><a href="../reference/pollin_cate.html">pollin_cate()</a></code> intervals are approximate. The fixed effects and the slope coefficients are drawn independently, since glmmTMB gives the conditional variance of each coefficient on its own. When the slope variance is estimated at zero, <code><a href="../reference/pollin_cate.html">pollin_cate()</a></code> stops.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="pollinator-020">pollinatoR 0.2.0<a class="anchor" aria-label="anchor" href="#pollinator-020"></a></h2>
+<p>This release adds economic valuation. A fitted estimand can be scaled to a population of fields and turned into a value with an interval, computed draw by draw. Every value prints its basis, population, price year, currency and source.</p>
+<div class="section level3">
+<h3 id="breaking-changes-0-2-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-0"></a></h3>
+<ul><li>
+<code>pollin_spec()</code> is removed, as announced in 0.1.0, with its print method. <code><a href="../reference/pollin_contribution.html">pollin_contribution()</a></code>, <code><a href="../reference/pollin_moderation.html">pollin_moderation()</a></code> and <code><a href="../reference/pollin_validate.html">pollin_validate()</a></code> no longer accept a <code>pollin_spec</code> and take only the layered objects. The getting-started vignette shows the equivalent calls.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-0-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h3>
+<ul><li>
+<code><a href="../reference/pollin_draws.html">pollin_draws()</a></code> returns draws of the two arm means of a fitted estimand and of the estimand formed from them, on its scale and basis. The default <code>method = "simulation"</code> draws the fixed effects from their sampling distribution and covers fixed-effect uncertainty, as the delta interval does. <code>method = "bootstrap"</code> uses the parametric bootstrap refits of <code><a href="../reference/pollin_effects.html">pollin_effects()</a></code> and gives the same interval. <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> gives the median and percentile interval per column.</li>
+<li>
+<code><a href="../reference/pollin_population.html">pollin_population()</a></code> declares a population of strata, the levels of one column (distance bands, regions, varieties) weighted by area, and <code>pollin_estimand(population = )</code> accepts it. The fit is made with the strata as <code>by</code>, and <code><a href="../reference/pollin_draws.html">pollin_draws()</a></code> adds a <code>"population"</code> column. The population estimand is formed from the area-weighted arm means: a ratio of population means, not a weighted mean of the stratum estimands. <code><a href="../reference/pollin_effects.html">pollin_effects()</a></code> reports the trial contrasts and does not use the population.</li>
+<li>
+<code><a href="../reference/pollin_market.html">pollin_market()</a></code> declares current production and price, as scalars or with draws, with the unit, currency, price year and a source that prints with every value.</li>
+<li>
+<code><a href="../reference/pollin_value.html">pollin_value()</a></code> multiplies draws of an estimand by price and production. The channel has no default:
+<ul><li>
+<code>"dependence"</code> takes a loss share and gives the value lost under total exclusion of pollinators;</li>
+<li>
+<code>"deficit"</code> takes the gain of hand pollination over open and gives the value of closing that gap.</li>
+</ul>
+Each channel accepts only its own estimand. A gain offered to the dependence channel is refused, since <code>g = D / (1 - D)</code> overstates the loss by <code>1 / (1 - D)</code>. A descriptive index or a plain number is refused because it has no estimand. Market draws are matched to the estimand draws by position.</li>
+<li>
+<code><a href="../reference/pollin_guard_doublecount.html">pollin_guard_doublecount()</a></code> adds values draw by draw and stops when two of them count the same pollination within a crop: a part plus its total, the same pollinators twice, two products of one crop (seed and oil), or two named guilds. For guilds, <code>nested = FALSE</code> confirms that they come from separate, non-nested exclusions, and the statement prints with the total. Each value records the pollinators removed (<code>pollin_value(agent = )</code>, <code>"all"</code> by default), the product and the crop (<code>pollin_market(crop = )</code>).</li>
+<li>New vignette <em>From dependence to value</em>. <em>A matched-pair field study</em> gains a section on scaling the estimand from the sampled fields to a growing area.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="validation-0-2-0">Validation<a class="anchor" aria-label="anchor" href="#validation-0-2-0"></a></h3>
+<ul><li>Golden-value tests check that the 0.1.0 outputs are unchanged: deficit and dependence on every scale, with delta and bootstrap intervals, overall and by level, and the contribution, moderation, validation and index results (<code>validation/golden/make_golden_v0.1.0.R</code>).</li>
+<li>Planted-truth calibration of value intervals over 1,000 simulated trials per cell (three-arm, split-plot and matched-pair designs, both channels, market inputs fixed or drawn, one two-stratum population): 95% interval coverage between 0.937 and 0.962 in all 11 cells. The bias criterion (below 0.1 standard errors) holds in 9 of 11; see Known limitations (<code>validation/planted_truth_S2_report.md</code>).</li>
+<li>The published valuation of Yocgo et al. (2023, <em>Scientific Reports</em> 13:20108) is reproduced from its supplementary data: totals to the dollar and all 20 published figures within their rounding (<code>validation/value_oracle/</code>).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="known-limitations-0-2-0">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations-0-2-0"></a></h3>
+<ul><li>
+<code>pollin_contribution(by = )</code> stops with “jacobian does not match the variance-covariance matrix” on nested multi-site data where the <code>by</code> variable is constant within the slope unit.</li>
+<li>The value summary is the median of the value draws. On the dependence channel with market draws it sits slightly low, by 0.13 to 0.14 standard errors in two planted-truth cells, because the loss share is concave in the log ratio and the median of a product falls below the product of medians. Interval coverage is unaffected.</li>
+<li>Simulation draws cover fixed-effect uncertainty only. Use <code>method = "bootstrap"</code> when the random effects should vary as well.</li>
+<li>A value assumes no price response, a total-loss counterfactual for the dependence channel, and independence of the estimand and market draws. It is gross revenue, before costs.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="pollinator-010">pollinatoR 0.1.0<a class="anchor" aria-label="anchor" href="#pollinator-010"></a></h2>
 <p>An analysis is now declared in layers: the data (<code><a href="../reference/pollin_data.html">pollin_data()</a></code>), the design (<code><a href="../reference/pollin_design.html">pollin_design()</a></code>) and the estimand (<code><a href="../reference/pollin_estimand.html">pollin_estimand()</a></code>), then fitted (<code><a href="../reference/pollin_fit.html">pollin_fit()</a></code>) and read on the estimand’s scale (<code><a href="../reference/pollin_effects.html">pollin_effects()</a></code>).</p>
 <div class="section level3">
@@ -52,7 +134,7 @@
 <li>
 <code><a href="../reference/pollin_moderation.html">pollin_moderation()</a></code> takes a <code>pollin_design</code> whose data declare <code>exposures</code>. The default of <code>exposures</code> is now <code>NULL</code>, meaning every declared exposure.</li>
 <li>
-<code><a href="../reference/pollin_spec.html">pollin_spec()</a></code> is deprecated and is removed at version 0.2.0. It warns once per session. <code><a href="../reference/pollin_contribution.html">pollin_contribution()</a></code>, <code><a href="../reference/pollin_moderation.html">pollin_moderation()</a></code> and <code><a href="../reference/pollin_validate.html">pollin_validate()</a></code> still accept a <code>pollin_spec</code> until then.</li>
+<code>pollin_spec()</code> is deprecated and is removed at version 0.2.0. It warns once per session. <code><a href="../reference/pollin_contribution.html">pollin_contribution()</a></code>, <code><a href="../reference/pollin_moderation.html">pollin_moderation()</a></code> and <code><a href="../reference/pollin_validate.html">pollin_validate()</a></code> still accept a <code>pollin_spec</code> until then.</li>
 <li>Removed six unused packages from Suggests (DHARMa, emmeans, brms, boot, fst, data.table).</li>
 </ul></div>
 <div class="section level3">
@@ -115,7 +197,7 @@
 <h2 class="pkg-version" data-toc-text="0.0.0.9000" id="pollinator-0009000">pollinatoR 0.0.0.9000<a class="anchor" aria-label="anchor" href="#pollinator-0009000"></a></h2>
 <ul><li>Initial development scaffold.</li>
 <li>
-<code><a href="../reference/pollin_spec.html">pollin_spec()</a></code> declares an exclusion-experiment study (outcomes, treatment, nested random structure, exposures, adjustment, latent grouping).</li>
+<code>pollin_spec()</code> declares an exclusion-experiment study (outcomes, treatment, nested random structure, exposures, adjustment, latent grouping).</li>
 <li>
 <code><a href="../reference/pollin_contribution.html">pollin_contribution()</a></code> estimates the per-outcome pollinator contribution (open minus exclusion) as a model-based average treatment effect with propagated uncertainty, carrying a random treatment slope on the latent unit to absorb unobserved between-unit (e.g. genotype) heterogeneity.</li>
 <li>

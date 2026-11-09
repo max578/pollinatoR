@@ -25,6 +25,13 @@ Name the contrast, the scale and the basis.
 - [`pollin_assumptions()`](https://max578.github.io/pollinatoR/reference/pollin_assumptions.md)
   : List the assumptions an estimand rests on
 
+## Population
+
+Carry the estimand from the trial to a population of strata.
+
+- [`pollin_population()`](https://max578.github.io/pollinatoR/reference/pollin_population.md)
+  : Declare a population of strata for an estimand
+
 ## Fit
 
 - [`pollin_fit()`](https://max578.github.io/pollinatoR/reference/pollin_fit.md)
@@ -36,10 +43,37 @@ Estimates and intervals on the estimand’s scale.
 
 - [`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
   : Estimate the effect on the estimand's scale
+- [`pollin_cate()`](https://max578.github.io/pollinatoR/reference/pollin_cate.md)
+  : Estimate the effect at each level of a grouping, with partial
+  pooling
 - [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md)
   : Estimate the pollinator contribution per outcome
 - [`pollin_moderation()`](https://max578.github.io/pollinatoR/reference/pollin_moderation.md)
   : Estimate exposure moderation of the contribution
+
+## Draws
+
+Draws of the estimand, for quantities computed per draw.
+
+- [`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md)
+  : Draw the estimand from its sampling distribution
+- [`summary(`*`<pollin_draws>`*`)`](https://max578.github.io/pollinatoR/reference/summary.pollin_draws.md)
+  [`as.matrix(`*`<pollin_draws>`*`)`](https://max578.github.io/pollinatoR/reference/summary.pollin_draws.md)
+  : Summarise draws of the estimand
+
+## Value
+
+Economic value of an estimand, computed per draw.
+
+- [`pollin_market()`](https://max578.github.io/pollinatoR/reference/pollin_market.md)
+  : Declare the market inputs a value rests on
+- [`pollin_value()`](https://max578.github.io/pollinatoR/reference/pollin_value.md)
+  : Value a dependence or deficit estimand
+- [`summary(`*`<pollin_value>`*`)`](https://max578.github.io/pollinatoR/reference/summary.pollin_value.md)
+  : Summarise a value
+- [`pollin_guard_doublecount()`](https://max578.github.io/pollinatoR/reference/pollin_guard_doublecount.md)
+  [`summary(`*`<pollin_value_total>`*`)`](https://max578.github.io/pollinatoR/reference/pollin_guard_doublecount.md)
+  : Guard against adding values that count one contribution twice
 
 ## Guards
 
@@ -64,8 +98,3 @@ Estimates and intervals on the estimand’s scale.
   : Within-between (Mundlak) decomposition of a numeric variable
 - [`pollin_fdr()`](https://max578.github.io/pollinatoR/reference/pollin_fdr.md)
   : Benjamini-Hochberg false-discovery-rate adjustment
-
-## Deprecated
-
-- [`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
-  : Declare a pollinator-exclusion study

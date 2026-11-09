@@ -186,6 +186,57 @@ intervals.
 `#> 2                                                  closed-form CI`\
 `#> 3 point; do not regress on open yield (see pollin_guard_spurious)`
 
+## From the sampled fields to the growing area
+
+The 24 fields are eight per region, but the regions grow different areas
+of canola. Suppose the North grows 2,000 ha, the Central region 1,000 ha
+and the South 500 ha.
+[`pollin_population()`](https://max578.github.io/pollinatoR/reference/pollin_population.md)
+declares the regions as strata weighted by area. The model is fitted
+with the region as `by`, and
+[`pollin_draws()`](https://max578.github.io/pollinatoR/reference/pollin_draws.md)
+returns the loss share per region and for the population.
+
+\
+`regions`` ``<-`` `[`pollin_population`](https://max578.github.io/pollinatoR/reference/pollin_population.md)`(`\
+`  ``"region"``,`\
+`  `[`c`](https://rdrr.io/r/base/c.html)`(``North ``=`` ``2000``, Central ``=`` ``1000``, South ``=`` ``500``)``,`\
+`  label ``=`` ``"canola area by region"`\
+`)`\
+`est_pop`` ``<-`` `[`pollin_estimand`](https://max578.github.io/pollinatoR/reference/pollin_estimand.md)`(``ds``, ``"dependence"``, ``"ratio"``, ``"loss"``, population ``=`` ``regions``)`\
+`dr`` ``<-`` `[`pollin_draws`](https://max578.github.io/pollinatoR/reference/pollin_draws.md)`(`\
+`  `[`pollin_fit`](https://max578.github.io/pollinatoR/reference/pollin_fit.md)`(``est_pop``, by ``=`` ``"region"``)``,`\
+`  n ``=`` ``1000L``,`\
+`  response ``=`` ``"seed_g"``,`\
+`  seed ``=`` ``1L`\
+`)`\
+[`summary`](https://rdrr.io/r/base/summary.html)`(``dr``)``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"level"``, ``"median"``, ``"conf.low"``, ``"conf.high"``)``]`\
+`#>        level     median     conf.low conf.high`\
+`#> 1    Central 0.25858044  0.180760050 0.3318839`\
+`#> 2      North 0.09242441 -0.003609891 0.1755858`\
+`#> 3      South 0.11473639  0.022422333 0.1999879`\
+`#> 4 population 0.13594660  0.075141990 0.1946263`
+
+The population loss share is
+$`1 - \sum w\,\mathrm{caged} / \sum w\,\mathrm{open}`$, a ratio of the
+area-weighted arm means. It is not the area-weighted mean of the
+regional loss shares, shown below for comparison.
+
+\
+`w`` ``<-`` ``regions``$``weights`\
+`weighted_mean`` ``<-`` ``dr``$``estimate``[``, `[`names`](https://rdrr.io/r/base/names.html)`(``w``)``]`` `[`%*%`](https://rdrr.io/r/base/matmult.html)` ``w`\
+[`quantile`](https://rdrr.io/r/stats/quantile.html)`(``weighted_mean``, `[`c`](https://rdrr.io/r/base/c.html)`(``0.5``, ``0.025``, ``0.975``)``)`\
+`#>        50%       2.5%      97.5% `\
+`#> 0.14228785 0.08327175 0.19839943`
+
+The ratio of means weights each region by its area times its open yield,
+that is, by its share of the seed harvested. A loss share is a share of
+harvested seed, so that is the weighting it needs. In these estimates
+the North yields most and loses least, so the weighted mean of the
+regional shares comes out higher. (The regions were simulated with the
+same loss share; their estimates differ by chance.) The gap widens as
+regions differ more in yield and in dependence.
+
 ## Guard: a between-field slope is not a plant-level effect
 
 The fields with more honey bee visits also yield more. Read across

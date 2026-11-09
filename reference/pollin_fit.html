@@ -21,7 +21,7 @@ pollin_effects()."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pollinatoR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,6 +38,12 @@ pollin_effects()."></head><body>
     <li><a class="dropdown-item" href="../articles/three-arm-trial.html">A three-arm trial: deficit and dependence</a></li>
     <li><a class="dropdown-item" href="../articles/split-plot-trial.html">A split-plot trial: dependence by variety</a></li>
     <li><a class="dropdown-item" href="../articles/matched-pair-field-study.html">A matched-pair field study</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Value</h6></li>
+    <li><a class="dropdown-item" href="../articles/dependence-to-value.html">From dependence to value</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Bayesian fits</h6></li>
+    <li><a class="dropdown-item" href="../articles/bayesian-fits.html">Bayesian fits with flexyBayes</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -69,7 +75,14 @@ data is kept in the fit; the contrast is read from the fitted model by
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pollin_fit</span><span class="op">(</span><span class="va">estimand</span>, engine <span class="op">=</span> <span class="st">"glmmTMB"</span>, family <span class="op">=</span> <span class="cn">NULL</span>, by <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pollin_fit</span><span class="op">(</span></span>
+<span>  <span class="va">estimand</span>,</span>
+<span>  engine <span class="op">=</span> <span class="st">"glmmTMB"</span>,</span>
+<span>  family <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  pooled <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -81,8 +94,11 @@ data is kept in the fit; the contrast is read from the fitted model by
 
 
 <dt id="arg-engine">engine<a class="anchor" aria-label="anchor" href="#arg-engine"></a></dt>
-<dd><p>The fitting engine. Only <code>"glmmTMB"</code> is available;
-<code>"flexyBayes"</code> arrives in version 0.2.0.</p></dd>
+<dd><p>The fitting engine: <code>"glmmTMB"</code> (the default) or
+<code>"flexyBayes"</code>, a Bayesian fit on INLA through flexyBayes
+(see Details). The flexyBayes engine is experimental: its posterior
+intervals are calibrated on designs with unit intercepts and run
+slightly narrow on designs with a random treatment slope.</p></dd>
 
 
 <dt id="arg-family">family<a class="anchor" aria-label="anchor" href="#arg-family"></a></dt>
@@ -97,24 +113,57 @@ chosen from their values.</p></dd>
 <dd><p>Optional name of a column of the data (for example variety or
 region). The treatment effect is fitted separately at each of its levels,
 as an interaction, and <code><a href="pollin_effects.html">pollin_effects()</a></code> then reports one contrast per
-level. The column is treated as a factor.</p></dd>
+level. The column is treated as a factor. An estimand whose population
+is a <code><a href="pollin_population.html">pollin_population()</a></code> must be fitted with <code>by</code> set to the
+population's <code>by</code> column.</p></dd>
+
+
+<dt id="arg-pooled">pooled<a class="anchor" aria-label="anchor" href="#arg-pooled"></a></dt>
+<dd><p>Optional name of a column of the data that is not a unit
+column (for example variety). Its levels get a random intercept and a
+random treatment slope, so the treatment effect at each level is pooled
+towards the overall effect; <code><a href="pollin_cate.html">pollin_cate()</a></code> reads the per-level effects.
+It must differ from <code>by</code>. A slope on a unit column is declared with
+<code>pollin_design(slope = )</code> instead. Rows with a missing value in the
+column are dropped.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Passed to <code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code>.</p></dd>
+<dd><p>Passed to <code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code>, or to <code><a href="https://aagi-aus.github.io/flexyBayes/reference/flexybayes.html" class="external-link">flexyBayes::flexybayes()</a></code>
+on the flexyBayes engine (for example <code>prior</code> or <code>seed</code>).</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of class <code>pollin_fit</code>: a list holding the <code>estimand</code>, the
 <code>engine</code>, the fitted models <code>fits</code> (named by response), the model <code>data</code>
-for each response, the right-hand-side terms <code>rhs</code>, the <code>families</code>, the
-<code>by</code> column (or <code>NULL</code>), and the further fitting arguments <code>args</code>.</p>
+for each response, the right-hand-side terms <code>rhs</code>, the <code>families</code> (as
+glmmTMB family objects on both engines), the <code>by</code> column (or <code>NULL</code>),
+and the further fitting arguments <code>args</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Rows with a missing value in the response, the treatment, a unit column or
 the <code>by</code> column are dropped for that response's model.</p>
+<p>With <code>engine = "flexyBayes"</code> each response is fitted by
+<code>flexyBayes::flexybayes(backend = "inla")</code>, which needs the flexyBayes and
+INLA packages. The fixed part is that of the glmmTMB engine. Each unit
+level is a random intercept; a nested level enters as one grouping column
+<code>pollin_&lt;outer&gt;_&lt;inner&gt;</code> added to the model data. flexyBayes fits a
+correlated random slope on brms only, so on INLA the treatment slope of
+the design is a random intercept per unit plus an independent effect per
+unit-by-arm cell (column <code>pollin_&lt;unit&gt;_&lt;treatment&gt;</code>): equal variances
+across arms and a non-negative correlation between them, the exchangeable
+form of the slope. A <code>pooled</code> column enters the same way. The families
+map as <code>nbinom2()</code> to <code>"negative_binomial"</code>, <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> to <code>"poisson"</code>,
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> to <code>"binomial"</code>, <code>Gamma(link = "log")</code> to <code>"gamma"</code> and
+<code>beta_family()</code> to <code>"beta"</code>; any other family is refused. Priors are
+passed through <code>...</code> as <code>flexybayes()</code> takes them; the seed of the
+posterior draws is set in <code><a href="pollin_draws.html">pollin_draws()</a></code>. The backend is INLA only, since the posterior draws of a brms fit are not in
+the flexyBayes extension API version 1. A fit whose convergence verdict
+(<code><a href="https://aagi-aus.github.io/flexyBayes/reference/fb_extension.html" class="external-link">flexyBayes::fb_convergence()</a></code>) is <code>FALSE</code> is an error, and one with no
+verdict a warning. Estimates and intervals of a flexyBayes fit come from
+its posterior draws; see <code><a href="pollin_draws.html">pollin_draws()</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

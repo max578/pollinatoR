@@ -9,8 +9,16 @@ not specific to any one crop or study.
 ## Details
 
 The package is organised around a small set of verbs.
-[`pollin_spec()`](https://max578.github.io/pollinatoR/reference/pollin_spec.md)
-declares the study;
+[`pollin_data()`](https://max578.github.io/pollinatoR/reference/pollin_data.md)
+and
+[`pollin_design()`](https://max578.github.io/pollinatoR/reference/pollin_design.md)
+declare the study;
+[`pollin_estimand()`](https://max578.github.io/pollinatoR/reference/pollin_estimand.md)
+names the contrast and its scale;
+[`pollin_fit()`](https://max578.github.io/pollinatoR/reference/pollin_fit.md)
+and
+[`pollin_effects()`](https://max578.github.io/pollinatoR/reference/pollin_effects.md)
+estimate it;
 [`pollin_contribution()`](https://max578.github.io/pollinatoR/reference/pollin_contribution.md)
 estimates the per-outcome contribution as a model-based treatment effect
 with uncertainty;
@@ -32,6 +40,8 @@ runs structural integrity checks.
 Useful links:
 
 - <https://github.com/max578/pollinatoR>
+
+- <https://max578.github.io/pollinatoR/>
 
 - Report bugs at <https://github.com/max578/pollinatoR/issues>
 

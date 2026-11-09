@@ -32,10 +32,16 @@ pollin_guard_bounded(x, index, allow = FALSE, response = NULL, unit = NULL)
   `FALSE` (the default) stops with an error; `TRUE` returns the average
   with the warning statement attached.
 
-- response, unit:
+- response:
 
-  With a design, the response and the unit level, as in
-  [`pollin_rii()`](https://max578.github.io/pollinatoR/reference/pollin_rii.md).
+  With a design, the response column to use. It may be left `NULL` when
+  the data declare one response.
+
+- unit:
+
+  With a design, the unit column the arm means are taken over, one of
+  the design's unit nesting. `NULL` (the default) uses the outermost
+  unit; an inner unit is taken within its outer units.
 
 ## Value
 
