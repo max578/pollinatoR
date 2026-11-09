@@ -67,6 +67,10 @@ interval carries the uncertainty in the fixed effects only. With
 (new random effects included), the model is refitted to each simulated set,
 and the interval is the percentile interval of the refitted estimates;
 \code{std.error} is their standard deviation and \code{p.value} is \code{NA}.
+
+The table reports the trial contrast, overall or per level of \code{by}. A
+population declared with \code{\link[=pollin_population]{pollin_population()}} is not used here; the
+population estimand is read with \code{\link[=pollin_draws]{pollin_draws()}}.
 }
 \examples{
 \donttest{

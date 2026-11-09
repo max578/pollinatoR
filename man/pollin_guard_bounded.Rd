@@ -15,8 +15,12 @@ numeric vector of unit-level index values.}
 \item{allow}{\code{FALSE} (the default) stops with an error; \code{TRUE} returns the
 average with the warning statement attached.}
 
-\item{response, unit}{With a design, the response and the unit level, as in
-\code{\link[=pollin_rii]{pollin_rii()}}.}
+\item{response}{With a design, the response column to use. It may be left
+\code{NULL} when the data declare one response.}
+
+\item{unit}{With a design, the unit column the arm means are taken over, one
+of the design's unit nesting. \code{NULL} (the default) uses the outermost
+unit; an inner unit is taken within its outer units.}
 }
 \value{
 With \code{allow = TRUE}, an object of class \code{pollin_bounded}: a list

@@ -103,21 +103,20 @@ test_that("a response that fails to fit is dropped with a warning", {
   expect_identical(names(fit$fits), "pods")
 })
 
-test_that("pollin_contribution from an estimand matches the spec path", {
+test_that("pollin_contribution reports the difference-scale dependence", {
   skip_on_cran()
   d <- l3_df()
-  sp <- suppressWarnings(pollin_spec(d, "pods", "trt", "Cage", "Site"))
-  old <- suppressWarnings(pollin_contribution(sp))$table
   new <- suppressWarnings(pollin_contribution(
     l3_estimand(d),
     outcomes = "pods"
   ))
   expect_s3_class(new, "pollin_contribution")
   tab <- new$table
-  expect_equal(tab$estimate, old$estimate, tolerance = 1e-10)
-  expect_equal(tab$std.error, old$std.error, tolerance = 1e-10)
-  expect_equal(tab$conf.low, old$conf.low, tolerance = 1e-10)
-  expect_equal(tab$slope_sd, old$slope_sd, tolerance = 1e-10)
+  eff <- suppressWarnings(pollin_effects(pollin_fit(l3_estimand(d))))$table
+  eff <- eff[eff$response == "pods", ]
+  expect_equal(tab$estimate, eff$estimate, tolerance = 1e-10)
+  expect_equal(tab$std.error, eff$std.error, tolerance = 1e-10)
+  expect_true(is.finite(tab$slope_sd))
   expect_identical(tab$scale, "difference")
   expect_identical(tab$contrast, "Open vs Cage")
   expect_true("p.fdr" %in% names(tab))
@@ -140,39 +139,18 @@ test_that("pollin_contribution from an estimand matches the spec path", {
   expect_error(pollin_contribution(l3_estimand(d), outcomes = "x"), "x")
 })
 
-test_that("the spec path accepts a column in several roles", {
+test_that("pollin_moderation from a design splits within and between", {
   skip_on_cran()
   d <- l3_df()
-  sp <- suppressWarnings(pollin_spec(
-    d,
-    "pods",
-    "trt",
-    "Cage",
-    "Site",
-    exposures = "pods",
-    group = "Site"
-  ))
-  ct <- suppressWarnings(pollin_contribution(sp))
-  expect_true(is.finite(ct$table$estimate))
-})
-
-test_that("pollin_moderation from a design matches the spec path", {
-  skip_on_cran()
-  d <- l3_df()
-  sp <- suppressWarnings(pollin_spec(
-    d,
-    "pods",
-    "trt",
-    "Cage",
-    "Site",
-    exposures = "bees"
-  ))
-  old <- suppressWarnings(pollin_moderation(sp, outcome = "pods"))
   ds <- l3_estimand(d)$design
   new <- suppressWarnings(pollin_moderation(ds, outcome = "pods"))
   expect_s3_class(new, "pollin_moderation")
-  expect_equal(new$table, old$table, tolerance = 1e-10)
+  expect_setequal(
+    new$table$component,
+    c("within (robust)", "between (vulnerable)")
+  )
   expect_identical(new$design, ds)
+  expect_error(pollin_moderation(ds$data, outcome = "pods"), "pollin_design")
   expect_error(pollin_moderation(ds, outcome = "yield"), "yield")
   pd <- pollin_data(d, "pods", "trt", unit = "Site")
   expect_error(
@@ -188,16 +166,4 @@ test_that("moderation splits on the full key of an inner slope unit", {
   inputs <- .design_inputs(ds, "Cage")
   expect_identical(nlevels(inputs$wb_group), 16L)
   expect_identical(inputs$slope_key, "Site:Plot")
-})
-
-test_that("pollin_spec warns once per session that it is deprecated", {
-  old <- .pollin_env$spec_warned
-  on.exit(.pollin_env$spec_warned <- old)
-  .pollin_env$spec_warned <- FALSE
-  d <- l3_df()
-  expect_warning(
-    pollin_spec(d, "pods", "trt", "Cage", "Site"),
-    "deprecated.*0.2.0"
-  )
-  expect_no_warning(pollin_spec(d, "pods", "trt", "Cage", "Site"))
 })

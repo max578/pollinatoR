@@ -1,7 +1,7 @@
 Package: pollinatoR
 Title: Uncertainty-Aware Pollinator-Dependence Analytics for Exclusion
     Experiments
-Version: 0.1.0
+Version: 0.2.0
 Authors@R:
     person("Max", "Moldovan", email = "max.moldovan@gmail.com",
            role = c("aut", "cre"),

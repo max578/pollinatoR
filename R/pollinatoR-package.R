@@ -6,8 +6,10 @@
 #' The methods are general to open-versus-exclusion designs and not specific to
 #' any one crop or study.
 #'
-#' The package is organised around a small set of verbs. [pollin_spec()]
-#' declares the study; [pollin_contribution()] estimates the per-outcome
+#' The package is organised around a small set of verbs. [pollin_data()] and
+#' [pollin_design()] declare the study; [pollin_estimand()] names the
+#' contrast and its scale; [pollin_fit()] and [pollin_effects()] estimate it;
+#' [pollin_contribution()] estimates the per-outcome
 #' contribution as a model-based treatment effect with uncertainty;
 #' [pollin_moderation()] asks which exposures drive the contribution while
 #' guarding against site-level confounders through a within-between

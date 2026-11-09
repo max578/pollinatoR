@@ -12,14 +12,10 @@ test_that("pollin_contribution fits and returns a treatment effect", {
   site_eff <- rnorm(ns, 0, 0.3)[as.integer(factor(Site))]
   mu <- exp(1.7 + 0.35 * (trt == "Open") + site_eff)
   df <- data.frame(y = rpois(length(mu), mu), trt = trt, Site = Site)
-  sp <- suppressWarnings(pollin_spec(
-    df,
-    outcomes = "y",
-    treatment = "trt",
-    control = "Cage",
-    random = "Site"
-  ))
-  ct <- suppressWarnings(pollin_contribution(sp))
+  pd <- pollin_data(df, "y", "trt", unit = "Site")
+  ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+  est <- pollin_estimand(ds, "dependence", "difference", "loss")
+  ct <- suppressWarnings(pollin_contribution(est))
   expect_s3_class(ct, "pollin_contribution")
   expect_true("estimate" %in% names(ct$table))
   expect_true(is.finite(ct$table$estimate[1]))
@@ -44,15 +40,9 @@ test_that("pollin_moderation returns within and between interaction terms", {
     Site = Site,
     bees = bees
   )
-  sp <- suppressWarnings(pollin_spec(
-    df,
-    outcomes = "y",
-    treatment = "trt",
-    control = "Cage",
-    random = "Site",
-    exposures = "bees"
-  ))
-  md <- suppressWarnings(pollin_moderation(sp, outcome = "y"))
+  pd <- pollin_data(df, "y", "trt", unit = "Site", exposures = "bees")
+  ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+  md <- suppressWarnings(pollin_moderation(ds, outcome = "y"))
   expect_s3_class(md, "pollin_moderation")
   expect_true(any(grepl("within", md$table$component)))
   expect_true(any(grepl("between", md$table$component)))

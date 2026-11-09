@@ -10,7 +10,7 @@
 #' [pollin_data()] runs these checks without levels or identities when it
 #' builds its object.
 #'
-#' @param x A [pollin_data()] object, or a [pollin_spec()] object.
+#' @param x A [pollin_data()] object.
 #' @param expect_levels Optional named list mapping column names to the expected
 #'   set of factor levels.
 #' @param identities Optional named list of functions; each takes the data frame
@@ -74,22 +74,10 @@ print.pollin_validate <- function(x, ...) {
   invisible(x)
 }
 
-#' Declared columns of a `pollin_data` or `pollin_spec`, in role order
+#' Declared columns of a `pollin_data`, in role order
 #' @noRd
 #' @keywords internal
 .declared_columns <- function(x) {
-  if (inherits(x, "pollin_data")) {
-    return(unique(unlist(x$roles, use.names = FALSE)))
-  }
-  if (inherits(x, "pollin_spec")) {
-    return(unique(c(
-      x$outcomes,
-      x$treatment,
-      x$random,
-      x$exposures,
-      x$adjust,
-      x$group
-    )))
-  }
-  stop("`x` must be a `pollin_data` or `pollin_spec` object.", call. = FALSE)
+  .check_class(x, "pollin_data")
+  unique(unlist(x$roles, use.names = FALSE))
 }

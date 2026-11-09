@@ -4,7 +4,9 @@
 from experiments that compare plants with and without pollinator access: caged
 or bagged plants against open ones, and hand-supplemented plants where a trial
 has them. Estimates come from mixed models, with intervals, on a scale and basis
-you declare. The methods apply to any crop studied with such a design.
+you declare. The estimand can be carried to a population of fields and on to
+an economic value, with its uncertainty kept by working draw by draw. The
+methods apply to any crop studied with such a design.
 
 ## Installation
 
@@ -41,6 +43,20 @@ supply) and a gain (the rise over a crop without them) are different numbers:
 excluded plants yielding 75% of open ones give a loss share of 25% and a gain of
 33%.
 
+## From dependence to value
+
+Draws of the estimand, multiplied by price and current production, give the
+value of pollination with an interval. The channel has no default: the
+`dependence` channel values the production lost without pollinators and needs
+a loss share.
+
+```r
+dr <- pollin_draws(fit, n = 1000L, seed = 1L)
+mk <- pollin_market(quantity = 12000, price = 650, unit = "t",
+                    currency = "AUD", year = 2024, source = "Illustrative inputs")
+pollin_value(dr, mk, channel = "dependence")
+```
+
 ## Functions by layer
 
 | Layer | Function | Purpose |
@@ -54,17 +70,22 @@ excluded plants yielding 75% of open ones give a loss share of 25% and a gain of
 | Effects | `pollin_effects()` | Estimates with delta or parametric bootstrap intervals, overall or per level of `by` |
 | | `pollin_contribution()` | Dependence on the difference scale, with FDR-adjusted p-values and the treatment-slope SD |
 | | `pollin_moderation()` | Treatment-by-exposure terms, split within and between units |
+| Population | `pollin_population()` | Strata of one column (distance bands, regions) weighted by area, passed to `pollin_estimand()` |
+| Draws | `pollin_draws()` | Draws of the arm means and the estimand, by simulation of the fixed effects or parametric bootstrap |
+| Value | `pollin_market()` | Current production and price, as values or draws, with unit, currency, price year and source |
+| | `pollin_value()` | Value per draw through the `dependence` or `deficit` channel, with the assumptions it rests on |
 | Guards | `pollin_guard_spurious()` | Index-versus-yield slope against a permutation null |
 | | `pollin_guard_bounded()` | Refuses to average unit-level ratios unless asked |
 | | `pollin_guard_ecological()` | Warns when an exposure slope exists only between units |
 | | `pollin_guard_posttreatment()` | Refuses an adjustment covariate declared downstream of treatment |
+| | `pollin_guard_doublecount()` | Adds values draw by draw and refuses overlapping attributions |
 | Indices and utilities | `pollin_index()`, `pollin_rii()` | Descriptive indices with intervals, from arm means |
 | | `pollin_compensation()` | Trade-offs among yield components |
 | | `pollin_within_between()` | Between-unit and within-unit split of a variable |
 | | `pollin_fdr()` | Benjamini-Hochberg adjustment |
 
-`pollin_spec()` is deprecated and is removed at version 0.2.0; the
-getting-started vignette shows the equivalent calls.
+`pollin_spec()` was removed at version 0.2.0; the getting-started vignette
+shows the equivalent calls.
 
 ## Vignettes
 
@@ -73,6 +94,7 @@ vignette("pollinatoR")
 vignette("three-arm-trial", package = "pollinatoR")
 vignette("split-plot-trial", package = "pollinatoR")
 vignette("matched-pair-field-study", package = "pollinatoR")
+vignette("dependence-to-value", package = "pollinatoR")
 ```
 
 ## Status

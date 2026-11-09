@@ -13,8 +13,10 @@ The methods are general to open-versus-exclusion designs and not specific to
 any one crop or study.
 }
 \details{
-The package is organised around a small set of verbs. \code{\link[=pollin_spec]{pollin_spec()}}
-declares the study; \code{\link[=pollin_contribution]{pollin_contribution()}} estimates the per-outcome
+The package is organised around a small set of verbs. \code{\link[=pollin_data]{pollin_data()}} and
+\code{\link[=pollin_design]{pollin_design()}} declare the study; \code{\link[=pollin_estimand]{pollin_estimand()}} names the
+contrast and its scale; \code{\link[=pollin_fit]{pollin_fit()}} and \code{\link[=pollin_effects]{pollin_effects()}} estimate it;
+\code{\link[=pollin_contribution]{pollin_contribution()}} estimates the per-outcome
 contribution as a model-based treatment effect with uncertainty;
 \code{\link[=pollin_moderation]{pollin_moderation()}} asks which exposures drive the contribution while
 guarding against site-level confounders through a within-between
@@ -27,6 +29,7 @@ that arises when an index is regressed on a yield axis sharing a term; and
 Useful links:
 \itemize{
   \item \url{https://github.com/max578/pollinatoR}
+  \item \url{https://max578.github.io/pollinatoR/}
   \item Report bugs at \url{https://github.com/max578/pollinatoR/issues}
 }
 

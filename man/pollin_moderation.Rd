@@ -7,8 +7,7 @@
 pollin_moderation(x, outcome, exposures = NULL, family = NULL, ...)
 }
 \arguments{
-\item{x}{A \code{\link[=pollin_design]{pollin_design()}} object whose data declare \code{exposures}, or a
-deprecated \code{\link[=pollin_spec]{pollin_spec()}} object with \code{exposures} set.}
+\item{x}{A \code{\link[=pollin_design]{pollin_design()}} object whose data declare \code{exposures}.}
 
 \item{outcome}{Single outcome to model.}
 
@@ -41,8 +40,7 @@ confounder-vulnerable. Adjustment covariates enter as fixed effects.
 From a \code{\link[=pollin_design]{pollin_design()}}, the unit of the split is the design's slope unit
 (with the unit levels outside it), or the outermost unit when the design
 carries no slope; the treatment reference level is the excluded arm, or the
-open arm when the design has no excluded arm. A deprecated \code{\link[=pollin_spec]{pollin_spec()}}
-is still accepted and splits on its \code{latent_unit}.
+open arm when the design has no excluded arm.
 }
 \examples{
 \donttest{

@@ -1,3 +1,92 @@
+# pollinatoR 0.2.0
+
+This release adds economic valuation. A fitted estimand can be scaled to a
+population of fields and turned into a value with an interval, computed draw
+by draw. Every value prints its basis, population, price year, currency and
+source.
+
+## Breaking changes
+
+* `pollin_spec()` is removed, as announced in 0.1.0, with its print method.
+  `pollin_contribution()`, `pollin_moderation()` and `pollin_validate()` no
+  longer accept a `pollin_spec` and take only the layered objects. The getting-started vignette shows the equivalent calls.
+
+## New features
+
+* `pollin_draws()` returns draws of the two arm means of a fitted estimand
+  and of the estimand formed from them, on its scale and basis. The default
+  `method = "simulation"` draws the fixed effects from their sampling
+  distribution and covers fixed-effect uncertainty, as the delta interval
+  does. `method = "bootstrap"` uses the parametric bootstrap refits of
+  `pollin_effects()` and gives the same interval.
+  `summary()` gives the median and percentile interval per column.
+* `pollin_population()` declares a population of strata, the levels of one
+  column (distance bands, regions, varieties) weighted by area, and
+  `pollin_estimand(population = )` accepts it. The fit is made with the
+  strata as `by`, and `pollin_draws()` adds a `"population"` column. The
+  population estimand is formed from the area-weighted arm means: a ratio of
+  population means, not a weighted mean of the stratum estimands.
+  `pollin_effects()` reports the trial contrasts and does not use the
+  population.
+* `pollin_market()` declares current production and price, as scalars or with
+  draws, with the unit, currency, price year and a source that prints with
+  every value.
+* `pollin_value()` multiplies draws of an estimand by price and production.
+  The channel has no default:
+  * `"dependence"` takes a loss share and gives the value lost under total
+    exclusion of pollinators;
+  * `"deficit"` takes the gain of hand pollination over open and gives the
+    value of closing that gap.
+
+  Each channel accepts only its own estimand. A gain offered to the
+  dependence channel is refused, since `g = D / (1 - D)` overstates the loss
+  by `1 / (1 - D)`. A descriptive index or a plain number is refused because
+  it has no estimand. Market draws are matched to the estimand draws by
+  position.
+* `pollin_guard_doublecount()` adds values draw by draw and stops when two of
+  them count the same pollination within a crop: a part plus its total, the
+  same pollinators twice, two products of one crop (seed and oil), or two named
+  guilds. For guilds, `nested = FALSE` confirms that they come from separate,
+  non-nested exclusions, and the statement prints with the total. Each value
+  records the pollinators removed (`pollin_value(agent = )`, `"all"` by
+  default), the product and the crop (`pollin_market(crop = )`).
+* New vignette *From dependence to value*. *A matched-pair field study* gains
+  a section on scaling the estimand from the sampled fields to a growing
+  area.
+
+## Validation
+
+* Golden-value tests check that the 0.1.0 outputs are unchanged: deficit and dependence on every
+  scale, with delta and bootstrap intervals, overall and by level, and the
+  contribution, moderation, validation and index results
+  (`validation/golden/make_golden_v0.1.0.R`).
+* Planted-truth calibration of value intervals over 1,000 simulated trials
+  per cell (three-arm, split-plot and matched-pair designs, both channels,
+  market inputs fixed or drawn, one two-stratum population): 95% interval
+  coverage between 0.937 and 0.962 in all 11 cells. The bias criterion
+  (below 0.1 standard errors) holds in 9 of 11; see Known limitations
+  (`validation/planted_truth_S2_report.md`).
+* The published valuation of Yocgo et al. (2023, *Scientific Reports*
+  13:20108) is reproduced from its supplementary data: totals to the dollar
+  and all 20 published figures within their rounding
+  (`validation/value_oracle/`).
+
+## Known limitations
+
+* `pollin_contribution(by = )` stops with "jacobian does not match the
+  variance-covariance matrix" on nested multi-site data where the `by`
+  variable is constant within the slope unit.
+* The value summary is the median of the value draws. On the dependence
+  channel with market draws it sits slightly low, by 0.13 to 0.14 standard
+  errors in two planted-truth cells, because the loss share is concave in
+  the log ratio and the median of a product falls below the product of
+  medians. Interval coverage is unaffected.
+* Simulation draws cover fixed-effect uncertainty only. Use
+  `method = "bootstrap"` when the random effects should vary as well.
+* A value assumes no price response, a total-loss counterfactual for the
+  dependence channel, and independence of the estimand and market draws.
+  It is gross revenue, before costs.
+
 # pollinatoR 0.1.0
 
 An analysis is now declared in layers: the data (`pollin_data()`), the design

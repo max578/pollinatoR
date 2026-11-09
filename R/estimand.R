@@ -31,8 +31,10 @@
 #' @param scale One of `"difference"`, `"ratio"`, `"rii"` or `"lnrr"`. There
 #'   is no default.
 #' @param basis `"loss"` or `"gain"`. There is no default.
-#' @param population The population the estimand refers to. Only `"trial"`
-#'   (the units in the experiment) is available.
+#' @param population The population the estimand refers to: `"trial"` (the
+#'   default, the units in the experiment) or a [pollin_population()] object,
+#'   strata of one column weighted by area. A population estimand is fitted
+#'   with the strata as `by` and read with [pollin_draws()].
 #'
 #' @return An object of class `pollin_estimand`: a list holding `design`,
 #'   `family`, `scale`, `basis`, `population`, the `contrast` (the treatment
@@ -59,7 +61,7 @@ pollin_estimand <- function(
   .check_choice(family, "family", c("deficit", "dependence"))
   .check_choice(scale, "scale", c("difference", "ratio", "rii", "lnrr"))
   .check_choice(basis, "basis", c("loss", "gain"))
-  .check_choice(population, "population", "trial")
+  .check_population(population, design$data$data)
 
   arms <- design$arms
   roles <- if (family == "deficit") {
@@ -92,7 +94,13 @@ pollin_estimand <- function(
         high = unname(arms[roles["high"]]),
         low = unname(arms[roles["low"]])
       ),
-      assumptions = .assumptions(design$layout, family, scale, basis)
+      assumptions = .assumptions(
+        design$layout,
+        family,
+        scale,
+        basis,
+        population
+      )
     ),
     class = "pollin_estimand"
   )
@@ -131,7 +139,7 @@ print.pollin_estimand <- function(x, ...) {
   cat("  contrast   :", x$contrast[["high"]], "vs", x$contrast[["low"]], "\n")
   cat("  scale      :", x$scale, "\n")
   cat("  basis      :", x$basis, "\n")
-  cat("  population :", x$population, "\n")
+  cat("  population :", .population_label(x$population), "\n")
   cat("  layout     :", x$design$layout, "\n")
   cat(
     "  assumptions:",
@@ -160,10 +168,44 @@ print.pollin_estimand <- function(x, ...) {
   invisible(TRUE)
 }
 
+#' Stop unless `population` is "trial" or a `pollin_population` whose strata
+#' are the levels of its column in the data
+#' @noRd
+#' @keywords internal
+.check_population <- function(population, data) {
+  if (inherits(population, "pollin_population")) {
+    return(.population_check_data(population, data))
+  }
+  if (!identical(population, "trial")) {
+    stop(
+      "`population` must be \"trial\" or a `pollin_population` object.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
+
+#' The population in words, for printing
+#' @noRd
+#' @keywords internal
+.population_label <- function(population) {
+  if (!inherits(population, "pollin_population")) {
+    return(population)
+  }
+  paste0(
+    if (!is.null(population$label)) paste0(population$label, ": "),
+    length(population$weights),
+    if (length(population$weights) == 1L) " stratum" else " strata",
+    " of ",
+    population$by,
+    ", weighted by area"
+  )
+}
+
 #' Assumption table for a layout, family and scale
 #' @noRd
 #' @keywords internal
-.assumptions <- function(layout, family, scale, basis) {
+.assumptions <- function(layout, family, scale, basis, population = "trial") {
   a <- c(
     consistency = "Each arm is one well-defined treatment, applied the same way on every unit.",
     excludability = if (family == "dependence") {
@@ -186,9 +228,11 @@ print.pollin_estimand <- function(x, ...) {
       "positive_means"
     ] <- "The expected response is positive in both arms, so the ratio is defined."
   }
-  a[
-    "population"
-  ] <- "The estimand refers to the units in the trial; carrying it to other fields or seasons is a further assumption."
+  a["population"] <- if (inherits(population, "pollin_population")) {
+    .population_statement(population)
+  } else {
+    "The estimand refers to the units in the trial; carrying it to other fields or seasons is a further assumption."
+  }
   data.frame(
     assumption = names(a),
     statement = unname(a),

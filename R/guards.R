@@ -26,8 +26,7 @@
 #' @param index `"rii"` or `"dependence"`. There is no default.
 #' @param allow `FALSE` (the default) stops with an error; `TRUE` returns the
 #'   average with the warning statement attached.
-#' @param response,unit With a design, the response and the unit level, as in
-#'   [pollin_rii()].
+#' @inheritParams pollin_rii
 #'
 #' @return With `allow = TRUE`, an object of class `pollin_bounded`: a list
 #'   holding `index`, `n` (units averaged), `mean_of_units`, `ratio_of_means`
@@ -378,6 +377,194 @@ pollin_guard_posttreatment <- function(x, downstream) {
   invisible(x)
 }
 
+#' Guard against adding values that count one contribution twice
+#'
+#' Adds two or more [pollin_value()] results, draw by draw, after checking
+#' that their attributions do not overlap. Each value carries the
+#' pollinators its exclusion removed (`agent`), the product valued and the
+#' crop. For values of the same crop the guard refuses
+#'
+#' * a part plus its total: a value for `agent = "all"` with a value for any
+#'   other agent;
+#' * the same agent twice for the same product;
+#' * two products of the same agent, for example seed plus oil: the value of
+#'   the output already contains the value of the seed;
+#' * two different named guilds, for example managed plus wild pollinators,
+#'   unless `nested = FALSE` asserts that they come from separate, non-nested
+#'   exclusion contrasts. The assertion is recorded and printed with the
+#'   total.
+#'
+#' A value whose market names no crop is taken to be of the same crop as any
+#' other, since the guard cannot rule out the overlap; declare `crop` in
+#' [pollin_market()]. Agents and products are compared ignoring case and
+#' surrounding spaces.
+#'
+#' The values must share currency and price year and have the same number
+#' of draws. They are added draw by draw, paired by index: values drawn from
+#' separate fits are summed as independent, and values read from one
+#' [pollin_draws()] object keep their correlation.
+#'
+#' @param ... Two or more [pollin_value()] objects, optionally named.
+#' @param nested `NULL` (the default) or `TRUE` refuses two different named
+#'   guilds of one crop; `FALSE` asserts that their exclusion contrasts are
+#'   separate and not nested, and allows the sum.
+#' @param conf_level Level of the percentile interval of the total.
+#'
+#' @return An object of class `pollin_value_total`: a list holding `draws`
+#'   (the per-draw total), `summary` (a one-row data frame with `median`,
+#'   `conf.low`, `conf.high`, `currency`, `year`, `n` and `components`),
+#'   `components` (the values added), `assertion` (the statement made by
+#'   `nested = FALSE`, or `NULL`) and `conf_level`.
+#' @seealso [pollin_value()].
+#' @export
+#' @examples
+#' \donttest{
+#' set.seed(1)
+#' d <- data.frame(
+#'   trt = rep(rep(c("Cage", "Open"), each = 10L), 8L),
+#'   Site = rep(paste0("s", seq_len(8L)), each = 20L)
+#' )
+#' d$seed <- rgamma(nrow(d), 20, 20 / exp(1 + 0.3 * (d$trt == "Open")))
+#' pd <- pollin_data(d, "seed", "trt", unit = "Site")
+#' ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "rcbd")
+#' est <- pollin_estimand(ds, "dependence", "ratio", "loss")
+#' dr <- pollin_draws(pollin_fit(est), n = 2000L, seed = 1L)
+#' canola <- pollin_market(
+#'   12000, 650, "t", "AUD", 2024, "Illustrative inputs", crop = "canola"
+#' )
+#' faba <- pollin_market(
+#'   3000, 400, "t", "AUD", 2024, "Illustrative inputs", crop = "faba bean"
+#' )
+#' # Two crops: no overlap
+#' pollin_guard_doublecount(
+#'   canola = pollin_value(dr, canola, channel = "dependence"),
+#'   faba = pollin_value(dr, faba, channel = "dependence")
+#' )
+#' # Seed plus oil of one crop is refused
+#' try(pollin_guard_doublecount(
+#'   pollin_value(dr, canola, channel = "dependence", product = "seed"),
+#'   pollin_value(dr, canola, channel = "dependence", product = "oil")
+#' ))
+#' }
+pollin_guard_doublecount <- function(..., nested = NULL, conf_level = 0.95) {
+  values <- list(...)
+  .attribution_check_values(values)
+  if (!is.null(nested)) {
+    .check_flag(nested, "nested")
+  }
+  .check_conf_level(conf_level)
+  labels <- .attribution_labels(values)
+  .attribution_check_market(values, labels)
+
+  # Overlaps -------------------------------------------------------------------
+  assertion <- character(0)
+  k <- length(values)
+  pairs <- which(upper.tri(diag(k)), arr.ind = TRUE)
+  pairs <- pairs[order(pairs[, 1L], pairs[, 2L]), , drop = FALSE]
+  for (p in seq_len(nrow(pairs))) {
+    i <- pairs[p, 1L]
+    j <- pairs[p, 2L]
+    hit <- .attribution_overlap(
+      values[[i]]$attribution,
+      values[[j]]$attribution,
+      labels[c(i, j)]
+    )
+    if (is.null(hit)) {
+      next
+    }
+    if (hit$type == "guilds" && identical(nested, FALSE)) {
+      assertion <- c(assertion, hit$assertion)
+      next
+    }
+    stop(hit$message, call. = FALSE)
+  }
+
+  # Total per draw -------------------------------------------------------------
+  n <- vapply(values, function(v) length(v$draws), integer(1))
+  if (length(unique(n)) != 1L) {
+    stop(
+      "The values have different numbers of draws (",
+      paste0(labels, " ", n, collapse = ", "),
+      "); values are added draw by draw, so draw each with the same `n`.",
+      call. = FALSE
+    )
+  }
+  total <- Reduce(`+`, lapply(values, `[[`, "draws"))
+  a <- (1 - conf_level) / 2
+  q <- stats::quantile(total, c(0.5, a, 1 - a), names = FALSE)
+  structure(
+    list(
+      draws = total,
+      summary = data.frame(
+        median = q[1L],
+        conf.low = q[2L],
+        conf.high = q[3L],
+        currency = values[[1L]]$summary$currency,
+        year = values[[1L]]$summary$year,
+        n = n[[1L]],
+        components = length(values),
+        stringsAsFactors = FALSE
+      ),
+      components = stats::setNames(values, labels),
+      assertion = if (length(assertion)) unique(assertion),
+      conf_level = conf_level
+    ),
+    class = "pollin_value_total"
+  )
+}
+
+#' @export
+print.pollin_value_total <- function(x, ...) {
+  s <- x$summary
+  cat("<pollin_value_total>  sum of", .n_noun(s$components, "value"), "\n")
+  cat(
+    "  total      :",
+    .value_format(s$median),
+    s$currency,
+    sprintf(
+      "(%s%% interval %s to %s)",
+      format(100 * x$conf_level),
+      .value_format(s$conf.low),
+      .value_format(s$conf.high)
+    ),
+    "\n"
+  )
+  cat("  price year :", s$year, "\n")
+  cat("  draws      :", s$n, "(added draw by draw, paired by index)\n")
+  cat("  components :\n")
+  for (nm in names(x$components)) {
+    v <- x$components[[nm]]
+    cat(
+      "    - ",
+      nm,
+      ": ",
+      .value_format(v$summary$median),
+      " ",
+      s$currency,
+      "; ",
+      v$channel,
+      "; ",
+      .attribution_label(v$attribution),
+      "; source: ",
+      v$market$source,
+      "\n",
+      sep = ""
+    )
+  }
+  if (length(x$assertion)) {
+    cat("  asserted by the caller (nested = FALSE):\n")
+    cat(paste0("    - ", x$assertion, "\n"), sep = "")
+  }
+  invisible(x)
+}
+
+#' @rdname pollin_guard_doublecount
+#' @param object A `pollin_value_total` object.
+#' @export
+summary.pollin_value_total <- function(object, ...) {
+  object$summary
+}
+
 # Internal helpers ------------------------------------------------------------
 
 #' Bounded index from open and excluded values, elementwise; non-finite where
@@ -530,4 +717,160 @@ pollin_guard_posttreatment <- function(x, downstream) {
     )
   }
   invisible(TRUE)
+}
+
+# Attribution helpers ---------------------------------------------------------
+
+#' Stop unless `values` holds two or more `pollin_value` objects
+#' @noRd
+#' @keywords internal
+.attribution_check_values <- function(values) {
+  ok <- vapply(values, inherits, logical(1), what = "pollin_value")
+  if (length(values) < 2L || !all(ok)) {
+    stop(
+      "Give two or more `pollin_value` objects to add.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
+
+#' Names for the values: those given, else their position
+#' @noRd
+#' @keywords internal
+.attribution_labels <- function(values) {
+  nm <- names(values)
+  pos <- paste("value", seq_along(values))
+  if (is.null(nm)) {
+    return(pos)
+  }
+  ifelse(is.na(nm) | !nzchar(nm), pos, nm)
+}
+
+#' Stop unless the values share currency and price year
+#' @noRd
+#' @keywords internal
+.attribution_check_market <- function(values, labels) {
+  for (field in c("currency", "year")) {
+    v <- vapply(values, function(x) as.character(x$summary[[field]]), "")
+    if (length(unique(v)) != 1L) {
+      stop(
+        "The values differ in ",
+        if (field == "year") "price year" else "currency",
+        " (",
+        paste0(labels, " ", v, collapse = ", "),
+        "); convert them to one ",
+        if (field == "year") "price year" else "currency",
+        " before adding.",
+        call. = FALSE
+      )
+    }
+  }
+  invisible(TRUE)
+}
+
+#' The overlap between two attributions, or NULL: a list of `type`,
+#' `message` and, for two guilds, the `assertion` that `nested = FALSE` makes
+#' @noRd
+#' @keywords internal
+.attribution_overlap <- function(a, b, labels) {
+  key <- function(x) tolower(trimws(x))
+  if (!is.null(a$crop) && !is.null(b$crop) && key(a$crop) != key(b$crop)) {
+    return(NULL)
+  }
+  crop <- if (!is.null(a$crop) && !is.null(b$crop)) {
+    paste0("the same crop (", a$crop, ")")
+  } else {
+    "the same crop (a market without `crop` matches any crop)"
+  }
+  pair <- paste0("The values ", paste0("`", labels, "`", collapse = " and "))
+  all_a <- key(a$agent) == "all"
+  all_b <- key(b$agent) == "all"
+  same_agent <- key(a$agent) == key(b$agent)
+  same_product <- key(a$product) == key(b$product)
+
+  if (xor(all_a, all_b)) {
+    part <- if (all_a) b$agent else a$agent
+    return(list(
+      type = "part_total",
+      message = paste0(
+        pair,
+        " overlap: one is the value of all pollinators and the other of '",
+        part,
+        "', for ",
+        crop,
+        ". The total already contains the part; report one of them."
+      )
+    ))
+  }
+  if (same_agent && same_product) {
+    return(list(
+      type = "same_agent",
+      message = paste0(
+        pair,
+        " are both for '",
+        a$product,
+        "' attributed to '",
+        a$agent,
+        "' for ",
+        crop,
+        "; adding them counts one contribution twice."
+      )
+    ))
+  }
+  if (same_agent) {
+    return(list(
+      type = "products",
+      message = paste0(
+        pair,
+        " are for two products ('",
+        a$product,
+        "' and '",
+        b$product,
+        "') attributed to '",
+        a$agent,
+        "' for ",
+        crop,
+        ". The value of the processed product already contains the value ",
+        "of the raw one, so adding them counts it again; value one product."
+      )
+    ))
+  }
+  list(
+    type = "guilds",
+    message = paste0(
+      pair,
+      " are for two guilds ('",
+      a$agent,
+      "' and '",
+      b$agent,
+      "') for ",
+      crop,
+      ". Guild values from nested exclusions overlap, since excluding one ",
+      "guild can leave or remove pollination the other supplies. Pass ",
+      "`nested = FALSE` only when they come from separate, non-nested ",
+      "exclusion contrasts."
+    ),
+    assertion = paste0(
+      "'",
+      a$agent,
+      "' and '",
+      b$agent,
+      "' come from separate, non-nested exclusion contrasts."
+    )
+  )
+}
+
+#' An attribution in words, for printing
+#' @noRd
+#' @keywords internal
+.attribution_label <- function(attribution) {
+  paste0(
+    "agent ",
+    attribution$agent,
+    ", product ",
+    attribution$product,
+    ", crop ",
+    if (is.null(attribution$crop)) "not declared" else attribution$crop
+  )
 }

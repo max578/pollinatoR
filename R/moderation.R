@@ -26,17 +26,15 @@
 #' From a [pollin_design()], the unit of the split is the design's slope unit
 #' (with the unit levels outside it), or the outermost unit when the design
 #' carries no slope; the treatment reference level is the excluded arm, or the
-#' open arm when the design has no excluded arm. A deprecated [pollin_spec()]
-#' is still accepted and splits on its `latent_unit`.
+#' open arm when the design has no excluded arm.
 #'
-#' @param x A [pollin_design()] object whose data declare `exposures`, or a
-#'   deprecated [pollin_spec()] object with `exposures` set.
+#' @param x A [pollin_design()] object whose data declare `exposures`.
 #' @param outcome Single outcome to model.
 #' @param exposures Exposures to use. `NULL` (the default) uses every declared
 #'   exposure.
 #' @param family Optional `glmmTMB` family (chosen from the outcome's values if
 #'   missing).
-#' @param ... Passed to [glmmTMB::glmmTMB()].
+#' @inheritParams pollin_fit
 #'
 #' @return An object of class `pollin_moderation` with a tidy `table` of the
 #'   treatment-by-exposure terms (each tagged `within` or `between`),
@@ -62,14 +60,10 @@ pollin_moderation <- function(
   family = NULL,
   ...
 ) {
-  if (inherits(x, "pollin_spec")) {
-    inputs <- .spec_inputs(x)
-  } else {
-    .check_class(x, "pollin_design")
-    .check_outcomes(outcome, x$data$roles$response)
-    low <- x$arms[[intersect(c("excluded", "open"), names(x$arms))[1L]]]
-    inputs <- .design_inputs(x, low)
-  }
+  .check_class(x, "pollin_design")
+  .check_outcomes(outcome, x$data$roles$response)
+  low <- x$arms[[intersect(c("excluded", "open"), names(x$arms))[1L]]]
+  inputs <- .design_inputs(x, low)
   if (is.null(exposures)) {
     exposures <- inputs$exposures
   }
@@ -119,9 +113,10 @@ pollin_moderation <- function(
   if (any(w)) {
     tab$p.fdr[w] <- pollin_fdr(tab$p.value[w])
   }
-  out <- list(table = tab, fit = fit, outcome = outcome)
-  out[[if (inherits(x, "pollin_spec")) "spec" else "design"]] <- x
-  structure(out, class = "pollin_moderation")
+  structure(
+    list(table = tab, fit = fit, outcome = outcome, design = x),
+    class = "pollin_moderation"
+  )
 }
 
 #' @export

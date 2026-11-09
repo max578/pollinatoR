@@ -25,7 +25,9 @@
 #' @param by Optional name of a column of the data (for example variety or
 #'   region). The treatment effect is fitted separately at each of its levels,
 #'   as an interaction, and [pollin_effects()] then reports one contrast per
-#'   level. The column is treated as a factor.
+#'   level. The column is treated as a factor. An estimand whose population
+#'   is a [pollin_population()] must be fitted with `by` set to the
+#'   population's `by` column.
 #' @param ... Passed to [glmmTMB::glmmTMB()].
 #'
 #' @return An object of class `pollin_fit`: a list holding the `estimand`, the
@@ -57,6 +59,9 @@ pollin_fit <- function(
 ) {
   .check_class(estimand, "pollin_estimand", arg = "estimand")
   .check_engine(engine)
+  if (inherits(estimand$population, "pollin_population")) {
+    .population_check_fit_by(estimand$population, by)
+  }
   inputs <- .estimand_inputs(estimand)
   .check_family_arg(family, inputs$responses)
   .new_fit(estimand, inputs, inputs$responses, family, by = by, ...)
@@ -147,24 +152,6 @@ print.pollin_fit <- function(x, ...) {
 #' @keywords internal
 .estimand_inputs <- function(estimand) {
   .design_inputs(estimand$design, estimand$contrast[["low"]])
-}
-
-#' Fit inputs from a deprecated `pollin_spec`, without the `pollin_data` checks
-#' @noRd
-#' @keywords internal
-.spec_inputs <- function(spec) {
-  .fit_inputs(
-    data = spec$data,
-    responses = spec$outcomes,
-    treatment = spec$treatment,
-    low = spec$control,
-    unit = spec$random,
-    random = .random_terms(spec),
-    slope_key = spec$latent_unit,
-    wb_group = spec$data[[spec$latent_unit]],
-    exposures = spec$exposures,
-    adjust = spec$adjust
-  )
 }
 
 # Fitting ---------------------------------------------------------------------

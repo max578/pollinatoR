@@ -18,6 +18,10 @@ reference:
     contents:
       - pollin_estimand
       - pollin_assumptions
+  - title: Population
+    desc: Carry the estimand from the trial to a population of strata.
+    contents:
+      - pollin_population
   - title: Fit
     contents:
       - pollin_fit
@@ -27,6 +31,18 @@ reference:
       - pollin_effects
       - pollin_contribution
       - pollin_moderation
+  - title: Draws
+    desc: Draws of the estimand, for quantities computed per draw.
+    contents:
+      - pollin_draws
+      - summary.pollin_draws
+  - title: Value
+    desc: Economic value of an estimand, computed per draw.
+    contents:
+      - pollin_market
+      - pollin_value
+      - summary.pollin_value
+      - pollin_guard_doublecount
   - title: Guards
     contents:
       - pollin_guard_spurious
@@ -40,9 +56,6 @@ reference:
       - pollin_compensation
       - pollin_within_between
       - pollin_fdr
-  - title: Deprecated
-    contents:
-      - pollin_spec
 
 articles:
   - title: Get started
@@ -55,3 +68,7 @@ articles:
       - three-arm-trial
       - split-plot-trial
       - matched-pair-field-study
+  - title: Value
+    navbar: Value
+    contents:
+      - dependence-to-value

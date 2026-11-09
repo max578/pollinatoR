@@ -120,7 +120,7 @@ print.pollin_design <- function(x, ...) {
 # Random-effect terms ---------------------------------------------------------
 
 #' Nested random terms, outer to inner: a random intercept per level, or a
-#' random treatment slope on the `slope` level. Shared with `pollin_spec()`.
+#' random treatment slope on the `slope` level.
 #' @noRd
 #' @keywords internal
 .nested_terms <- function(unit, treatment, slope = NULL) {
