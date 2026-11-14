@@ -36,7 +36,7 @@
 #'   Every response needs a log link.
 #' @param yield The name of the whole-yield response.
 #' @param components The names of at least two component responses whose
-#'   product is yield (up to a constant factor such as a unit conversion).
+#'   product is yield, up to a constant factor.
 #' @param n_boot Number of bootstrap replicates.
 #' @param seed Optional seed for the resampling. The session's random number
 #'   state is restored afterwards.
