@@ -332,16 +332,25 @@ print.pollin_ecological <- function(x, ...) {
 #' (for example vegetative weight, or a pollinator visit count under a cage)
 #' blocks part of the effect and can open a collider path. Whether a covariate
 #' is downstream of treatment is a fact about the system that the data cannot
-#' reveal. The declaration is the user's: `downstream` names the variables the
-#' user holds to be affected by treatment, and the guard stops if any
-#' adjustment covariate in `x` is among them.
+#' reveal. It comes from one of two sources, or both:
+#'
+#' * a declaration: `downstream` names the variables the user holds to be
+#'   affected by treatment;
+#' * a graph: with `dag`, every observed descendant of the treatment in the
+#'   [pollin_dag()] graph is downstream.
+#'
+#' The guard stops if any adjustment covariate in `x` is downstream. For an
+#' estimand with `effect = "direct"`, the declared `mediators` are held fixed
+#' on purpose and pass; any other downstream covariate is still refused.
 #'
 #' @param x A [pollin_data()], [pollin_design()] or [pollin_estimand()]
 #'   object.
 #' @param downstream Character vector of variables declared downstream of
-#'   treatment. `character(0)` declares none. There is no default.
+#'   treatment. `character(0)` declares none. Give `downstream`, `dag` or
+#'   both.
+#' @param dag A [pollin_dag()] object built from the same design.
 #'
-#' @return `x`, invisibly, when no adjustment covariate is declared downstream.
+#' @return `x`, invisibly, when no adjustment covariate is downstream.
 #' @export
 #' @examples
 #' df <- data.frame(
@@ -357,20 +366,70 @@ print.pollin_ecological <- function(x, ...) {
 #' pd2 <- pollin_data(df, "pods", "trt", unit = "Site",
 #'                    adjust = c("rain", "veg_weight"))
 #' try(pollin_guard_posttreatment(pd2, downstream = "veg_weight"))
-pollin_guard_posttreatment <- function(x, downstream) {
+#' @examplesIf requireNamespace("dagitty", quietly = TRUE)
+#' # The same refusal from a graph: veg_weight is a descendant of trt
+#' ds <- pollin_design(pd2, c(excluded = "Cage", open = "Open"), "multi_site")
+#' g <- pollin_dag(
+#'   ds,
+#'   "dag { rain -> pods; trt -> veg_weight -> pods; trt -> pods }",
+#'   "pods"
+#' )
+#' try(pollin_guard_posttreatment(ds, dag = g))
+pollin_guard_posttreatment <- function(x, downstream = NULL, dag = NULL) {
   roles <- .roles_of(x)
-  .check_downstream(if (!missing(downstream)) downstream)
-  hit <- intersect(roles$adjust, downstream)
+  if (is.null(downstream) && is.null(dag)) {
+    stop(
+      "Give `downstream` (a character vector of variable names; ",
+      "character(0) declares none), `dag`, or both.",
+      call. = FALSE
+    )
+  }
+  if (!is.null(downstream)) {
+    .check_downstream(downstream)
+  }
+  from_dag <- character(0)
+  if (!is.null(dag)) {
+    .check_class(dag, "pollin_dag", arg = "dag")
+    if (!identical(dag$roles, roles)) {
+      stop(
+        "`dag` was built from a different design; rebuild it with ",
+        "`pollin_dag(design, ...)`.",
+        call. = FALSE
+      )
+    }
+    cls <- dag$classes[dag$classes$target == dag$treatment, , drop = FALSE]
+    from_dag <- cls$node[cls$class %in% c("mediator", "descendant")]
+  }
+  held <- if (
+    inherits(x, "pollin_estimand") && identical(x$effect, "direct")
+  ) {
+    x$mediators
+  }
+  hit <- setdiff(intersect(roles$adjust, union(downstream, from_dag)), held)
   if (length(hit)) {
+    source <- c(
+      if (length(intersect(hit, downstream))) "declared",
+      if (length(intersect(hit, from_dag))) "in the graph"
+    )
     stop(
       "Adjustment ",
       if (length(hit) == 1L) "covariate " else "covariates ",
       paste0("`", hit, "`", collapse = ", "),
       if (length(hit) == 1L) " is" else " are",
-      " declared downstream of `",
+      " ",
+      paste(source, collapse = " and "),
+      " downstream of `",
       roles$treatment,
       "`. Adjusting for a downstream covariate removes part of the treatment ",
-      "effect; drop it from `adjust`.",
+      "effect; drop it from `adjust`",
+      if (length(held)) {
+        paste0(
+          ". A direct effect holds only its declared mediators (",
+          paste0("`", held, "`", collapse = ", "),
+          ") fixed"
+        )
+      },
+      ".",
       call. = FALSE
     )
   }

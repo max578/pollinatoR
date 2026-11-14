@@ -126,11 +126,11 @@ pollin_draws <- function(
 #' @export
 print.pollin_draws <- function(x, ...) {
   e <- x$estimand
-  label <- if (e$family == "deficit") "deficit (E1)" else "dependence (E2)"
   cat("<pollin_draws>\n")
-  cat("  family   :", label, "\n")
+  cat("  family   :", .family_label(e$family), "\n")
   cat("  scale    :", e$scale, "\n")
-  cat("  basis    :", e$basis, "\n")
+  cat("  basis    :", .basis_label(e$basis), "\n")
+  cat("  effect   :", .effect_label(e$effect, e$mediators), "\n")
   cat(
     "  estimate :",
     .scale_definition(
@@ -161,7 +161,7 @@ print.pollin_draws <- function(x, ...) {
 #' @return A data frame with one row per column of the draws and the columns
 #'   `response`, `level` (the column name: a `by` level, `"overall"` or
 #'   `"population"`), `median`, `conf.low` and `conf.high` (the percentile
-#'   interval), `family`, `scale`, `basis`, `method` and `n`.
+#'   interval), `family`, `scale`, `basis`, `effect`, `method` and `n`.
 #'   `as.matrix()` returns the `estimate` matrix of the draws.
 #' @export
 summary.pollin_draws <- function(object, conf_level = 0.95, ...) {
@@ -184,6 +184,7 @@ summary.pollin_draws <- function(object, conf_level = 0.95, ...) {
     family = e$family,
     scale = e$scale,
     basis = e$basis,
+    effect = e$effect,
     method = object$method,
     n = object$n,
     row.names = NULL,

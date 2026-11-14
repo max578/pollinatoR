@@ -21,6 +21,11 @@
 #' channel: it relates to the loss share by `g = D / (1 - D)`, so valuing a
 #' gain overstates the loss by the factor `1 / (1 - D)`.
 #'
+#' Two estimands are refused whatever the channel: the `cage` family, which
+#' measures the exclusion device and not pollinators, and a direct effect
+#' (`effect = "direct"`), whose mediator-adjusted share is not the
+#' contribution the crop would lose without pollinators.
+#'
 #' A dependence estimand whose reference arm is `"supplemented"` (potential
 #' dependence) is valued and labelled as the value at full pollination, which
 #' is not the contribution of the pollination the crop receives now.
@@ -262,6 +267,25 @@ summary.pollin_value <- function(object, ...) {
     paste0(
       "the gain of hand pollination over current production, ",
       "E[Y_supp]/E[Y_open] - 1"
+    )
+  }
+  if (estimand$family == "cage") {
+    stop(
+      "A `cage` estimand is the effect of the exclusion device itself ",
+      "(sham versus open), not of pollinators; it is not a pollination ",
+      "quantity and has no value. Value a dependence estimand, netted of the ",
+      "cage by a design with `reference = \"sham\"`.",
+      call. = FALSE
+    )
+  }
+  if (identical(estimand$effect, "direct")) {
+    stop(
+      "A direct effect holds ",
+      paste0("`", estimand$mediators, "`", collapse = ", "),
+      " fixed. A mediator-adjusted share is not the contribution the crop ",
+      "would lose without pollinators, since that loss also runs through the ",
+      "mediators; value the total effect (`effect = \"total\"`).",
+      call. = FALSE
     )
   }
   if (estimand$family != want[["family"]] || estimand$scale != "ratio") {

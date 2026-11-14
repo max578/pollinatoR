@@ -1,0 +1,275 @@
+---
+title: "Identification in a field study"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Identification in a field study}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_dagitty <- requireNamespace("dagitty", quietly = TRUE)
+```
+
+```{r setup}
+library(pollinatoR)
+```
+
+A cage trial randomises the arm, so the contrast between caged and open plants
+is causal by design. Three questions are not settled by the randomisation.
+Which covariates may enter the model without changing what the contrast means?
+What does the cage itself do to the plants? And when the question turns from
+the treatment to the insects (which visitors drive the contribution), what
+protects a comparison between fields that were never randomised? This vignette
+works through each on one simulated field study.
+
+## The study
+
+Thirty canola fields, six caged and six open plants in each. Pod count is the
+response. Vegetative weight is recorded at harvest, and bee visits are counted
+per plant. Fertility varies between fields and is not recorded: it raises pod
+count and attracts more bees.
+
+```{r data}
+set.seed(47)
+n_field <- 30L
+fields <- sprintf("F%02d", seq_len(n_field))
+fertility <- setNames(rnorm(n_field, 0, 0.25), fields)
+study <- expand.grid(
+  plant = seq_len(6L),
+  trt = c("Caged", "Open"),
+  field = fields,
+  stringsAsFactors = FALSE
+)
+f <- fertility[study$field]
+open <- study$trt == "Open"
+study$bees <- rpois(n_field, exp(1.8 + 1.2 * fertility))[match(study$field, fields)] +
+  rpois(nrow(study), 1)
+study$veg <- round(rgamma(nrow(study), shape = 15, rate = 15 / (40 * exp(0.25 * open))), 1)
+study$pods <- rnbinom(
+  nrow(study),
+  mu = exp(4 + f + 0.15 * open + 0.012 * study$veg),
+  size = 20
+)
+head(study)
+```
+
+Pollinator access was planted to raise vegetative weight by about 28%, and
+vegetative weight raises pod count. Access also raises pod count directly.
+The loss share without pollinators is about 0.25 in total, of which the direct
+part, with vegetative weight held fixed, is $1 - e^{-0.15} = 0.14$.
+
+## A graph for the study
+
+The graph states what causes what. Vegetative weight weighed at harvest is
+downstream of the arm: access changes how the plant grows. That is the reading
+the data were simulated under, and it is the reading supported where it has
+been tested: in Zou et al. (2017), closed-cage canola carried more straw
+biomass than plants in open-top cages.
+
+```{r graph, eval = has_dagitty}
+pd <- pollin_data(
+  study,
+  "pods",
+  "trt",
+  unit = "field",
+  adjust = "veg",
+  exposures = "bees"
+)
+ds <- pollin_design(pd, c(excluded = "Caged", open = "Open"), "multi_site")
+g_harvest <- pollin_dag(
+  ds,
+  "dag {
+    trt -> veg -> yield
+    trt -> yield
+    fertility -> bees -> yield
+    fertility -> yield
+    fertility [latent]
+  }",
+  "yield"
+)
+g_harvest
+```
+
+The graph gives the adjustment set for the total effect of the arm (none is
+needed, since the arm was randomised) and for the direct effect (vegetative
+weight). It classes vegetative weight as a mediator of the arm. It also says
+that the effect of bees on pod count has no adjustment set: fertility is
+latent, and it opens a path from bees to yield that nothing recorded can close.
+
+## Total and direct effects
+
+Adjusting for a mediator is not a precision choice. It changes the question
+from "what does pollinator access do" to "what does access do apart from its
+effect on vegetative weight". With the graph, the package refuses the first
+estimand while vegetative weight sits in `adjust`:
+
+```{r guard, eval = has_dagitty, error = TRUE}
+pollin_guard_posttreatment(ds, dag = g_harvest)
+```
+
+The total effect is fitted from data that do not adjust for it. The direct
+effect is asked for by name, with the mediator held fixed, and every table it
+produces says so.
+
+```{r effects}
+pd_total <- pollin_data(study, "pods", "trt", unit = "field", exposures = "bees")
+ds_total <- pollin_design(pd_total, c(excluded = "Caged", open = "Open"), "multi_site")
+est_total <- pollin_estimand(ds_total, "dependence", "ratio", "loss")
+
+pd_veg <- pollin_data(study, "pods", "trt", unit = "field", adjust = "veg")
+ds_veg <- pollin_design(pd_veg, c(excluded = "Caged", open = "Open"), "multi_site")
+est_direct <- pollin_estimand(
+  ds_veg,
+  "dependence",
+  "ratio",
+  "loss",
+  effect = "direct",
+  mediators = "veg"
+)
+
+fit_total <- pollin_fit(est_total)
+fit_direct <- pollin_fit(est_direct)
+pollin_effects(fit_total)
+pollin_effects(fit_direct)
+```
+
+The two numbers answer different questions, and only the first is what the
+crop would lose without pollinators. `pollin_value()` therefore values the
+total effect and refuses the direct one:
+
+```{r value, error = TRUE}
+canola <- pollin_market(
+  quantity = 3600,
+  price = 700,
+  unit = "t",
+  currency = "AUD",
+  year = 2025,
+  source = "Illustrative inputs"
+)
+pollin_value(pollin_draws(fit_direct, n = 1000L, seed = 1L), canola,
+             channel = "dependence")
+```
+
+If vegetative weight were measured before flowering, the arm could not have
+changed it. The graph then has no edge from `trt` to `veg`, vegetative weight
+is pre-treatment, and the estimand builds with it declared. The effect stays a
+total effect, and the fit of a total effect takes no covariates:
+
+```{r preflowering, eval = has_dagitty}
+g_pre <- pollin_dag(
+  ds,
+  "dag { trt -> yield; veg -> yield; fertility -> bees -> yield; fertility -> yield; fertility [latent] }",
+  "yield"
+)
+pollin_estimand(ds, "dependence", "ratio", "loss", dag = g_pre)
+```
+
+Which branch holds is a fact about the protocol, not about the data, and the
+graph is where it is written down.
+
+## The cage itself
+
+A closed cage shades and shelters the plant as well as keeping insects out.
+The loss share above compares caged with uncaged plants, so it includes any
+effect of the cage on pod count. Two remedies exist.
+
+With a sham arm, a device identical to the cage that lets insects in, the
+dependence can be read against the sham (`reference = "sham"`) and the cage
+effect itself is estimated by the `cage` family; *A three-arm exclusion trial*
+shows both.
+
+Without one, the share can be bounded. If the cage multiplies pod count
+without pollinators by a factor `k`, the share net of the cage is
+`1 - (1 - D) / k`. `pollin_bound()` takes a range for `k` and reports the
+bounds per draw:
+
+```{r bound}
+pollin_bound(pollin_draws(fit_total, n = 2000L, seed = 1L), cage_factor = c(1, 1.2))
+```
+
+The range has no default. It has to come from evidence about the device, such
+as a sham arm in another trial of the same crop.
+
+## Which visitors drive the contribution
+
+The moderation of the contribution by bee visits compares fields, and fields
+were not randomised to their bees. `pollin_moderation()` splits the exposure
+into a within-field and a between-field part and reports the bees' slope among
+the caged plants, which insects could not reach:
+
+```{r moderation}
+m <- pollin_moderation(ds_total, "pods")
+m
+```
+
+Neither moderation term differs from zero here. The negative control does: in
+the caged arm, pod count rises with the field's bee count, which cannot be
+pollination. It is the fertility that brings both, and the graph above already
+said that the effect of bees is not identified in this study. Given the graph,
+`pollin_moderation(ds, "pods", dag = g_harvest)` refuses for that reason.
+
+The negative control detects a field variable that raises both arms alike. It
+cannot detect one that changes the contrast itself, and the assumption table
+of the moderation result says so.
+
+## Whole yield and its components
+
+A dependence estimated on one yield component is not the dependence of yield.
+Seed yield per plant is the product of pods per plant, seeds per pod and seed
+weight, and a plant that sets fewer seeds can fill them better. Suppose the
+study also weighed the seeds of each plant and counted seeds per pod, and
+that seeds per pod respond strongly to pollinator access while seed weight
+compensates:
+
+```{r components}
+set.seed(48)
+study$seeds <- rgamma(nrow(study), shape = 20, rate = 20 / exp(2.5 + 0.35 * open))
+study$weight <- rgamma(nrow(study), shape = 30, rate = 30 / exp(1.2 - 0.12 * open))
+study$yield <- study$pods * study$seeds * study$weight / 1000
+pd_yield <- pollin_data(study, c("yield", "pods", "seeds", "weight"), "trt",
+  unit = "field")
+ds_yield <- pollin_design(pd_yield, c(excluded = "Caged", open = "Open"), "rcbd")
+fit_yield <- pollin_fit(
+  pollin_estimand(ds_yield, "dependence", "ratio", "loss"),
+  family = list(
+    yield = stats::Gamma(link = "log"), pods = glmmTMB::nbinom2(),
+    seeds = stats::Gamma(link = "log"), weight = stats::Gamma(link = "log")
+  )
+)
+pollin_decompose(fit_yield, "yield", c("pods", "seeds", "weight"),
+  n_boot = 100L, seed = 1L)
+```
+
+On the log scale the effect on yield is the sum of the effects on the
+components plus an interaction term, which is near zero here because the
+components vary independently within each arm. The shares say how much of the
+yield effect each component carries. Seed weight carries a negative share and
+is flagged as compensating. A loss share computed from any single component
+misstates the dependence of yield: seeds per pod alone would understate it
+here, and seed weight alone would give it the wrong sign. The intervals come from resampling whole fields
+and refitting all four models on each resample; 100 replicates keep this
+vignette quick, and an analysis would use about 2,000.
+
+## Sensitivity
+
+For the total effect on a count, the E-value states how strongly an unmeasured
+confounder would have to be associated with both the arm and the response to
+explain the contrast away:
+
+```{r evalue}
+pollin_sensitivity(pollin_effects(fit_total))
+```
+
+In a randomised trial this guards against a failure of the randomisation
+rather than against ordinary confounding. The package forms no E-value for a
+direct effect, a difference or a continuous response, and for a moderation
+term it reports the link-scale bias that would move the term to zero.
+
+## Reference
+
+Zou, Y., Xiao, H., Bianchi, F. J. J. A., Jauker, F., Luo, S., & van der Werf,
+W. (2017). Wild pollinators enhance oilseed rape yield in small-holder farming
+systems in China. *BMC Ecology*, *17*, 6.
+https://doi.org/10.1186/s12898-017-0116-1

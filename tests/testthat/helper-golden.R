@@ -102,16 +102,34 @@ golden_grid_v010 <- function() {
   )
 }
 
+# The `effect` column added in 0.5.0 is the only column the older oracles
+# lack: every table it appears in must read "total", and it is then dropped so
+# the remaining columns are compared to the oracle unchanged.
+golden_total_only <- function(x) {
+  if (is.data.frame(x)) {
+    if ("effect" %in% names(x)) {
+      testthat::expect_true(all(x$effect == "total"))
+      x$effect <- NULL
+    }
+    return(x)
+  }
+  if (is.list(x) && !is.object(x)) {
+    x[] <- lapply(x, golden_total_only)
+  }
+  x
+}
+
 # The numbers an analyst reads from a pollin_effects object.
 golden_effects <- function(x) {
   x <- unclass(x)
-  x[c("table", "interval", "n_boot", "seed", "conf_level", "by")]
+  golden_total_only(x[c("table", "interval", "n_boot", "seed", "conf_level", "by")])
 }
 
 # The delta route of 0.1.0 to 0.3.1 is `interval = "delta_fixed"` since 0.4.0;
 # its outputs are compared to the 0.1.0 oracle under the old label.
 golden_fixed_as_delta <- function(x) {
   relabel <- function(v) replace(v, v == "delta_fixed", "delta")
+  x <- golden_total_only(x)
   if (is.data.frame(x)) {
     x$interval <- relabel(x$interval)
     return(x)
@@ -257,4 +275,105 @@ golden_capture_v040 <- function() {
     ),
     golden_capture_v020()
   )
+}
+
+# Outputs at 0.4.0: moderation ------------------------------------------------
+
+golden_path_v040_moderation <- function() {
+  testthat::test_path("_golden", "golden_v0.4.0_moderation.rds")
+}
+
+# The numbers an analyst reads from a pollin_moderation object. A fit without a
+# positive-definite Hessian or without convergence is never an oracle.
+golden_moderation <- function(x) {
+  if (!isTRUE(x$fit$sdr$pdHess) || x$fit$fit$convergence != 0L) {
+    stop("Moderation fit for `", x$outcome, "` did not converge cleanly.",
+      call. = FALSE)
+  }
+  list(table = x$table, outcome = x$outcome)
+}
+
+# Moderation on two designs that Stage 4 must leave unchanged: the shipped
+# example (exposure varying within site) and the three-arm block trial of
+# 0.1.0. Not captured: the nested design of 0.0.0.9000 (its fits lack a
+# positive-definite Hessian; `pods` stays frozen by the older oracles) and a
+# site-level-only exposure (its 0.4.0 output is the defect Stage 4 fixes).
+golden_capture_v040_moderation <- function() {
+  set.seed(1)
+  site <- rep(paste0("s", seq_len(14L)), each = 20L)
+  trt <- rep(rep(c("Cage", "Open"), each = 10L), 14L)
+  bees <- rep(stats::rpois(14L, 8), each = 20L) + stats::rpois(280L, 1)
+  y <- stats::rpois(
+    length(trt),
+    exp(1.6 + 0.3 * (trt == "Open") + 0.02 * bees * (trt == "Open"))
+  )
+  d_ex <- data.frame(y = y, trt = trt, Site = site, bees = bees)
+  pd_ex <- pollin_data(d_ex, "y", "trt", unit = "Site", exposures = "bees")
+  ds_ex <- pollin_design(
+    pd_ex,
+    c(excluded = "Cage", open = "Open"),
+    "multi_site"
+  )
+
+  d3 <- golden_inputs_v010()
+  pd3 <- pollin_data(
+    d3,
+    c("pods", "seed_wt"),
+    "trt",
+    unit = "Block",
+    groups = "Region",
+    exposures = "bees"
+  )
+  ds3 <- pollin_design(pd3, golden_arms_v010, "rcbd")
+
+  list(
+    example = golden_moderation(pollin_moderation(ds_ex, outcome = "y")),
+    rcbd_pods = golden_moderation(pollin_moderation(ds3, outcome = "pods")),
+    rcbd_seed_wt = golden_moderation(
+      pollin_moderation(ds3, outcome = "seed_wt")
+    )
+  )
+}
+
+# Outputs at 0.4.0: CATE -------------------------------------------------------
+
+golden_path_v040_cate <- function() {
+  testthat::test_path("_golden", "golden_v0.4.0_cate.rds")
+}
+
+# The shipped `pollin_cate()` example, glmmTMB engine, on two scales.
+golden_capture_v040_cate <- function() {
+  set.seed(3)
+  d <- data.frame(
+    trt = rep(rep(c("Cage", "Open"), each = 8L), 12L),
+    Site = rep(sprintf("s%02d", seq_len(12L)), each = 16L)
+  )
+  slope <- stats::rnorm(12L, 0, 0.3)[as.integer(factor(d$Site))]
+  d$pods <- stats::rnbinom(
+    nrow(d),
+    mu = exp(3 + (0.3 + slope) * (d$trt == "Open")),
+    size = 20
+  )
+  pd <- pollin_data(d, "pods", "trt", unit = "Site")
+  ds <- pollin_design(pd, c(excluded = "Cage", open = "Open"), "multi_site")
+  est_r <- pollin_estimand(ds, "dependence", "ratio", "loss")
+  est_d <- pollin_estimand(ds, "dependence", "difference", "loss")
+  list(
+    ratio_loss = pollin_cate(pollin_fit(est_r), n = 1000L, seed = 1L)$table,
+    difference = pollin_cate(pollin_fit(est_d), n = 1000L, seed = 1L)$table
+  )
+}
+
+# Outputs at 0.5.0: whole-yield decomposition ---------------------------------
+
+golden_path_v050_decompose <- function() {
+  testthat::test_path("_golden", "golden_v0.5.0_decompose.rds")
+}
+
+golden_capture_v050_decompose <- function() {
+  d <- decompose_fixture(n_sites = 10L, n_plants = 6L, seed = 2L)
+  fit <- decompose_fit(d)
+  r <- pollin_decompose(fit, "yield", c("pods", "seeds", "weight"),
+    n_boot = 20L, seed = 1L)
+  list(table = r$table, draws = r$draws)
 }

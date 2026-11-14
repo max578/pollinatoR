@@ -1,3 +1,68 @@
+# pollinatoR 0.5.0
+
+This release is about identification: what a dependence estimate means
+causally, and what it does not.
+
+## New features
+
+* `pollin_dag()` reads a causal graph (a `dagitty` graph; `dagitty` is in
+  Suggests) and returns the adjustment sets and the class of each covariate
+  (for example confounder, mediator, collider, instrument or precision
+  variable).
+  `pollin_dag_check()` tests the conditional independencies the graph
+  implies against the data.
+* Every estimand carries `effect = "total"` (the default) or
+  `effect = "direct"` with named `mediators`. A direct effect is fitted with
+  the adjustment set, and the label travels through `pollin_effects()`,
+  `pollin_draws()` and `pollin_cate()`. With a graph, a direct effect for
+  which no adjustment set exists is refused. Total-effect fits take no
+  covariates.
+* A `sham` arm (a cage that lets pollinators in) can be declared in
+  `pollin_design()`, and `reference = "sham"` makes the dependence net of
+  the cage. The new `cage` family estimates the cage factor itself (sham
+  against open) and needs both arms.
+* `pollin_bound()` bounds the loss share over a range of cage factors
+  supplied by the user, for trials without a sham arm.
+* `pollin_decompose()` gives the effect on whole yield and its log-scale
+  decomposition into yield components (for canola, pods per plant, seeds
+  per pod and seed weight), with an interaction term for what the product
+  of the component ratios does not carry, shares of the yield effect, and
+  intervals from a bootstrap over whole units that refits every model on
+  the same resampled units. A component that moves against yield is flagged
+  as compensating.
+* `pollin_sensitivity()` gives E-values for ratio effects on count and
+  binomial responses, and the link-scale bias needed to explain away a
+  moderation term.
+* `pollin_moderation()` takes a graph's adjustment set, reports a negative
+  control, fits an exposure that is constant within sites as a between-unit
+  term only (it returned an all-missing row before), and warns when a fit
+  fails.
+* `pollin_guard_posttreatment()` accepts a graph, and `pollin_value()`
+  refuses cage and direct effects.
+
+## Validation
+
+* On 7,200 simulated data sets over seven designs
+  (`validation/planted_truth_S4_report.md`), all 17 pre-registered gates
+  pass: total and direct intervals cover 0.932 to 0.945, the cage factor
+  0.957 and the dependence net of the cage 0.933; moderation false-call
+  rates are 0.050 and 0.059; with the graph's set moderation covers 0.953,
+  and without it the bias matches the planted bias. The run was reproduced
+  in a second process with an identical gate table. glmmTMB did not converge
+  on 13 to 37% of fits on the designs with a random treatment slope; those
+  gates are read on converged seeds.
+* A published sham-cage study (Zou et al. 2017, BMC Ecology 17:6) is
+  reproduced from its plant-level data: the treatment coefficients equal
+  those of `nlme` fitted by maximum likelihood, and Table 1's t value for
+  thousand-seed weight and every degree of freedom are recovered
+  (`validation/causal_oracle/`).
+* `pollin_decompose()` recovers planted multiplicative component effects
+  within three bootstrap standard errors, and its terms add up to the yield
+  effect in every replicate.
+* An acceptance run on a masked copy of a multi-site field study, with a
+  signed causal graph, is not part of this release; it is planned for
+  0.5.1.
+
 # pollinatoR 0.4.0
 
 ## Breaking changes

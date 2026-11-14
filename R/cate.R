@@ -38,7 +38,7 @@
 #'   row per response and level and the columns `response`, `contrast`,
 #'   `level`, `estimate`, `std.error`, `conf.low`, `conf.high`, `pooled`
 #'   (`TRUE`), `n` (rows of the model data at the level), `family`, `scale`,
-#'   `basis`, `distribution` and `interval` (`"conditional"` on glmmTMB,
+#'   `basis`, `effect`, `distribution` and `interval` (`"conditional"` on glmmTMB,
 #'   `"posterior"` on flexyBayes); and `by`, `engine`, `conf_level`, `n`,
 #'   `seed` and the `estimand`.
 #' @seealso [pollin_effects()] for the trial contrast and the fixed per-level
@@ -102,6 +102,7 @@ pollin_cate <- function(
         family = est$family,
         scale = est$scale,
         basis = est$basis,
+        effect = est$effect,
         distribution = fit$families[[r]]$family,
         interval = if (fit$engine == "flexyBayes") {
           "posterior"
@@ -135,7 +136,8 @@ print.pollin_cate <- function(x, ...) {
   cat("<pollin_cate>\n")
   cat("  by       :", x$by, "\n")
   cat("  scale    :", e$scale, "\n")
-  cat("  basis    :", e$basis, "\n")
+  cat("  basis    :", .basis_label(e$basis), "\n")
+  cat("  effect   :", .effect_label(e$effect, e$mediators), "\n")
   cat(
     "  estimate :",
     .scale_definition(

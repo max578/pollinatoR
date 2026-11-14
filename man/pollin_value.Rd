@@ -71,6 +71,11 @@ In particular a gain \code{g = high/low - 1} is refused by the dependence
 channel: it relates to the loss share by \code{g = D / (1 - D)}, so valuing a
 gain overstates the loss by the factor \code{1 / (1 - D)}.
 
+Two estimands are refused whatever the channel: the \code{cage} family, which
+measures the exclusion device and not pollinators, and a direct effect
+(\code{effect = "direct"}), whose mediator-adjusted share is not the
+contribution the crop would lose without pollinators.
+
 A dependence estimand whose reference arm is \code{"supplemented"} (potential
 dependence) is valued and labelled as the value at full pollination, which
 is not the contribution of the pollination the crop receives now.

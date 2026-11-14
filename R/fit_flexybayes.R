@@ -268,6 +268,7 @@
   } else {
     paste(inputs$treatment, "*", by)
   }
+  fixed <- c(fixed, inputs$covariates)
   fits <- list()
   data <- list()
   families <- list()

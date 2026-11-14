@@ -34,7 +34,13 @@ test_that("estimands and assumptions match 0.1.0 exactly", {
         gold$estimand,
         info = key
       )
-      expect_identical(pollin_assumptions(est), gold$assumptions, info = key)
+      # 0.5.0 appends the effect label; the 0.1.0 rows must not move.
+      a <- pollin_assumptions(est)
+      expect_identical(setdiff(a$assumption, gold$assumptions$assumption),
+        "effect", info = key)
+      a <- a[a$assumption %in% gold$assumptions$assumption, ]
+      rownames(a) <- NULL
+      expect_identical(a, gold$assumptions, info = key)
     }
   }
 })

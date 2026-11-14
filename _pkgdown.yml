@@ -18,6 +18,13 @@ reference:
     contents:
       - pollin_estimand
       - pollin_assumptions
+  - title: Identification
+    desc: Causal graph, adjustment sets, cage bounds and sensitivity.
+    contents:
+      - pollin_dag
+      - pollin_dag_check
+      - pollin_bound
+      - pollin_sensitivity
   - title: Population
     desc: Carry the estimand from the trial to a population of strata.
     contents:
@@ -55,6 +62,7 @@ reference:
       - pollin_index
       - pollin_rii
       - pollin_compensation
+      - pollin_decompose
       - pollin_within_between
       - pollin_fdr
 
@@ -69,6 +77,7 @@ articles:
       - three-arm-trial
       - split-plot-trial
       - matched-pair-field-study
+      - identification
   - title: Value
     navbar: Value
     contents:

@@ -200,6 +200,7 @@ test_that("summary and print name the estimand, scale, basis and method", {
       "family",
       "scale",
       "basis",
+      "effect",
       "method",
       "n"
     )

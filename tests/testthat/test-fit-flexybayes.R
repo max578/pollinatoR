@@ -143,3 +143,15 @@ test_that("a FALSE convergence verdict stops and NA warns", {
     "no convergence verdict for 'pods'"
   )
 })
+
+test_that("a direct effect carries its adjustment on the flexyBayes engine", {
+  skip_flexy()
+  op <- flexy_options()
+  on.exit(options(op), add = TRUE)
+  fit <- pollin_fit(fd_estimand("direct"), engine = "flexyBayes")
+  expect_identical(fit$flexy$fixed, c("trt", "veg"))
+  e <- pollin_effects(fit, n_draws = 1000L, seed = 1L)
+  expect_identical(e$table$effect, "direct")
+  ref <- pollin_effects(pollin_fit(fd_estimand("direct")))$table$estimate
+  expect_lt(abs(e$table$estimate - ref), 0.02)
+})

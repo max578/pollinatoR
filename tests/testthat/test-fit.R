@@ -166,3 +166,124 @@ test_that("moderation splits on the full key of an inner slope unit", {
   expect_identical(nlevels(inputs$wb_group), 16L)
   expect_identical(inputs$slope_key, "Site:Plot")
 })
+
+test_that("a direct effect adds its adjustment as main effects", {
+  skip_on_cran()
+  tot <- pollin_fit(fd_estimand())
+  dir <- pollin_fit(fd_estimand("direct"))
+  expect_identical(tot$rhs, c("trt", "(1 | Site)"))
+  expect_identical(dir$rhs, c("trt", "veg", "(1 | Site)"))
+  # On the log link with main effects only, the ratio of the averaged arm
+  # predictions is exp(b_trt) exactly, so the loss share is 1 - exp(-b_trt)
+  b <- glmmTMB::fixef(dir$fits$pods)$cond[["trtOpen"]]
+  e_dir <- pollin_effects(dir)
+  expect_equal(e_dir$table$estimate, 1 - exp(-b), tolerance = 1e-8)
+  expect_identical(e_dir$table$effect, "direct")
+  expect_identical(pollin_effects(tot)$table$effect, "total")
+  # The cage lowers veg, which lowers pods, so the total exceeds the direct
+  expect_gt(pollin_effects(tot)$table$estimate, e_dir$table$estimate)
+  expect_output(print(e_dir), "effect   : direct, holding veg fixed")
+})
+
+test_that("a direct effect drops rows missing an adjustment column", {
+  skip_on_cran()
+  est <- fd_estimand("direct")
+  est$design$data$data$veg[1:3] <- NA
+  expect_identical(nrow(pollin_fit(est)$data$pods), 157L)
+  est_t <- fd_estimand()
+  est_t$design$data$data$veg[1:3] <- NA
+  expect_identical(nrow(pollin_fit(est_t)$data$pods), 160L)
+})
+
+test_that("a site-level exposure is fitted between units only", {
+  skip_on_cran()
+  ds <- fd_moderation_design(3L, site_only = TRUE)
+  expect_message(
+    m <- pollin_moderation(ds, "y"),
+    "`bees` does not vary within units"
+  )
+  expect_identical(m$table$component, "between (vulnerable)")
+  expect_false(anyNA(m$table$estimate))
+  expect_identical(m$between_only, "bees")
+  a <- m$assumptions
+  expect_match(
+    a$statement[a$assumption == "within-unit moderation"],
+    "Not estimated for bees"
+  )
+  expect_output(print(m), "between units only: bees")
+})
+
+test_that("the excluded-arm slope is reported as the negative control", {
+  skip_on_cran()
+  # Fertility raises both arms alike and the bee count: no true moderation
+  m <- pollin_moderation(fd_moderation_design(2L, conf = 0.5), "y")
+  nc <- m$negative_control
+  expect_identical(nc$term, c("bees_within", "bees_between"))
+  co <- summary(m$fit)$coefficients$cond
+  expect_identical(nc$estimate, unname(co[nc$term, 1L]))
+  expect_lt(nc$p.value[nc$term == "bees_between"], 0.001)
+  expect_output(print(m), "negative control")
+  # Without an excluded arm there is no negative control
+  pd <- m$design$data
+  pd$data$trt[pd$data$trt == "Cage"] <- "Hand"
+  ds2 <- pollin_design(pd, c(open = "Open", supplemented = "Hand"),
+    "multi_site")
+  m2 <- pollin_moderation(ds2, "y")
+  expect_null(m2$negative_control)
+  expect_match(
+    m2$assumptions$statement[m2$assumptions$assumption == "negative control"],
+    "no excluded arm"
+  )
+})
+
+test_that("a graph's exposure set enters as main effects and interactions", {
+  skip_on_cran()
+  skip_if_not_installed("dagitty")
+  ds <- fd_moderation_design(4L)
+  g <- pollin_dag(
+    ds,
+    "dag { forest -> bees; forest -> y; bees -> y; trt -> y }",
+    "y"
+  )
+  m <- pollin_moderation(ds, "y", dag = g)
+  expect_identical(m$adjustment, "forest")
+  expect_true("trtOpen:forest" %in% m$table$term)
+  expect_identical(
+    m$table$component[m$table$term == "trtOpen:forest"],
+    "adjustment"
+  )
+  expect_match(
+    m$assumptions$statement[m$assumptions$assumption == "adjustment"],
+    "cannot draw effect modification"
+  )
+  # Without the graph the declared adjust column is a main effect only
+  ds_a <- fd_moderation_design(4L, adjust = "forest")
+  m_a <- pollin_moderation(ds_a, "y")
+  expect_identical(m_a$adjustment, "forest")
+  expect_false(any(m_a$table$component == "adjustment"))
+  # A latent common cause leaves no set
+  g_lat <- pollin_dag(
+    ds,
+    "dag { u [latent]; u -> bees; u -> y; bees -> y; trt -> y }",
+    "y"
+  )
+  expect_error(
+    pollin_moderation(ds, "y", dag = g_lat),
+    "identifies no adjustment set for the effect of `bees`"
+  )
+  expect_error(pollin_moderation(ds_a, "y", dag = g), "different design")
+})
+
+test_that("a fit without a positive-definite Hessian warns by name", {
+  skip_on_cran()
+  ds <- fd_moderation_design(1L, site_sd = 0, slope_sd = 0)
+  seen <- character(0)
+  withCallingHandlers(
+    suppressMessages(pollin_moderation(ds, "y")),
+    warning = function(w) {
+      seen <<- c(seen, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl("moderation fit for `y` .*not reliable", seen)))
+})

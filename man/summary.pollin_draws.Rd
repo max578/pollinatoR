@@ -20,7 +20,7 @@
 A data frame with one row per column of the draws and the columns
 \code{response}, \code{level} (the column name: a \code{by} level, \code{"overall"} or
 \code{"population"}), \code{median}, \code{conf.low} and \code{conf.high} (the percentile
-interval), \code{family}, \code{scale}, \code{basis}, \code{method} and \code{n}.
+interval), \code{family}, \code{scale}, \code{basis}, \code{effect}, \code{method} and \code{n}.
 \code{as.matrix()} returns the \code{estimate} matrix of the draws.
 }
 \description{

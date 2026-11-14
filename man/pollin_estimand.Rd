@@ -4,42 +4,78 @@
 \alias{pollin_estimand}
 \title{Declare the estimand of a pollination experiment}
 \usage{
-pollin_estimand(design, family, scale, basis, population = "trial")
+pollin_estimand(
+  design,
+  family,
+  scale,
+  basis,
+  population = "trial",
+  effect = "total",
+  mediators = NULL,
+  dag = NULL
+)
 }
 \arguments{
 \item{design}{A \code{\link[=pollin_design]{pollin_design()}} object.}
 
-\item{family}{\code{"deficit"} or \code{"dependence"}. There is no default.}
+\item{family}{\code{"deficit"}, \code{"dependence"} or \code{"cage"}. There is no
+default.}
 
 \item{scale}{One of \code{"difference"}, \code{"ratio"}, \code{"rii"} or \code{"lnrr"}. There
 is no default.}
 
-\item{basis}{\code{"loss"} or \code{"gain"}. There is no default.}
+\item{basis}{\code{"loss"} or \code{"gain"}. There is no default, except for the
+\code{"cage"} family, which takes none (leave it out or pass \code{NULL}).}
 
 \item{population}{The population the estimand refers to: \code{"trial"} (the
 default, the units in the experiment) or a \code{\link[=pollin_population]{pollin_population()}} object,
 strata of one column weighted by area. A population estimand is fitted
 with the strata as \code{by} and read with \code{\link[=pollin_draws]{pollin_draws()}}.}
+
+\item{effect}{\code{"total"} (the default) or \code{"direct"}.}
+
+\item{mediators}{For \code{effect = "direct"}, the declared \code{adjust} columns held
+fixed. Required for a direct effect, refused for a total one.}
+
+\item{dag}{Optional \code{\link[=pollin_dag]{pollin_dag()}} object built from \code{design}. With a graph,
+a total effect requires the unadjusted contrast to be valid, and a direct
+effect requires each mediator to lie on a path from the treatment to the
+outcome and the declared \code{adjust} columns to contain a direct-effect
+adjustment set of the graph.}
 }
 \value{
 An object of class \code{pollin_estimand}: a list holding \code{design},
-\code{family}, \code{scale}, \code{basis}, \code{population}, the \code{contrast} (the treatment
-levels of the \code{high} and \code{low} arms) and the \code{assumptions} table.
+\code{family}, \code{scale}, \code{basis} (\code{NA} for the cage family), \code{population},
+\code{effect}, \code{mediators}, \code{adjustment} (the columns a direct effect is
+adjusted for), \code{dag}, the \code{contrast} (the treatment levels of the \code{high}
+and \code{low} arms) and the \code{assumptions} table.
 }
 \description{
 Names the contrast, the scale it is reported on and the basis of any share,
-for a declared \code{\link[=pollin_design]{pollin_design()}}. Two estimand families are available:
+for a declared \code{\link[=pollin_design]{pollin_design()}}. Three estimand families are available:
 }
 \details{
 \itemize{
 \item \code{"deficit"} (E1): supplemented versus open, the yield gap left by the
 pollination the crop received.
-\item \code{"dependence"} (E2): excluded versus the design's reference arm (open, or
-supplemented), the yield owed to pollinators.
+\item \code{"dependence"} (E2): excluded versus the design's reference arm (open,
+supplemented or sham), the yield owed to pollinators. Against a sham arm
+it is net of the cage effect.
+\item \code{"cage"}: sham versus open, the effect of the exclusion device itself on
+plants that pollinators still reach. It has no basis, and its ratio scale
+is the cage factor \code{sham / open}; scales \code{"difference"}, \code{"ratio"} and
+\code{"lnrr"}.
 }
 
+Every estimand is a total effect unless \code{effect = "direct"} is asked for.
+A direct effect holds the named \code{mediators} fixed (for example vegetative
+weight measured at harvest, which pollination itself can change); it is
+never the default, and with a \code{dag} it is refused when the graph leaves a
+path from the mediators to the outcome open, as an unmeasured common cause
+of the mediator and the yield does.
+
 Writing \code{high} for the expected response in the higher arm (open or
-supplemented) and \code{low} for the lower one, the scales are:\tabular{ll}{
+supplemented or sham) and \code{low} for the lower one, the scales are:\tabular{ll}{
    Scale \tab Value \cr
    \code{"difference"} \tab \code{high - low} \cr
    \code{"ratio"}, \code{basis = "loss"} \tab \code{1 - low / high}, the share of \code{high} lost without the contrast \cr

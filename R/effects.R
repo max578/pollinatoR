@@ -15,6 +15,7 @@
 #' | `"ratio"` | `"gain"` | `rr - 1` |
 #' | `"rii"` | either | `(rr - 1) / (rr + 1)`, equal to `D / (2 - D)` |
 #' | `"lnrr"` | either | `log(rr)` |
+#' | `"ratio"` | none (cage family) | `rr`, the cage factor `sham / open` |
 #'
 #' With `interval = "delta"`, the interval for a ratio-type scale is a delta
 #' interval for `log(rr)`, transformed to the scale, so the loss share stays
@@ -74,7 +75,8 @@
 #'   one row per response (and per `by` level) and the columns `response`,
 #'   `contrast`, any `by` column, `estimate`, `std.error`, `conf.low`,
 #'   `conf.high`, `p.value`, `family` (the estimand family), `scale`, `basis`,
-#'   `distribution` (the model family) and `interval`; and `interval`, `n_boot`,
+#'   `effect` (`"total"` or `"direct"`), `distribution` (the model family) and
+#'   `interval`; and `interval`, `n_boot`,
 #'   `seed`, `conf_level`, `by`, the `estimand` and `n_draws` (posterior
 #'   intervals only).
 #' @seealso [pollin_estimand()] for the scales and the basis.
@@ -155,6 +157,7 @@ pollin_effects <- function(
         family = est$family,
         scale = est$scale,
         basis = est$basis,
+        effect = est$effect,
         distribution = fit$families[[r]]$family,
         interval = interval,
         stringsAsFactors = FALSE
@@ -184,11 +187,11 @@ print.pollin_effects <- function(x, ...) {
   e <- x$estimand
   high <- e$contrast[["high"]]
   low <- e$contrast[["low"]]
-  label <- if (e$family == "deficit") "deficit (E1)" else "dependence (E2)"
   cat("<pollin_effects>\n")
-  cat("  family   :", label, "\n")
+  cat("  family   :", .family_label(e$family), "\n")
   cat("  scale    :", e$scale, "\n")
-  cat("  basis    :", e$basis, "\n")
+  cat("  basis    :", .basis_label(e$basis), "\n")
+  cat("  effect   :", .effect_label(e$effect, e$mediators), "\n")
   cat("  estimate :", .scale_definition(e$scale, e$basis, high, low), "\n")
   cat(
     "  interval :",
@@ -219,7 +222,9 @@ print.pollin_effects <- function(x, ...) {
   switch(
     scale,
     difference = sprintf("%s - %s (difference)", high, low),
-    ratio = if (basis == "loss") {
+    ratio = if (is.na(basis)) {
+      sprintf("%s (cage factor)", r)
+    } else if (basis == "loss") {
       sprintf("1 - %s/%s (loss share)", low, high)
     } else {
       sprintf("%s - 1 (gain)", r)
@@ -235,7 +240,13 @@ print.pollin_effects <- function(x, ...) {
 .from_ratio <- function(r, scale, basis) {
   switch(
     scale,
-    ratio = if (basis == "loss") 1 - 1 / r else r - 1,
+    ratio = if (is.na(basis)) {
+      r
+    } else if (basis == "loss") {
+      1 - 1 / r
+    } else {
+      r - 1
+    },
     rii = (r - 1) / (r + 1),
     lnrr = log(r)
   )
@@ -248,7 +259,13 @@ print.pollin_effects <- function(x, ...) {
 .from_ratio_slope <- function(r, scale, basis) {
   switch(
     scale,
-    ratio = if (basis == "loss") 1 / r else r,
+    ratio = if (is.na(basis)) {
+      r
+    } else if (basis == "loss") {
+      1 / r
+    } else {
+      r
+    },
     rii = 2 * r / (r + 1)^2,
     lnrr = rep(1, length(r))
   )

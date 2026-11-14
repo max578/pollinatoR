@@ -195,6 +195,57 @@ test_that("the wrong family is refused, with the call for the right one", {
   )
 })
 
+test_that("a cage estimand is refused as not a pollination quantity", {
+  d <- data.frame(
+    pods = rep(c(20, 30, 29), 8L),
+    trt = rep(c("Cage", "Open", "Sham"), 8L),
+    Block = rep(sprintf("b%d", 1:4), each = 6L),
+    stringsAsFactors = FALSE
+  )
+  pd <- pollin_data(d, "pods", "trt", unit = "Block")
+  ds <- pollin_design(
+    pd,
+    c(excluded = "Cage", open = "Open", sham = "Sham"),
+    "rcbd"
+  )
+  dr <- va_draws(pollin_estimand(ds, "cage", "ratio"))
+  for (ch in c("dependence", "deficit")) {
+    expect_error(
+      pollin_value(dr, va_market(), channel = ch),
+      "not a pollination quantity"
+    )
+  }
+  # The sham-referenced dependence estimand of the same design is valued
+  ds_s <- pollin_design(
+    pd,
+    c(excluded = "Cage", open = "Open", sham = "Sham"),
+    "rcbd",
+    reference = "sham"
+  )
+  v <- pollin_value(
+    va_draws(pollin_estimand(ds_s, "dependence", "ratio", "loss")),
+    va_market(),
+    channel = "dependence"
+  )
+  expect_s3_class(v, "pollin_value")
+})
+
+test_that("a direct effect is refused; the total effect is valued", {
+  e <- va_estimand()
+  expect_identical(e$effect, "total")
+  expect_s3_class(
+    pollin_value(va_draws(e), va_market(), channel = "dependence"),
+    "pollin_value"
+  )
+  skip_on_cran()
+  dr <- pollin_draws(pollin_fit(fd_estimand("direct")), n = 200L, seed = 1L)
+  expect_identical(summary(dr)$effect, "direct")
+  expect_error(
+    pollin_value(dr, va_market(), channel = "dependence"),
+    "holds `veg` fixed.*value the total effect"
+  )
+})
+
 test_that("a scale other than the ratio is refused", {
   for (s in c("difference", "rii", "lnrr")) {
     dr <- va_draws(va_estimand(scale = s))
@@ -476,4 +527,57 @@ test_that("the guard refuses mixed currencies, years and draw counts", {
   )
   expect_error(pollin_guard_doublecount(dc_value()), "two or more")
   expect_error(pollin_guard_doublecount(dc_value(), 3), "two or more")
+})
+
+# pollin_bound() ---------------------------------------------------------------
+
+test_that("the bound is 1 - (1 - D)/k per draw at each end of the range", {
+  dr <- va_draws()
+  b <- pollin_bound(dr, cage_factor = c(1, 1.25))
+  d_obs <- 1 - c(20, 24, 21, 18) / c(30, 32, 28, 31)
+  expect_equal(unname(b$draws[, "lower"]), d_obs)
+  expect_equal(unname(b$draws[, "upper"]), 1 - (1 - d_obs) / 1.25)
+  t <- b$table
+  expect_equal(t$observed, stats::median(d_obs))
+  expect_equal(t$upper, stats::median(1 - (1 - d_obs) / 1.25))
+  expect_equal(t$conf.low, stats::quantile(d_obs, 0.025, names = FALSE))
+  expect_equal(
+    t$conf.high,
+    stats::quantile(1 - (1 - d_obs) / 1.25, 0.975, names = FALSE)
+  )
+  expect_lte(t$lower, t$upper)
+  # No cage effect returns the observed share
+  b1 <- pollin_bound(dr, cage_factor = c(1, 1))
+  expect_identical(b1$table$lower, b1$table$observed)
+  expect_output(print(b), "cage factor in \\[1, 1.25\\]")
+})
+
+test_that("the bound refuses other estimands, a sham reference and bad ranges", {
+  dr <- va_draws()
+  expect_error(pollin_bound(dr), "no default")
+  expect_error(pollin_bound(dr, c(1.2, 1)), "low then high")
+  expect_error(pollin_bound(dr, c(0, 1)), "positive")
+  expect_error(pollin_bound(dr, 1.1), "two positive numbers")
+  expect_error(
+    pollin_bound(va_draws(va_estimand(basis = "gain")), c(1, 1.2)),
+    "loss share"
+  )
+  expect_error(
+    pollin_bound(va_draws(va_estimand("deficit", basis = "gain")), c(1, 1.2)),
+    "loss share"
+  )
+  d <- data.frame(
+    pods = rep(c(20, 30, 29), 8L),
+    trt = rep(c("Cage", "Open", "Sham"), 8L),
+    Block = rep(sprintf("b%d", 1:4), each = 6L)
+  )
+  ds <- pollin_design(
+    pollin_data(d, "pods", "trt", unit = "Block"),
+    c(excluded = "Cage", open = "Open", sham = "Sham"),
+    "rcbd",
+    reference = "sham"
+  )
+  dr_s <- va_draws(pollin_estimand(ds, "dependence", "ratio", "loss"))
+  expect_error(pollin_bound(dr_s, c(1, 1.2)), "already net")
+  expect_error(pollin_bound(1, c(1, 1.2)), "pollin_draws")
 })

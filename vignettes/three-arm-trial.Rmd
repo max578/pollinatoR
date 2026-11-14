@@ -169,6 +169,57 @@ est_sup <- pollin_estimand(ds_sup, "dependence", scale = "ratio", basis = "loss"
 pollin_effects(pollin_fit(est_sup))
 ```
 
+## A sham arm
+
+A bag or cage does more than keep insects out: it shades the plant and changes
+the air around it. The dependence above includes any such effect, because the
+excluded plants carry the device and the open plants do not. A sham arm
+carries the same device with its sides open, so insects reach the plant. The
+trial below swaps the hand-pollinated arm for a sham, and the device raises
+pod count by 10% whether or not insects visit.
+
+```{r sham-data}
+set.seed(2025)
+sham_trial <- expand.grid(
+  plant = seq_len(n_plant),
+  trt = c("Bagged", "Open", "Sham"),
+  block = sprintf("B%d", seq_len(n_block)),
+  stringsAsFactors = FALSE
+)
+sham_mean <- c(Bagged = 44, Open = 60, Sham = 66)
+mu <- sham_mean[sham_trial$trt] * exp(block_effect[sham_trial$block])
+sham_trial$pods <- rnbinom(nrow(sham_trial), mu = mu, size = 30)
+pd_sham <- pollin_data(sham_trial, "pods", "trt", unit = "block")
+sham_arms <- c(excluded = "Bagged", open = "Open", sham = "Sham")
+```
+
+The `cage` family estimates the device's own effect, the sham against the
+open arm. On the ratio scale it is the factor by which the device multiplies
+pod count, planted at 1.1.
+
+```{r cage}
+ds_sham <- pollin_design(pd_sham, sham_arms, layout = "rcbd")
+pollin_effects(pollin_fit(pollin_estimand(ds_sham, "cage", "ratio")))
+```
+
+Read against the sham, the dependence compares two bagged arms that differ
+only in whether insects get in. It is net of the device, planted at
+$1 - 44/66 = 0.33$, where the contrast with the open arm gives
+$1 - 44/60 = 0.27$.
+
+```{r sham-reference}
+ds_net <- pollin_design(pd_sham, sham_arms, layout = "rcbd", reference = "sham")
+est_net <- pollin_estimand(ds_net, "dependence", scale = "ratio", basis = "loss")
+pollin_effects(pollin_fit(est_net))
+```
+
+This reading assumes the device multiplies pod count by the same factor with
+and without insects, and `pollin_assumptions(est_net)` states it. A trial
+with only the sham and the excluded arm reads the dependence the same way but
+cannot estimate the device's effect. Without a sham arm, `pollin_bound()`
+bounds the share over a range of device effects (*Identification in a field
+study*).
+
 ## A guard on plant-level ratios
 
 A common shortcut computes the RII or the dependence ratio for each block (or

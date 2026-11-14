@@ -43,7 +43,8 @@ An object of class \code{pollin_effects}: a list holding \code{table}, with
 one row per response (and per \code{by} level) and the columns \code{response},
 \code{contrast}, any \code{by} column, \code{estimate}, \code{std.error}, \code{conf.low},
 \code{conf.high}, \code{p.value}, \code{family} (the estimand family), \code{scale}, \code{basis},
-\code{distribution} (the model family) and \code{interval}; and \code{interval}, \code{n_boot},
+\code{effect} (\code{"total"} or \code{"direct"}), \code{distribution} (the model family) and
+\code{interval}; and \code{interval}, \code{n_boot},
 \code{seed}, \code{conf_level}, \code{by}, the \code{estimand} and \code{n_draws} (posterior
 intervals only).
 }
@@ -62,6 +63,7 @@ never an average of unit ratios. With \code{rr = high / low}:
    \code{"ratio"} \tab \code{"gain"} \tab \code{rr - 1} \cr
    \code{"rii"} \tab either \tab \code{(rr - 1) / (rr + 1)}, equal to \code{D / (2 - D)} \cr
    \code{"lnrr"} \tab either \tab \code{log(rr)} \cr
+   \code{"ratio"} \tab none (cage family) \tab \code{rr}, the cage factor \code{sham / open} \cr
 }
 
 

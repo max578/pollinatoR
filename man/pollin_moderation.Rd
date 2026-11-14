@@ -4,7 +4,7 @@
 \alias{pollin_moderation}
 \title{Estimate exposure moderation of the contribution}
 \usage{
-pollin_moderation(x, outcome, exposures = NULL, family = NULL, ...)
+pollin_moderation(x, outcome, exposures = NULL, family = NULL, dag = NULL, ...)
 }
 \arguments{
 \item{x}{A \code{\link[=pollin_design]{pollin_design()}} object whose data declare \code{exposures}.}
@@ -17,30 +17,60 @@ exposure.}
 \item{family}{Optional \code{glmmTMB} family (chosen from the outcome's values if
 missing).}
 
+\item{dag}{Optional \code{\link[=pollin_dag]{pollin_dag()}} object built from \code{x}; its adjustment
+sets replace the declared \code{adjust} columns.}
+
 \item{...}{Passed to \code{\link[glmmTMB:glmmTMB]{glmmTMB::glmmTMB()}}.}
 }
 \value{
-An object of class \code{pollin_moderation} with a tidy \code{table} of the
-treatment-by-exposure terms (each tagged \code{within} or \code{between}),
-FDR-adjusted across the within terms, and the fitted model in \code{fit}.
+An object of class \code{pollin_moderation}: a list holding the tidy
+\code{table} of the treatment-by-exposure terms (each tagged \code{within},
+\code{between} or, for a graph's adjustment columns, \code{adjustment}),
+FDR-adjusted across the within terms; the \code{negative_control} table (the
+exposure terms' slopes in the excluded arm, on the link scale per
+standard deviation; \code{NULL} without an excluded arm); \code{between_only} (the
+exposures with no within-unit variation); \code{adjustment} (the columns
+adjusted for); the \code{assumptions} (a data frame of \code{assumption} and
+\code{statement}); the fitted model in \code{fit}; the \code{outcome} and the \code{design}.
 }
 \description{
 Asks which exposures (e.g. honey-bee versus other-insect abundance) drive
 the open-minus-exclusion contribution, as treatment-by-exposure
 interactions. Each exposure enters through a within-between (Mundlak)
 decomposition: a between-unit part (the unit mean) and a within-unit part
-(the deviation from it). The \strong{within-unit} treatment-by-exposure
-coefficient is robust to any unit-level confounder -- observed or not,
-including an unrecorded genotype -- because it is identified from variation
-that occurs within the unit, where
-the confounder is constant. The between-unit part is reported but flagged as
-confounder-vulnerable. Adjustment covariates enter as fixed effects.
+(the deviation from it), each standardised. The \strong{within-unit}
+treatment-by-exposure coefficient is robust to any unit-level confounder --
+observed or not, including an unrecorded genotype -- because it is
+identified from variation that occurs within the unit, where the confounder
+is constant. The between-unit part is reported but flagged as
+confounder-vulnerable. An exposure that does not vary within units (a
+site-level count) has no within part: it is fitted between units only, and
+a message says so.
 }
 \details{
 From a \code{\link[=pollin_design]{pollin_design()}}, the unit of the split is the design's slope unit
 (with the unit levels outside it), or the outermost unit when the design
 carries no slope; the treatment reference level is the excluded arm, or the
 open arm when the design has no excluded arm.
+
+\strong{Adjustment.} Without a graph, the declared \code{adjust} columns enter as
+main effects. With \code{dag}, the adjustment set of each exposure (its first
+minimal set for the exposure's effect on the outcome, from \code{\link[=pollin_dag]{pollin_dag()}})
+enters as main effects and treatment interactions, since a confounder that
+changes the contrast is removed only by its interaction. A graph cannot
+draw effect modification: the set is borrowed from the exposure's effect on
+the outcome, and the assumptions say so.
+
+\strong{Negative control.} Insects cannot reach the excluded plants, so an
+exposure's slope in the excluded arm is not pollination: it is confounding,
+or a site effect correlated with the cage. With the excluded arm as the
+reference level that slope is the exposure's main effect, reported in
+\code{negative_control}. It detects a site variable that shifts both arms alike
+on the link scale; it does not detect one that changes the contrast itself.
+
+A fit without a positive-definite Hessian, or that did not converge, has
+unreliable standard errors and p-values; it returns with a warning naming
+the outcome.
 }
 \examples{
 \donttest{
