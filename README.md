@@ -77,14 +77,18 @@ pollin_value(dr, mk, channel = "dependence")
 |---|---|---|
 | Data | `pollin_data()` | Declare responses, treatment, units, groups, exposures and adjustment columns |
 | | `pollin_validate()` | Structural checks: missing values, expected levels, identities |
-| Design | `pollin_design()` | Map treatment levels to the excluded, open and supplemented arms; set the layout |
-| Estimand | `pollin_estimand()` | Deficit or dependence, on the difference, ratio, RII or lnRR scale, with a loss or gain basis |
+| Design | `pollin_design()` | Map treatment levels to the excluded, open, supplemented and sham arms; set the layout |
+| Estimand | `pollin_estimand()` | Deficit, dependence or cage effect, on the difference, ratio, RII or lnRR scale, with a loss or gain basis; a total effect, or a direct effect with named mediators held fixed |
 | | `pollin_assumptions()` | The assumptions the estimand rests on |
+| Identification | `pollin_dag()` | Read a causal graph (`dagitty`): adjustment sets for the total and direct effects and for each exposure, and the class of each covariate |
+| | `pollin_dag_check()` | Test the graph's implied independencies on the data |
+| | `pollin_bound()` | Bound the loss share over a range of cage effects when there is no sham arm |
+| | `pollin_sensitivity()` | E-value of a ratio of arm means; link-scale bias to the null for a moderation term |
 | Fit | `pollin_fit()` | One model per response, on `glmmTMB` or, with `engine = "flexyBayes"`, a Bayesian fit on INLA; the treatment effect fitted per level of a column (`by`), or pooled across its levels (`pooled`) |
 | Effects | `pollin_effects()` | Estimates with delta, parametric bootstrap or posterior intervals, overall or per level of `by` |
 | | `pollin_cate()` | The effect at each level of a column with a random treatment slope, partially pooled |
 | | `pollin_contribution()` | Dependence on the difference scale, with FDR-adjusted p-values and the treatment-slope SD |
-| | `pollin_moderation()` | Treatment-by-exposure terms, split within and between units |
+| | `pollin_moderation()` | Treatment-by-exposure terms, split within and between units, with a graph's adjustment set and the exposure's slope in the excluded arm as a negative control |
 | Population | `pollin_population()` | Strata of one column (distance bands, regions) weighted by area, passed to `pollin_estimand()` |
 | Draws | `pollin_draws()` | Draws of the arm means and the estimand, by joint simulation of the fixed and random effects, parametric bootstrap, or from the posterior of a flexyBayes fit |
 | Value | `pollin_market()` | Current production and price, as values or draws, with unit, currency, price year and source |
@@ -92,7 +96,7 @@ pollin_value(dr, mk, channel = "dependence")
 | Guards | `pollin_guard_spurious()` | Index-versus-yield slope against a permutation null |
 | | `pollin_guard_bounded()` | Refuses to average unit-level ratios unless asked |
 | | `pollin_guard_ecological()` | Warns when an exposure slope exists only between units |
-| | `pollin_guard_posttreatment()` | Refuses an adjustment covariate declared downstream of treatment |
+| | `pollin_guard_posttreatment()` | Refuses an adjustment covariate downstream of treatment, declared or read from a graph |
 | | `pollin_guard_doublecount()` | Adds values draw by draw and refuses overlapping attributions |
 | Indices and utilities | `pollin_index()`, `pollin_rii()` | Descriptive indices with intervals, from arm means |
 | | `pollin_compensation()` | Trade-offs among yield components |
@@ -109,6 +113,7 @@ vignette("pollinatoR")
 vignette("three-arm-trial", package = "pollinatoR")
 vignette("split-plot-trial", package = "pollinatoR")
 vignette("matched-pair-field-study", package = "pollinatoR")
+vignette("identification", package = "pollinatoR")
 vignette("dependence-to-value", package = "pollinatoR")
 vignette("bayesian-fits", package = "pollinatoR")
 ```

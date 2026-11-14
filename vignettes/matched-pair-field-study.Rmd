@@ -221,3 +221,29 @@ try(pollin_guard_posttreatment(pd_bad, downstream = "veg_biomass"))
 
 The first call returns silently because rainfall is not declared downstream.
 The second stops before any analysis uses the biomass adjustment.
+
+The same judgement can be written as a causal graph. With the `dagitty`
+package installed, `pollin_dag()` reads the graph, works out which columns are
+downstream of the cage, and the guard takes them from it:
+
+```{r posttreatment-dag, eval = requireNamespace("dagitty", quietly = TRUE)}
+pd_both <- pollin_data(
+  study,
+  response = c("pods", "seed_g"),
+  treatment = "trt",
+  unit = "field",
+  adjust = c("rainfall", "veg_biomass")
+)
+ds_both <- pollin_design(pd_both, c(excluded = "Caged", open = "Open"), "matched_pairs")
+g <- pollin_dag(
+  ds_both,
+  "dag { trt -> veg_biomass -> yield; trt -> yield; rainfall -> yield }",
+  "yield"
+)
+try(pollin_guard_posttreatment(ds_both, dag = g))
+```
+
+When the question is the direct effect of pollination with biomass held
+fixed, the estimand asks for it by name (`effect = "direct"`) and the guard
+lets the mediator through; *Identification in a field study* works through
+both readings.
