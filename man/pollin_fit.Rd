@@ -69,13 +69,11 @@ data is kept in the fit; the contrast is read from the fitted model by
 \details{
 For an estimand with \code{effect = "direct"}, the fixed part adds the
 estimand's adjustment columns (its mediators, and with a graph the rest of
-its direct-effect set) as main effects, `response ~ treatment + \if{html}{\out{<adjustment>}}
-\itemize{
-\item \if{html}{\out{<random terms>}}`. The arm means then keep each row's observed adjustment
-values, so the contrast is the controlled direct effect averaged over the
+its direct-effect set) as main effects:
+\code{response ~ treatment + adjustment + random}. The arm means then keep each
+row's observed adjustment values, so the contrast is the controlled direct effect averaged over the
 observed mediator values. With no treatment-by-mediator interaction in the
 model, that is the effect of the treatment at any fixed mediator value.
-}
 
 Rows with a missing value in the response, the treatment, a unit column,
 the denominator, the \code{by} column or a direct effect's adjustment column are

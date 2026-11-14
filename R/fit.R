@@ -13,9 +13,9 @@
 #'
 #' For an estimand with `effect = "direct"`, the fixed part adds the
 #' estimand's adjustment columns (its mediators, and with a graph the rest of
-#' its direct-effect set) as main effects, `response ~ treatment + <adjustment>
-#' + <random terms>`. The arm means then keep each row's observed adjustment
-#' values, so the contrast is the controlled direct effect averaged over the
+#' its direct-effect set) as main effects:
+#' `response ~ treatment + adjustment + random`. The arm means then keep each
+#' row's observed adjustment values, so the contrast is the controlled direct effect averaged over the
 #' observed mediator values. With no treatment-by-mediator interaction in the
 #' model, that is the effect of the treatment at any fixed mediator value.
 #'
