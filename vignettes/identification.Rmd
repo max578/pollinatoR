@@ -214,6 +214,44 @@ The negative control detects a field variable that raises both arms alike. It
 cannot detect one that changes the contrast itself, and the assumption table
 of the moderation result says so.
 
+## Whole yield and its components
+
+A dependence estimated on one yield component is not the dependence of yield.
+Seed yield per plant is the product of pods per plant, seeds per pod and seed
+weight, and a plant that sets fewer seeds can fill them better. Suppose the
+study also weighed the seeds of each plant and counted seeds per pod, and
+that seeds per pod respond strongly to pollinator access while seed weight
+compensates:
+
+```{r components}
+set.seed(48)
+study$seeds <- rgamma(nrow(study), shape = 20, rate = 20 / exp(2.5 + 0.35 * open))
+study$weight <- rgamma(nrow(study), shape = 30, rate = 30 / exp(1.2 - 0.12 * open))
+study$yield <- study$pods * study$seeds * study$weight / 1000
+pd_yield <- pollin_data(study, c("yield", "pods", "seeds", "weight"), "trt",
+  unit = "field")
+ds_yield <- pollin_design(pd_yield, c(excluded = "Caged", open = "Open"), "rcbd")
+fit_yield <- pollin_fit(
+  pollin_estimand(ds_yield, "dependence", "ratio", "loss"),
+  family = list(
+    yield = stats::Gamma(link = "log"), pods = glmmTMB::nbinom2(),
+    seeds = stats::Gamma(link = "log"), weight = stats::Gamma(link = "log")
+  )
+)
+pollin_decompose(fit_yield, "yield", c("pods", "seeds", "weight"),
+  n_boot = 100L, seed = 1L)
+```
+
+On the log scale the effect on yield is the sum of the effects on the
+components plus an interaction term, which is near zero here because the
+components vary independently within each arm. The shares say how much of the
+yield effect each component carries. Seed weight carries a negative share and
+is flagged as compensating. A loss share computed from any single component
+misstates the dependence of yield: seeds per pod alone would understate it
+here, and seed weight alone would give it the wrong sign. The intervals come from resampling whole fields
+and refitting all four models on each resample; 100 replicates keep this
+vignette quick, and an analysis would use about 2,000.
+
 ## Sensitivity
 
 For the total effect on a count, the E-value states how strongly an unmeasured

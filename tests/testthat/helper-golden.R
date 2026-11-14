@@ -363,3 +363,17 @@ golden_capture_v040_cate <- function() {
     difference = pollin_cate(pollin_fit(est_d), n = 1000L, seed = 1L)$table
   )
 }
+
+# Outputs at 0.5.0: whole-yield decomposition ---------------------------------
+
+golden_path_v050_decompose <- function() {
+  testthat::test_path("_golden", "golden_v0.5.0_decompose.rds")
+}
+
+golden_capture_v050_decompose <- function() {
+  d <- decompose_fixture(n_sites = 10L, n_plants = 6L, seed = 2L)
+  fit <- decompose_fit(d)
+  r <- pollin_decompose(fit, "yield", c("pods", "seeds", "weight"),
+    n_boot = 20L, seed = 1L)
+  list(table = r$table, draws = r$draws)
+}

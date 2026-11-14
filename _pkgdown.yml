@@ -62,6 +62,7 @@ reference:
       - pollin_index
       - pollin_rii
       - pollin_compensation
+      - pollin_decompose
       - pollin_within_between
       - pollin_fdr
 
