@@ -1,0 +1,18 @@
+Warning message:
+1 unit of `field` lacking at least one arm. 
+     response t_published df_published estimate std.error t_package df_design
+     seed_set        7.86          113  4.42185  0.559840    7.8984       113
+    sqrt_pods       -1.06          115 -0.70676  0.662473   -1.0668       115
+ sqrt_flowers       -2.99          115 -2.21393  0.735175   -3.0114       115
+      log_tgw       -3.25          111 -0.13794  0.042399   -3.2533       111
+   sqrt_straw       -3.72          115 -0.75202  0.200996   -3.7415       115
+ effect      t_gap t_met df_met gated coef_nlme_ml t_nlme_ml coef_met
+  total  0.0384161 FALSE   TRUE FALSE      4.42185    7.8633     TRUE
+  total -0.0068495 FALSE   TRUE FALSE     -0.70676   -1.0603     TRUE
+  total -0.0214374 FALSE   TRUE FALSE     -2.21393   -2.9923     TRUE
+  total -0.0033418  TRUE   TRUE  TRUE     -0.13794   -3.2452     TRUE
+  total -0.0214715 FALSE   TRUE FALSE     -0.75202   -3.7196     TRUE
+
+Gated row (thousand seed weight) and all degrees of freedom and coefficients met: TRUE 
+Data SHA-256: b8b627e2f8e7136ea0277ef81b296cc0db214881919fa049ac03ea4b5824d588 
+pollinatoR git HEAD: 0c00a49c90839130eeb12fc08418b5aecc597921 
