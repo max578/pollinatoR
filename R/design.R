@@ -209,12 +209,6 @@ print.pollin_design <- function(x, ...) {
   if (length(arms) < 2L) {
     stop("A design needs at least two arms.", call. = FALSE)
   }
-  if ("sham" %in% names(arms) && !"open" %in% names(arms)) {
-    stop(
-      "A sham arm needs an open arm: the cage effect is sham versus open.",
-      call. = FALSE
-    )
-  }
   lev <- .treatment_levels(x$data[[x$roles$treatment]])
   absent <- setdiff(arms, lev)
   if (length(absent)) {

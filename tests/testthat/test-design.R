@@ -120,7 +120,7 @@ test_that("pollin_design refuses a mis-declared design", {
   expect_error(pollin_design(pd3, l1_arms, "rcbd"), "no arm: Hand")
 })
 
-test_that("a sham arm needs an open arm and can be the reference", {
+test_that("a sham arm can be the reference, with or without an open arm", {
   d <- l1_df()
   d$trt[d$trt == "Open" & d$plant == 2] <- "Sham"
   pd <- pollin_data(d, "pods", "trt", unit = "Site")
@@ -131,10 +131,14 @@ test_that("a sham arm needs an open arm and can be the reference", {
   expect_identical(pollin_design(pd, three, "rcbd")$reference, "open")
   d2 <- d[d$trt != "Open", ]
   pd2 <- pollin_data(d2, "pods", "trt", unit = "Site")
-  expect_error(
-    pollin_design(pd2, c(excluded = "Cage", sham = "Sham"), "rcbd"),
-    "sham arm needs an open arm"
+  two <- c(excluded = "Cage", sham = "Sham")
+  expect_error(pollin_design(pd2, two, "rcbd"), "reference arm 'open'")
+  ds2 <- pollin_design(pd2, two, "rcbd", reference = "sham")
+  expect_identical(
+    pollin_estimand(ds2, "dependence", "ratio", "loss")$contrast[["high"]],
+    "Sham"
   )
+  expect_error(pollin_estimand(ds2, "cage", "ratio"), "needs the open arm")
   expect_error(
     pollin_design(pollin_data(l1_df(), "pods", "trt", unit = "Site"),
       l1_arms, "rcbd", reference = "sham"),
