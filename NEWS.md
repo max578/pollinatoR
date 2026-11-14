@@ -59,6 +59,9 @@ causally, and what it does not.
 * `pollin_decompose()` recovers planted multiplicative component effects
   within three bootstrap standard errors, and its terms add up to the yield
   effect in every replicate.
+* An acceptance run on a masked copy of a multi-site field study, with a
+  signed causal graph, is not part of this release; it is planned for
+  0.5.1.
 
 # pollinatoR 0.4.0
 
